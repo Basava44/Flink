@@ -1,0 +1,53 @@
+/* Custom animations for floating elements */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Gradient animation for text */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.gradient-animation {
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* Custom font class */
+.custom-font {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Mobile-only responsive utilities */
+@media (min-width: 768px) {
+  .mobile-warning {
+    display: flex !important;
+  }
+  .mobile-content {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .mobile-warning {
+    display: none !important;
+  }
+  .mobile-content {
+    display: flex !important;
+  }
+}
