@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Flink - All Your Socials. One Link.</title>
+    <script>
+      // Apply theme immediately to prevent flash of unstyled content
+      (function() {
+        try {
+          const saved = localStorage.getItem('flink-theme');
+          if (saved === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

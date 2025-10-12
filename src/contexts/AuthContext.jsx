@@ -8,22 +8,57 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
+    // Check for cached session first to avoid API call
+    const getCachedSession = () => {
+      try {
+        const cachedSession = localStorage.getItem('sb-session');
+        if (cachedSession) {
+          const session = JSON.parse(cachedSession);
+          if (session?.user && session.expires_at > Date.now() / 1000) {
+            console.log('AuthContext: Using cached session');
+            setUser(session.user);
+            setLoading(false);
+            return true;
+          }
+        }
+      } catch (error) {
+        console.log('Error reading cached session:', error);
+      }
+      return false;
+    };
+
+    // Get initial session with fallback to cache
     const getInitialSession = async () => {
       try {
-        console.log('AuthContext: Getting initial session...');
+        // First try cached session for immediate response
+        if (getCachedSession()) {
+          // Still fetch fresh session in background
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+              setUser(session.user);
+              // Cache the session
+              localStorage.setItem('sb-session', JSON.stringify({
+                user: session.user,
+                expires_at: session.expires_at
+              }));
+            }
+          }).catch(err => console.log('Background session fetch failed:', err));
+          return;
+        }
+
+        console.log('AuthContext: Getting fresh session...');
         const {
           data: { session },
         } = await supabase.auth.getSession();
         console.log('AuthContext: Initial session result:', session?.user?.id ? 'User found' : 'No user');
         setUser(session?.user ?? null);
         
-        // Fetch user details if user is already logged in (non-blocking)
+        // Cache the session if valid
         if (session?.user) {
-          console.log('AuthContext: Fetching user details for:', session.user.id);
-          getUserDetails(session.user.id).catch(err => {
-            console.log('Error fetching user details (non-critical):', err);
-          });
+          localStorage.setItem('sb-session', JSON.stringify({
+            user: session.user,
+            expires_at: session.expires_at
+          }));
         }
         
         console.log('AuthContext: Setting loading to false');
@@ -43,10 +78,23 @@ export const AuthProvider = ({ children }) => {
       console.log('Auth state change:', { event, session: session?.user?.id });
       setUser(session?.user ?? null);
       
-      // Fetch user details when user logs in or signs up
+      // Cache the session if valid
+      if (session?.user) {
+        localStorage.setItem('sb-session', JSON.stringify({
+          user: session.user,
+          expires_at: session.expires_at
+        }));
+      } else {
+        // Clear cached session on sign out
+        localStorage.removeItem('sb-session');
+      }
+      
+      // Fetch user details when user logs in or signs up (non-blocking)
       if (session?.user && (event === 'SIGNED_IN' || event === 'SIGNED_UP')) {
         console.log('User signed in/up, fetching user details...');
-        await getUserDetails(session.user.id);
+        getUserDetails(session.user.id).catch(err => {
+          console.log('Error fetching user details (non-critical):', err);
+        });
       } else if (!session?.user) {
         // Clear user details when user signs out
         console.log('User signed out, clearing user details...');
@@ -56,11 +104,11 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
 
-    // Fallback timeout to prevent infinite loading
+    // Reduced timeout to prevent infinite loading
     const timeout = setTimeout(() => {
       console.log('AuthContext: Loading timeout reached, forcing loading to false');
       setLoading(false);
-    }, 5000); // 5 second timeout
+    }, 2000); // Reduced to 2 second timeout
 
     return () => {
       subscription.unsubscribe();
