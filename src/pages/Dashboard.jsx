@@ -34,16 +34,52 @@ function Dashboard() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <header className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold brand-font mb-2">
-              Welcome to Flink
-            </h1>
-            <p className={`text-lg ${
-              isDark ? "text-gray-300" : "text-gray-600"
-            }`}>
-              {user?.email}
-            </p>
+          <div className="flex items-center space-x-4">
+            {/* Profile Picture */}
+            <div className="relative">
+              {userDetails?.profile_url ? (
+                <img
+                  src={userDetails.profile_url}
+                  alt="Profile"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-primary-500 shadow-lg"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div 
+                className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold border-2 border-primary-500 shadow-lg ${
+                  userDetails?.profile_url ? 'hidden' : 'flex'
+                } ${
+                  isDark 
+                    ? 'bg-slate-700 text-white border-slate-600' 
+                    : 'bg-primary-100 text-primary-600'
+                }`}
+              >
+                {userDetails?.name ? userDetails.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
+              </div>
+            </div>
+            
+            <div>
+              <h1 className="text-3xl font-bold brand-font mb-2">
+                Welcome to Flink
+              </h1>
+              <p className={`text-lg ${
+                isDark ? "text-gray-300" : "text-gray-600"
+              }`}>
+                {userDetails?.name || user?.email}
+              </p>
+              {userDetails?.name && (
+                <p className={`text-sm ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}>
+                  {user?.email}
+                </p>
+              )}
+            </div>
           </div>
+          
           <button
             onClick={handleSignOut}
             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-xl transition-all duration-200 shadow-soft hover:shadow-soft-lg transform hover:scale-105"
@@ -59,11 +95,56 @@ function Dashboard() {
               ? "bg-slate-800/50 border border-slate-700/50" 
               : "bg-white border border-gray-200"
           }`}>
-            <h2 className={`text-2xl font-bold mb-4 ${
-              isDark ? "text-white" : "text-gray-800"
-            }`}>
-              User Details from Database
-            </h2>
+            <div className="flex items-center space-x-6 mb-6">
+              {/* Large Profile Picture */}
+              <div className="relative">
+                {userDetails?.profile_url ? (
+                  <img
+                    src={userDetails.profile_url}
+                    alt="Profile"
+                    className="w-24 h-24 rounded-full object-cover border-4 border-primary-500 shadow-lg"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold border-4 border-primary-500 shadow-lg ${
+                    userDetails?.profile_url ? 'hidden' : 'flex'
+                  } ${
+                    isDark 
+                      ? 'bg-slate-700 text-white border-slate-600' 
+                      : 'bg-primary-100 text-primary-600'
+                  }`}
+                >
+                  {userDetails?.name ? userDetails.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              </div>
+              
+              <div>
+                <h2 className={`text-2xl font-bold mb-2 ${
+                  isDark ? "text-white" : "text-gray-800"
+                }`}>
+                  {userDetails.name || 'User Profile'}
+                </h2>
+                <p className={`text-lg ${
+                  isDark ? "text-gray-300" : "text-gray-600"
+                }`}>
+                  {userDetails.email || user?.email}
+                </p>
+                {userDetails.first_login && (
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-2 ${
+                    isDark 
+                      ? 'bg-green-900/30 text-green-400 border border-green-800' 
+                      : 'bg-green-100 text-green-800 border border-green-200'
+                  }`}>
+                    First Login
+                  </span>
+                )}
+              </div>
+            </div>
+            
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <span className={`text-sm font-medium ${
@@ -89,6 +170,27 @@ function Dashboard() {
                   {userDetails.email || user?.email}
                 </p>
               </div>
+              {userDetails.profile_url && (
+                <div>
+                  <span className={`text-sm font-medium ${
+                    isDark ? "text-gray-400" : "text-gray-600"
+                  }`}>
+                    Profile URL:
+                  </span>
+                  <p className={`${
+                    isDark ? "text-white" : "text-gray-800"
+                  }`}>
+                    <a 
+                      href={userDetails.profile_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary-600 hover:text-primary-500 underline break-all"
+                    >
+                      {userDetails.profile_url}
+                    </a>
+                  </p>
+                </div>
+              )}
               {userDetails.created_at && (
                 <div>
                   <span className={`text-sm font-medium ${
@@ -100,20 +202,6 @@ function Dashboard() {
                     isDark ? "text-white" : "text-gray-800"
                   }`}>
                     {new Date(userDetails.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              )}
-              {userDetails.updated_at && (
-                <div>
-                  <span className={`text-sm font-medium ${
-                    isDark ? "text-gray-400" : "text-gray-600"
-                  }`}>
-                    Updated At:
-                  </span>
-                  <p className={`${
-                    isDark ? "text-white" : "text-gray-800"
-                  }`}>
-                    {new Date(userDetails.updated_at).toLocaleDateString()}
                   </p>
                 </div>
               )}

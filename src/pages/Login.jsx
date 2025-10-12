@@ -8,6 +8,7 @@ function Login() {
   const { signIn, signUp, signInWithGoogle } = useAuth();
   const { isDark } = useTheme();
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -82,13 +83,16 @@ function Login() {
           return;
         }
 
-        const { error } = await signUp(formData.email, formData.password);
+        const { data, error } = await signUp(formData.email, formData.password, { name: formData.name });
         if (error) {
           setError(error.message);
         } else {
           setMessage("Check your email for the confirmation link!");
           setCountdown(10); // Start 10-second countdown
           setSignupSuccess(true); // Mark signup as successful
+          
+          // Log signup data for debugging
+          console.log('Signup successful:', data);
         }
       } else {
         const { error } = await signIn(formData.email, formData.password);
@@ -192,6 +196,31 @@ function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {isSignUp && (
+              <div>
+                <label htmlFor="name" className={`block text-sm font-medium mb-2 ${
+                  isDark ? "text-gray-200" : "text-gray-700"
+                }`}>
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  disabled={signupSuccess}
+                  className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isDark
+                      ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                      : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                  }`}
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+            )}
+
             <div>
               <label htmlFor="email" className={`block text-sm font-medium mb-2 ${
                 isDark ? "text-gray-200" : "text-gray-700"

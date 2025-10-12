@@ -10,5 +10,7 @@ export const AuthContext = createContext({
   signOut: () => {},
   resetPassword: () => {},
   getUserDetails: () => {},
+  addUserToDatabase: () => {},
+  testDatabaseConnection: () => {},
   supabase: null,
 });

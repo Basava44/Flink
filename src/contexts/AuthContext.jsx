@@ -89,9 +89,31 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('sb-session');
       }
       
-      // Fetch user details when user logs in or signs up (non-blocking)
+      // Handle user signup and signin
       if (session?.user && (event === 'SIGNED_IN' || event === 'SIGNED_UP')) {
-        console.log('User signed in/up, fetching user details...');
+        console.log('User signed in/up, handling user data...', { 
+          event, 
+          userId: session.user.id, 
+          emailConfirmed: session.user.email_confirmed_at,
+          userConfirmed: session.user.confirmed_at 
+        });
+        
+        // For OAuth users (Google), add them to database immediately
+        // For email signups, they should already be added in the signUp function
+        if (event === 'SIGNED_IN' || (event === 'SIGNED_UP' && (session.user.email_confirmed_at || session.user.confirmed_at))) {
+          console.log('Adding user to database via auth state change...');
+          addUserToDatabase(session.user).then(({ error }) => {
+            if (error) {
+              console.error('Failed to add user to database:', error);
+            } else {
+              console.log('User successfully added to database');
+            }
+          });
+        } else {
+          console.log('User not yet confirmed, skipping database insertion (will be handled after confirmation)');
+        }
+        
+        // Then fetch user details (non-blocking)
         getUserDetails(session.user.id).catch(err => {
           console.log('Error fetching user details (non-critical):', err);
         });
@@ -117,11 +139,27 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Sign up with email and password
-  const signUp = async (email, password) => {
+  const signUp = async (email, password, additionalData = {}) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: additionalData
+      }
     });
+    
+    // If signup is successful and we have a user, add them to the database immediately
+    if (data?.user && !error) {
+      console.log('Signup successful, adding user to database immediately...');
+      addUserToDatabase(data.user, additionalData).then(({ error: dbError }) => {
+        if (dbError) {
+          console.error('Failed to add user to database after signup:', dbError);
+        } else {
+          console.log('User successfully added to database after signup');
+        }
+      });
+    }
+    
     return { data, error };
   };
 
@@ -142,6 +180,9 @@ export const AuthProvider = ({ children }) => {
         redirectTo: "http://localhost:5173",
       },
     });
+    
+    // Note: For OAuth, the user will be added via the auth state change listener
+    // when they return from the OAuth redirect
     return { data, error };
   };
 
@@ -176,6 +217,70 @@ export const AuthProvider = ({ children }) => {
     return { data, error };
   };
 
+  // Add user to users table after successful signup
+  const addUserToDatabase = async (user, additionalData = {}) => {
+    try {
+      console.log('addUserToDatabase called with:', { 
+        userId: user.id, 
+        email: user.email, 
+        metadata: user.user_metadata,
+        additionalData 
+      });
+
+      // First check if user already exists in database
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (existingUser) {
+        console.log('User already exists in database, skipping insertion');
+        return { data: existingUser, error: null };
+      }
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 is "not found" error, which is expected for new users
+        console.error('Error checking if user exists:', checkError);
+        return { data: null, error: checkError };
+      }
+
+      const userData = {
+        id: user.id, // This will be the UUID from auth.users.id
+        email: user.email,
+        name: user.user_metadata?.full_name || user.user_metadata?.name || additionalData.name || null,
+        profile_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || additionalData.profile_url || null,
+        first_login: true,
+        created_at: new Date().toISOString()
+      };
+
+      console.log('Adding user to database with data:', userData);
+
+      const { data, error } = await supabase
+        .from('users')
+        .insert([userData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding user to database:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        return { data: null, error };
+      }
+
+      console.log('User successfully added to database:', data);
+      return { data, error: null };
+    } catch (err) {
+      console.error('Unexpected error adding user to database:', err);
+      return { data: null, error: err };
+    }
+  };
+
   // Get user details from users table
   const getUserDetails = async (userId) => {
     try {
@@ -198,6 +303,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Test database connection
+  const testDatabaseConnection = async () => {
+    try {
+      console.log('Testing database connection...');
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, name, profile_url, first_login, created_at')
+        .limit(1);
+      
+      if (error) {
+        console.error('Database connection test failed:', error);
+        return { success: false, error };
+      }
+      
+      console.log('Database connection test successful:', data);
+      return { success: true, data };
+    } catch (err) {
+      console.error('Database connection test error:', err);
+      return { success: false, error: err };
+    }
+  };
+
   const value = {
     user,
     userDetails,
@@ -208,6 +335,8 @@ export const AuthProvider = ({ children }) => {
     signOut,
     resetPassword,
     getUserDetails,
+    addUserToDatabase,
+    testDatabaseConnection,
     supabase, // Expose supabase client for password reset
   };
 
