@@ -11,6 +11,8 @@ export const AuthContext = createContext({
   resetPassword: () => {},
   getUserDetails: () => {},
   addUserToDatabase: () => {},
+  getSocialLinks: () => {},
+  getProfileDetails: () => {},
   testDatabaseConnection: () => {},
   supabase: null,
 });

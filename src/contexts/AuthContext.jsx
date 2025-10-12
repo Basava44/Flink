@@ -303,6 +303,48 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Get user's social links
+  const getSocialLinks = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('social_links')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching social links:', error);
+        return { data: null, error };
+      }
+      
+      return { data, error: null };
+    } catch (err) {
+      console.error('Unexpected error fetching social links:', err);
+      return { data: null, error: err };
+    }
+  };
+
+  // Get user's profile details
+  const getProfileDetails = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('flink_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching profile details:', error);
+        return { data: null, error };
+      }
+      
+      return { data, error: null };
+    } catch (err) {
+      console.error('Unexpected error fetching profile details:', err);
+      return { data: null, error: err };
+    }
+  };
+
   // Test database connection
   const testDatabaseConnection = async () => {
     try {
@@ -336,6 +378,8 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     getUserDetails,
     addUserToDatabase,
+    getSocialLinks,
+    getProfileDetails,
     testDatabaseConnection,
     supabase, // Expose supabase client for password reset
   };

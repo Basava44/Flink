@@ -1,12 +1,150 @@
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
+import OnboardingFlow from "../components/OnboardingFlow";
 // import ThemeToggle from "../components/ThemeToggle";
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { user, userDetails, signOut } = useAuth();
+  const { user, userDetails, signOut, getUserDetails, getSocialLinks, getProfileDetails } = useAuth();
   const { isDark } = useTheme();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [socialLinks, setSocialLinks] = useState([]);
+  const [profileDetails, setProfileDetails] = useState(null);
+  const [loadingData, setLoadingData] = useState(false);
+
+  // Check if user needs onboarding
+  useEffect(() => {
+    if (userDetails && userDetails.first_login === true) {
+      setShowOnboarding(true);
+    }
+  }, [userDetails]);
+
+  // Fetch social links and profile details when user is not in first login
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (userDetails && userDetails.first_login === false && user?.id) {
+        setLoadingData(true);
+        try {
+          // Fetch social links
+          const { data: socialData, error: socialError } = await getSocialLinks(user.id);
+          if (socialError) {
+            console.error('Error fetching social links:', socialError);
+          } else {
+            setSocialLinks(socialData || []);
+          }
+
+          // Fetch profile details
+          const { data: profileData, error: profileError } = await getProfileDetails(user.id);
+          if (profileError) {
+            console.error('Error fetching profile details:', profileError);
+          } else {
+            setProfileDetails(profileData);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        } finally {
+          setLoadingData(false);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [userDetails, user?.id, getSocialLinks, getProfileDetails]);
+
+  const handleOnboardingComplete = async () => {
+    console.log('Onboarding completed, refreshing user details...');
+    // Refresh user details to get updated first_login status
+    await getUserDetails(user.id);
+    
+    // Also refresh social links and profile details
+    if (user?.id) {
+      const { data: socialData } = await getSocialLinks(user.id);
+      const { data: profileData } = await getProfileDetails(user.id);
+      setSocialLinks(socialData || []);
+      setProfileDetails(profileData);
+    }
+    
+    setShowOnboarding(false);
+  };
+
+  // Helper function to get social media icon
+  const getSocialIcon = (platform) => {
+    const icons = {
+      email: '📧',
+      phone: '📱',
+      instagram: '📷',
+      twitter: '🐦',
+      linkedin: '💼',
+      github: '💻',
+      youtube: '📺',
+      facebook: '👥',
+      snapchat: '👻',
+      discord: '🎮',
+      twitch: '🎮',
+    };
+    return icons[platform] || '🔗';
+  };
+
+  // Helper function to get social media name
+  const getSocialName = (platform) => {
+    const names = {
+      email: 'Email',
+      phone: 'Phone',
+      instagram: 'Instagram',
+      twitter: 'Twitter/X',
+      linkedin: 'LinkedIn',
+      github: 'GitHub',
+      youtube: 'YouTube',
+      facebook: 'Facebook',
+      snapchat: 'Snapchat',
+      discord: 'Discord',
+      twitch: 'Twitch',
+    };
+    return names[platform] || platform;
+  };
+
+  // Helper function to format URL for display
+  const formatUrlForDisplay = (url, platform) => {
+    if (platform === 'email') {
+      return url;
+    }
+    if (platform === 'phone') {
+      return url;
+    }
+    
+    try {
+      const urlObj = new URL(url);
+      // For social platforms, show just the username or path
+      if (platform === 'instagram' || platform === 'twitter' || platform === 'snapchat') {
+        return urlObj.pathname.replace('/', '@') || url;
+      }
+      if (platform === 'github') {
+        return urlObj.pathname || url;
+      }
+      if (platform === 'linkedin') {
+        return urlObj.pathname.replace('/in/', '') || url;
+      }
+      if (platform === 'youtube') {
+        return urlObj.pathname.replace('/@', '@') || url;
+      }
+      if (platform === 'facebook') {
+        return urlObj.pathname || url;
+      }
+      if (platform === 'discord') {
+        return url;
+      }
+      if (platform === 'twitch') {
+        return urlObj.pathname || url;
+      }
+      
+      // For other platforms, show domain + path
+      return urlObj.hostname + urlObj.pathname;
+    } catch {
+      return url;
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -26,6 +164,17 @@ function Dashboard() {
       console.error("Unexpected error during sign out:", error);
     }
   };
+
+  // Show onboarding flow for first-time users
+  if (showOnboarding) {
+    return (
+      <OnboardingFlow
+        onComplete={handleOnboardingComplete}
+        user={user}
+        userDetails={userDetails}
+      />
+    );
+  }
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -218,6 +367,120 @@ function Dashboard() {
           </div>
         )}
 
+        {/* Social Links Section */}
+        {socialLinks.length > 0 && (
+          <div className={`mb-8 p-6 rounded-2xl ${
+            isDark 
+              ? "bg-slate-800/50 border border-slate-700/50" 
+              : "bg-white border border-gray-200"
+          }`}>
+            <h2 className={`text-2xl font-bold mb-4 ${
+              isDark ? "text-white" : "text-gray-800"
+            }`}>
+              Your Social Links
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {socialLinks.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`p-4 rounded-xl transition-all duration-200 hover:scale-105 min-w-0 ${
+                    isDark
+                      ? "bg-slate-700/50 hover:bg-slate-700 border border-slate-600"
+                      : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">
+                      {getSocialIcon(link.platform)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`font-medium ${
+                        isDark ? "text-white" : "text-gray-800"
+                      }`}>
+                        {getSocialName(link.platform)}
+                      </p>
+                      <p className={`text-sm truncate ${
+                        isDark ? "text-gray-400" : "text-gray-500"
+                      }`} title={link.url}>
+                        {formatUrlForDisplay(link.url, link.platform)}
+                      </p>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Profile Details Section */}
+        {profileDetails && (
+          <div className={`mb-8 p-6 rounded-2xl ${
+            isDark 
+              ? "bg-slate-800/50 border border-slate-700/50" 
+              : "bg-white border border-gray-200"
+          }`}>
+            <h2 className={`text-2xl font-bold mb-4 ${
+              isDark ? "text-white" : "text-gray-800"
+            }`}>
+              Your Flink Profile
+            </h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <span className={`text-sm font-medium ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}>
+                  Flink Handle:
+                </span>
+                <p className={`${
+                  isDark ? "text-white" : "text-gray-800"
+                }`}>
+                  <a 
+                    href={`https://flink.to/${profileDetails.handle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:text-primary-500 underline"
+                  >
+                    flink.to/{profileDetails.handle}
+                  </a>
+                </p>
+              </div>
+              {profileDetails.created_at && (
+                <div>
+                  <span className={`text-sm font-medium ${
+                    isDark ? "text-gray-400" : "text-gray-600"
+                  }`}>
+                    Profile Created:
+                  </span>
+                  <p className={`${
+                    isDark ? "text-white" : "text-gray-800"
+                  }`}>
+                    {new Date(profileDetails.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loadingData && (
+          <div className={`mb-8 p-6 rounded-2xl text-center ${
+            isDark 
+              ? "bg-slate-800/50 border border-slate-700/50" 
+              : "bg-white border border-gray-200"
+          }`}>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className={`${
+              isDark ? "text-gray-300" : "text-gray-600"
+            }`}>
+              Loading your profile data...
+            </p>
+          </div>
+        )}
+
         {/* Main Content */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
@@ -331,7 +594,7 @@ function Dashboard() {
               <div className={`text-3xl font-bold mb-2 ${
                 isDark ? "text-white" : "text-gray-800"
               }`}>
-                0
+                {socialLinks.length}
               </div>
               <div className={`text-sm ${
                 isDark ? "text-gray-400" : "text-gray-600"
@@ -363,12 +626,12 @@ function Dashboard() {
               <div className={`text-3xl font-bold mb-2 ${
                 isDark ? "text-white" : "text-gray-800"
               }`}>
-                0
+                {profileDetails ? '1' : '0'}
               </div>
               <div className={`text-sm ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>
-                Connections
+                Flink Profile
               </div>
             </div>
           </div>
