@@ -19,7 +19,7 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
 
   const socialPlatforms = [
     { key: 'email', name: 'Email', icon: '📧', placeholder: 'your.email@example.com', type: 'email' },
-    { key: 'phone', name: 'Phone', icon: '📱', placeholder: '+1 (555) 123-4567', type: 'tel' },
+    { key: 'phone', name: 'Phone', icon: '📱', placeholder: '+91 9876543210', type: 'tel' },
     { key: 'instagram', name: 'Instagram', icon: '📷', placeholder: '@username' },
     { key: 'twitter', name: 'Twitter/X', icon: '🐦', placeholder: '@username' },
     { key: 'linkedin', name: 'LinkedIn', icon: '💼', placeholder: 'linkedin.com/in/username' },

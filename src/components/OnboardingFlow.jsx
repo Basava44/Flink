@@ -39,7 +39,11 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
         .insert([{
           user_id: formData.userId, // This should be passed from parent
           handle: data.handle,
-          created_at: new Date().toISOString()
+          bio: data.bio || null,
+          location: data.location || null,
+          website: data.website || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }]);
 
       if (profileError) {
@@ -52,6 +56,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
           user_id: formData.userId,
           platform,
           url,
+          private: platform === 'email' ? false : true, // Email is always public, others are private by default
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));

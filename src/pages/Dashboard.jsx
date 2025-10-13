@@ -487,6 +487,62 @@ function Dashboard() {
                 </div>
               )}
             </div>
+            
+            {/* Bio Section */}
+            {profileDetails.bio && (
+              <div className="mt-4">
+                <span className={`text-sm font-medium ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}>
+                  Bio:
+                </span>
+                <p className={`mt-1 ${
+                  isDark ? "text-white" : "text-gray-800"
+                }`}>
+                  {profileDetails.bio}
+                </p>
+              </div>
+            )}
+            
+            {/* Location and Website Row */}
+            <div className="grid md:grid-cols-2 gap-4 mt-4">
+              {profileDetails.location && (
+                <div>
+                  <span className={`text-sm font-medium ${
+                    isDark ? "text-gray-400" : "text-gray-600"
+                  }`}>
+                    Location:
+                  </span>
+                  <p className={`${
+                    isDark ? "text-white" : "text-gray-800"
+                  }`}>
+                    {profileDetails.location}
+                  </p>
+                </div>
+              )}
+              
+              {profileDetails.website && (
+                <div>
+                  <span className={`text-sm font-medium ${
+                    isDark ? "text-gray-400" : "text-gray-600"
+                  }`}>
+                    Website:
+                  </span>
+                  <p className={`${
+                    isDark ? "text-white" : "text-gray-800"
+                  }`}>
+                    <a 
+                      href={profileDetails.website.startsWith('http') ? profileDetails.website : `https://${profileDetails.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary-600 hover:text-primary-500 underline break-all"
+                    >
+                      {profileDetails.website}
+                    </a>
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
