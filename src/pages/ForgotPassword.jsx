@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../hooks/useTheme";
 
 function ForgotPassword() {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -28,6 +30,10 @@ function ForgotPassword() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const onBackToLogin = () => {
+    navigate('/login');
   };
 
   return (
@@ -56,7 +62,9 @@ function ForgotPassword() {
       </div>
 
       {/* Mobile Forgot Password - Visible only on mobile */}
-      <div className="md:hidden min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex items-center justify-center px-4">
+      <div className={`md:hidden min-h-screen flex items-center justify-center px-4 transition-colors duration-300 ${
+        isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
+      }`}>
         {/* Background elements */}
         <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 float-animation"></div>
         <div
@@ -68,7 +76,9 @@ function ForgotPassword() {
         {/* Back button */}
         <button
           onClick={onBackToLogin}
-          className="mb-8 flex items-center text-gray-300 hover:text-white transition-colors duration-300"
+          className={`mb-8 flex items-center transition-colors duration-200 ${
+            isDark ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"
+          }`}
         >
           <svg
             className="w-5 h-5 mr-2"
@@ -87,7 +97,11 @@ function ForgotPassword() {
         </button>
 
         {/* Forgot Password form */}
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+        <div className={`rounded-3xl py-8 px-12  border transition-all duration-300 ${
+          isDark 
+            ? "bg-slate-800/50 backdrop-blur-md border-slate-700/50" 
+            : "bg-white border-gray-200 shadow-lg"
+        }`}>
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg
@@ -104,22 +118,34 @@ function ForgotPassword() {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+            <h1 className={`text-2xl sm:text-3xl md:text-4xl font-bold mb-2 ${
+              isDark ? "text-white" : "text-gray-800"
+            }`}>
               Forgot Password?
             </h1>
-            <p className="text-sm sm:text-base text-gray-300">
+            <p className={`text-sm sm:text-base ${
+              isDark ? "text-gray-300" : "text-gray-600"
+            }`}>
               No worries! Enter your email and we'll send you reset instructions.
             </p>
           </div>
 
           {message && (
-            <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-xl text-green-300 text-sm">
+            <div className={`mb-6 p-4 rounded-xl text-sm ${
+              isDark 
+                ? "bg-green-500/20 border border-green-500/30 text-green-300" 
+                : "bg-green-50 border border-green-200 text-green-700"
+            }`}>
               {message}
             </div>
           )}
 
           {error && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm">
+            <div className={`mb-6 p-4 rounded-xl text-sm ${
+              isDark 
+                ? "bg-red-500/20 border border-red-500/30 text-red-300" 
+                : "bg-red-50 border border-red-200 text-red-700"
+            }`}>
               {error}
             </div>
           )}
@@ -128,7 +154,9 @@ function ForgotPassword() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-300 mb-2"
+                className={`block text-sm font-medium mb-2 ${
+                  isDark ? "text-gray-200" : "text-gray-700"
+                }`}
               >
                 Email Address
               </label>
@@ -137,7 +165,11 @@ function ForgotPassword() {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
+                  isDark
+                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                }`}
                 placeholder="Enter your email address"
                 required
               />
@@ -146,18 +178,21 @@ function ForgotPassword() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl transform hover:scale-105 disabled:hover:scale-100 transition-all duration-300 shadow-2xl hover:shadow-pink-500/25 text-sm sm:text-base"
+              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-soft hover:shadow-soft-lg transform hover:scale-105 disabled:hover:scale-100 text-sm sm:text-base"
             >
               {isLoading ? "Sending..." : "Send Reset Instructions"}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-300 text-sm">
+            <p className={`text-sm ${
+              isDark ? "text-gray-300" : "text-gray-600"
+            }`}>
               Remember your password?{" "}
               <button
+                type="button"
                 onClick={() => navigate('/login')}
-                className="text-purple-400 hover:text-purple-300 font-medium transition-colors duration-300"
+                className="text-primary-600 hover:text-primary-500 font-medium transition-colors duration-200"
               >
                 Sign in instead
               </button>

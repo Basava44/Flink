@@ -131,8 +131,33 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
   }
 
   return (
-    <div>
-      {error && (
+    <>
+      {/* Desktop Warning Message - Hidden on mobile */}
+      <div className="hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+        <div className="text-center p-8 max-w-md">
+          <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+            Mobile Only
+          </h1>
+          <p className="text-gray-300 text-lg mb-6">
+            Onboarding is designed for mobile devices. Please access it from your phone or resize your browser window.
+          </p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transform hover:scale-105 transition-all duration-300"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Onboarding - Visible only on mobile */}
+      <div className="md:hidden">
+        {error && (
         <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
           <div className="flex">
             <div className="py-1">
@@ -176,7 +201,8 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
