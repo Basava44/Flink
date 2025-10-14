@@ -16,6 +16,8 @@ import {
   X,
   HelpCircle,
   User,
+  Sun,
+  Moon,
 } from "lucide-react";
 // import ThemeToggle from "../components/ThemeToggle";
 
@@ -29,47 +31,105 @@ function Dashboard() {
     getSocialLinks,
     getProfileDetails,
   } = useAuth();
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [socialLinks, setSocialLinks] = useState([]);
   const [profileDetails, setProfileDetails] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // Initial check for onboarding when component mounts
+  useEffect(() => {
+    const checkInitialOnboarding = async () => {
+      if (user?.id && !userDetails) {
+        try {
+          const { data, error } = await getUserDetails(user.id);
+          if (!error && data && data.first_login === true) {
+            setShowOnboarding(true);
+          }
+        } catch (err) {
+          console.error('Error in initial onboarding check:', err);
+        }
+      }
+    };
+    
+    checkInitialOnboarding();
+  }, [user?.id, getUserDetails]);
+
   // Check if user needs onboarding
   useEffect(() => {
     if (userDetails && userDetails.first_login === true) {
       setShowOnboarding(true);
+    } else if (user && !userDetails && !loadingData) {
+      // If user exists but userDetails is not loaded yet, fetch it
+      const fetchUserDetails = async () => {
+        try {
+          const { data, error } = await getUserDetails(user.id);
+          if (error) {
+            console.error('Error fetching user details:', error);
+          } else if (data && data.first_login === true) {
+            setShowOnboarding(true);
+          }
+        } catch (err) {
+          console.error('Error in fetchUserDetails:', err);
+        }
+      };
+      fetchUserDetails();
     }
-  }, [userDetails]);
+  }, [userDetails, user, loadingData, getUserDetails]);
 
-  // Fetch social links and profile details when user is not in first login
+  // Fetch social links and profile details when user is not in first login (with caching)
   useEffect(() => {
     const fetchUserData = async () => {
       if (userDetails && userDetails.first_login === false && user?.id) {
         setLoadingData(true);
+        
         try {
-          // Fetch social links
-          const { data: socialData, error: socialError } = await getSocialLinks(
-            user.id
-          );
-          if (socialError) {
-            console.error("Error fetching social links:", socialError);
+          // Try to get cached data from local storage
+          const cachedSocialLinks = localStorage.getItem(`socialLinks_${user.id}`);
+          const cachedProfileDetails = localStorage.getItem(`profileDetails_${user.id}`);
+          const cacheTimestamp = localStorage.getItem(`cacheTimestamp_${user.id}`);
+          
+          // Check if cache is still valid (less than 5 minutes old)
+          const isCacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 5 * 60 * 1000;
+          
+          if (isCacheValid && cachedSocialLinks && cachedProfileDetails) {
+            // Use cached data
+            console.log('Using cached dashboard data');
+            setSocialLinks(JSON.parse(cachedSocialLinks));
+            setProfileDetails(JSON.parse(cachedProfileDetails));
+            setLoadingData(false);
           } else {
-            setSocialLinks(socialData || []);
-          }
+            // Fetch fresh data from API
+            console.log('Fetching fresh dashboard data');
+            
+            // Fetch social links
+            const { data: socialData, error: socialError } = await getSocialLinks(
+              user.id
+            );
+            if (socialError) {
+              console.error("Error fetching social links:", socialError);
+            } else {
+              setSocialLinks(socialData || []);
+              localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialData || []));
+            }
 
-          // Fetch profile details
-          const { data: profileData, error: profileError } =
-            await getProfileDetails(user.id);
-          if (profileError) {
-            console.error("Error fetching profile details:", profileError);
-          } else {
-            setProfileDetails(profileData);
+            // Fetch profile details
+            const { data: profileData, error: profileError } =
+              await getProfileDetails(user.id);
+            if (profileError) {
+              console.error("Error fetching profile details:", profileError);
+            } else {
+              setProfileDetails(profileData);
+              localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileData));
+            }
+            
+            // Update cache timestamp
+            localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
+            setLoadingData(false);
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
-        } finally {
           setLoadingData(false);
         }
       }
@@ -104,6 +164,16 @@ function Dashboard() {
   };
 
   const handleMenuClose = () => {
+    setIsMenuOpen(false);
+  };
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+    setIsMenuOpen(false);
+  };
+
+  const handleHelpClick = () => {
+    navigate('/help');
     setIsMenuOpen(false);
   };
 
@@ -201,7 +271,7 @@ function Dashboard() {
             </div>
             
             <div>
-              <h1 className="text-3xl font-bold brand-font mb-2">
+              <h1 className="text-2xl font-bold brand-font mb-2">
                 Welcome to Flink
               </h1>
                 <p
@@ -354,7 +424,7 @@ function Dashboard() {
 
                     {/* Profile */}
                     <button
-                      onClick={handleMenuClose}
+                      onClick={handleProfileClick}
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-200 ${
                         isDark
                           ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
@@ -367,7 +437,7 @@ function Dashboard() {
 
                     {/* Help */}
                     <button
-                      onClick={handleMenuClose}
+                      onClick={handleHelpClick}
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-300 ${
                         isDark
                           ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
@@ -376,6 +446,31 @@ function Dashboard() {
                     >
                       <HelpCircle className="w-5 h-5" />
                       <span className="font-medium">Help & Support</span>
+                    </button>
+
+                    {/* Theme Toggle */}
+                    <button
+                      onClick={() => {
+                        toggleTheme();
+                        setIsMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-[400ms] ${
+                        isDark
+                          ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
+                          : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      {isDark ? (
+                        <>
+                          <Sun className="w-5 h-5" />
+                          <span className="font-medium">Light Mode</span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="w-5 h-5" />
+                          <span className="font-medium">Dark Mode</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

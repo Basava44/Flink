@@ -35,6 +35,7 @@ const SettingsPage = () => {
   const [profileDetails, setProfileDetails] = useState(null);
   const [showActionBar, setShowActionBar] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showSnackbar, setShowSnackbar] = useState(false);
   const scrollTimeoutRef = useRef(null);
   const idleTimeoutRef = useRef(null);
   
@@ -248,6 +249,7 @@ const SettingsPage = () => {
       }
 
       setSuccess('Profile and social links updated successfully!');
+      setShowSnackbar(true);
       setHasChanges(false);
       setShowActionBar(false);
       
@@ -257,10 +259,21 @@ const SettingsPage = () => {
       setSocialLinks(socialData || []);
       setProfileDetails(updatedProfileData);
 
-      // Auto-redirect to dashboard after 1 second
+      // Update local storage cache with fresh data
+      localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialData || []));
+      localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(updatedProfileData));
+      localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
+      console.log('Cache updated with fresh data after settings save');
+
+      // Auto-hide snackbar after 3 seconds
+      setTimeout(() => {
+        setShowSnackbar(false);
+      }, 3000);
+
+      // Auto-redirect to dashboard after 2 seconds
       setTimeout(() => {
         navigate('/dashboard');
-      }, 1000);
+      }, 600);
 
     } catch (err) {
       console.error('Error updating profile:', err);
@@ -305,6 +318,36 @@ const SettingsPage = () => {
     <div className={`settings-page min-h-screen transition-colors duration-300 slide-in-from-right ${
       isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
     }`}>
+      {/* Success Snackbar */}
+      {showSnackbar && (
+        <div className="fixed top-4 left-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
+          <div className={`mx-auto max-w-sm rounded-lg shadow-lg border ${
+            isDark 
+              ? "bg-green-900/90 border-green-700 text-green-100" 
+              : "bg-green-50 border-green-200 text-green-800"
+          }`}>
+            <div className="p-4">
+              <div className="flex items-center space-x-3">
+                <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                <p className="text-sm font-medium">
+                  Profile and social links updated successfully!
+                </p>
+                <button
+                  onClick={() => setShowSnackbar(false)}
+                  className={`ml-auto p-1 rounded-full transition-colors ${
+                    isDark 
+                      ? "hover:bg-green-800 text-green-300 hover:text-green-100" 
+                      : "hover:bg-green-100 text-green-600 hover:text-green-800"
+                  }`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className={`sticky top-0 z-10 border-b ${
         isDark 
