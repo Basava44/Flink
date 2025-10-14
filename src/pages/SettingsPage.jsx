@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
@@ -33,6 +33,10 @@ const SettingsPage = () => {
   const [success, setSuccess] = useState('');
   const [socialLinks, setSocialLinks] = useState([]);
   const [profileDetails, setProfileDetails] = useState(null);
+  const [showActionBar, setShowActionBar] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const scrollTimeoutRef = useRef(null);
+  const idleTimeoutRef = useRef(null);
   
   // Convert social links array to object format for editing
   const [socialLinksData, setSocialLinksData] = useState({});
@@ -44,6 +48,7 @@ const SettingsPage = () => {
   });
 
   const socialPlatforms = [
+    { key: 'email', name: 'Email', icon: <Mail className="w-5 h-5" />, placeholder: 'your@email.com', type: 'email' },
     { key: 'phone', name: 'Phone', icon: <Phone className="w-5 h-5" />, placeholder: '+91 9876543210', type: 'tel' },
     { key: 'instagram', name: 'Instagram', icon: <Instagram className="w-5 h-5" />, placeholder: '@username' },
     { key: 'twitter', name: 'Twitter/X', icon: <Twitter className="w-5 h-5" />, placeholder: '@username' },
@@ -97,6 +102,70 @@ const SettingsPage = () => {
 
     loadUserData();
   }, [user?.id, getSocialLinks, getProfileDetails]);
+
+  // Scroll detection and idle state management
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // Check if user is at bottom (within 100px)
+      const atBottom = scrollTop + windowHeight >= documentHeight - 100;
+      
+      setShowActionBar(false);
+      
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Set timeout to detect when scrolling stops
+      scrollTimeoutRef.current = setTimeout(() => {
+        // Show action bar immediately if at bottom, or if user has changes and is idle
+        if (atBottom) {
+          setShowActionBar(true);
+        } else if (hasChanges) {
+          idleTimeoutRef.current = setTimeout(() => {
+            setShowActionBar(true);
+          }, 500); // 500ms idle delay
+        }
+      }, 150); // 150ms after scroll stops
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+    };
+  }, [hasChanges]);
+
+  // Check for changes
+  useEffect(() => {
+    const checkForChanges = () => {
+      // Check if social links have changed
+      const currentSocialLinks = {};
+      socialLinks.forEach(link => {
+        currentSocialLinks[link.platform] = link.url;
+      });
+      
+      const socialLinksChanged = JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData);
+      
+      // Check if profile data has changed
+      const currentProfileData = {
+        bio: profileDetails?.bio || '',
+        location: profileDetails?.location || '',
+        website: profileDetails?.website || ''
+      };
+      
+      const profileChanged = JSON.stringify(currentProfileData) !== JSON.stringify(profileData);
+      
+      setHasChanges(socialLinksChanged || profileChanged);
+    };
+
+    checkForChanges();
+  }, [socialLinksData, profileData, socialLinks, profileDetails]);
 
   const handleInputChange = (platform, value) => {
     setSocialLinksData(prev => ({
@@ -179,6 +248,8 @@ const SettingsPage = () => {
       }
 
       setSuccess('Profile and social links updated successfully!');
+      setHasChanges(false);
+      setShowActionBar(false);
       
       // Refresh the data
       const { data: socialData } = await getSocialLinks(user.id);
@@ -186,10 +257,10 @@ const SettingsPage = () => {
       setSocialLinks(socialData || []);
       setProfileDetails(updatedProfileData);
 
-      // Clear success message after 3 seconds
+      // Auto-redirect to dashboard after 1 second
       setTimeout(() => {
-        setSuccess('');
-      }, 3000);
+        navigate('/dashboard');
+      }, 1000);
 
     } catch (err) {
       console.error('Error updating profile:', err);
@@ -200,7 +271,17 @@ const SettingsPage = () => {
   };
 
   const handleBack = () => {
-    navigate('/dashboard');
+    // Add slide-out animation
+    const settingsPage = document.querySelector('.settings-page');
+    if (settingsPage) {
+      settingsPage.style.transform = 'translateX(100%)';
+      settingsPage.style.transition = 'transform 0.3s ease-in-out';
+    }
+    
+    // Navigate after animation
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 300);
   };
 
   if (loading && !socialLinks.length && !profileDetails) {
@@ -221,7 +302,7 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 slide-in-from-right ${
+    <div className={`settings-page min-h-screen transition-colors duration-300 slide-in-from-right ${
       isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
     }`}>
       {/* Header */}
@@ -258,7 +339,7 @@ const SettingsPage = () => {
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 pb-24">
         {/* Info Message */}
         <div className={`mb-6 p-3 rounded-lg ${
           isDark 
@@ -273,7 +354,7 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form id="settings-form" onSubmit={handleSubmit} className="space-y-8">
           {/* Social Links Section */}
           <div className={`p-6 rounded-2xl ${
             isDark 
@@ -424,37 +505,53 @@ const SettingsPage = () => {
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-6">
-            <button
-              type="button"
-              onClick={handleBack}
-              disabled={loading}
-              className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                isDark
-                  ? "bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50"
-                  : "bg-gray-200 hover:bg-gray-300 text-gray-700 disabled:opacity-50"
-              }`}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-soft hover:shadow-soft-lg transform hover:scale-105 disabled:transform-none disabled:shadow-none"
-            >
-              {loading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Saving...</span>
-                </div>
-              ) : (
-                'Save Changes'
-              )}
-            </button>
-          </div>
         </form>
       </div>
+
+      {/* Smart Floating Action Bar */}
+      {showActionBar && (
+        <div className={`fixed bottom-6 left-4 right-4 z-20 transform transition-all duration-500 ease-out ${
+          showActionBar ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+        }`}>
+          <div className={`backdrop-blur-lg rounded-2xl shadow-2xl border ${
+            isDark 
+              ? "bg-slate-800/90 border-slate-600/50" 
+              : "bg-white/90 border-gray-200/50"
+          }`}>
+          <div className="p-3">
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={handleBack}
+                disabled={loading}
+                className={`flex-1 py-2 px-3 rounded-lg font-medium transition-all duration-200 text-sm ${
+                  isDark
+                    ? "bg-slate-700/50 hover:bg-slate-600/50 text-gray-300 hover:text-white disabled:opacity-50 border border-slate-600/30"
+                    : "bg-gray-100/50 hover:bg-gray-200/50 text-gray-600 hover:text-gray-800 disabled:opacity-50 border border-gray-200/50"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="settings-form"
+                disabled={loading}
+                className="flex-1 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-primary-400 disabled:to-primary-500 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none disabled:shadow-lg text-sm"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center space-x-1">
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Saving...</span>
+                  </div>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </div>
+          </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -12,6 +12,10 @@ import {
   LogOut,
   ArrowLeft,
   Smartphone,
+  Menu,
+  X,
+  HelpCircle,
+  User,
 } from "lucide-react";
 // import ThemeToggle from "../components/ThemeToggle";
 
@@ -30,6 +34,7 @@ function Dashboard() {
   const [socialLinks, setSocialLinks] = useState([]);
   const [profileDetails, setProfileDetails] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Check if user needs onboarding
   useEffect(() => {
@@ -91,6 +96,15 @@ function Dashboard() {
 
   const handleSettingsClick = () => {
     navigate("/settings");
+    setIsMenuOpen(false);
+  };
+
+  const handleMenuToggle = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleMenuClose = () => {
+    setIsMenuOpen(false);
   };
 
 
@@ -209,36 +223,24 @@ function Dashboard() {
             </div>
           </div>
 
-            <div className="flex items-center space-x-3">
-              {/* Settings Icon */}
+            <div className="flex items-center">
+              {/* Hamburger Menu */}
               <button
-                onClick={handleSettingsClick}
+                onClick={handleMenuToggle}
                 className={`p-3 rounded-xl transition-all duration-200 hover:scale-105 ${
                   isDark
                     ? "bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-gray-300 hover:text-white"
                     : "bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 hover:text-gray-800"
                 }`}
-                title="Settings"
+                title="Menu"
               >
-                <Settings className="w-5 h-5" />
+                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
-          
-          <button
-            onClick={handleSignOut}
-                className={`p-3 rounded-xl transition-all duration-200 hover:scale-105 ${
-                  isDark
-                    ? "bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 hover:text-red-300"
-                    : "bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 hover:text-red-700"
-                }`}
-                title="Sign Out"
-              >
-                <LogOut className="w-5 h-5" />
-          </button>
             </div>
         </header>
 
-        {/* User Details Section */}
-        {userDetails && (
+        {/* User Status Section - Only show for new users */}
+        {userDetails && userDetails.first_login && (
             <div
               className={`mb-8 p-6 rounded-2xl ${
             isDark 
@@ -246,135 +248,16 @@ function Dashboard() {
               : "bg-white border border-gray-200"
               }`}
             >
-            <div className="flex items-center space-x-6 mb-6">
-              {/* Large Profile Picture */}
-              <div className="relative">
-                {userDetails?.profile_url ? (
-                  <img
-                    src={userDetails.profile_url}
-                    alt="Profile"
-                    className="w-24 h-24 rounded-full object-cover border-4 border-primary-500 shadow-lg"
-                    onError={(e) => {
-                        e.target.style.display = "none";
-                        e.target.nextSibling.style.display = "flex";
-                    }}
-                  />
-                ) : null}
-                <div 
-                  className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold border-4 border-primary-500 shadow-lg ${
-                      userDetails?.profile_url ? "hidden" : "flex"
-                  } ${
-                    isDark 
-                        ? "bg-slate-700 text-white border-slate-600"
-                        : "bg-primary-100 text-primary-600"
-                    }`}
-                  >
-                    {userDetails?.name
-                      ? userDetails.name.charAt(0).toUpperCase()
-                      : user?.email?.charAt(0).toUpperCase() || "U"}
-                  </div>
-              </div>
-              
-              <div>
-                  <h2
-                    className={`text-2xl font-bold mb-2 ${
-                  isDark ? "text-white" : "text-gray-800"
-                    }`}
-                  >
-                    {userDetails.name || "User Profile"}
-                </h2>
-                  <p
-                    className={`text-lg ${
-                  isDark ? "text-gray-300" : "text-gray-600"
-                    }`}
-                  >
-                  {userDetails.email || user?.email}
-                </p>
-                {userDetails.first_login && (
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-2 ${
-                    isDark 
-                          ? "bg-green-900/30 text-green-400 border border-green-800"
-                          : "bg-green-100 text-green-800 border border-green-200"
-                      }`}
-                    >
-                    First Login
-                  </span>
-                )}
-              </div>
-            </div>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                  <span
-                    className={`text-sm font-medium ${
-                  isDark ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                  User ID:
-                </span>
-                  <p className={`${isDark ? "text-white" : "text-gray-800"}`}>
-                  {userDetails.id}
-                </p>
-              </div>
-              <div>
-                  <span
-                    className={`text-sm font-medium ${
-                  isDark ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                  Email:
-                </span>
-                  <p className={`${isDark ? "text-white" : "text-gray-800"}`}>
-                  {userDetails.email || user?.email}
-                </p>
-              </div>
-              {userDetails.profile_url && (
-                <div>
-                    <span
-                      className={`text-sm font-medium ${
-                    isDark ? "text-gray-400" : "text-gray-600"
-                      }`}
-                    >
-                    Profile URL:
-                  </span>
-                    <p className={`${isDark ? "text-white" : "text-gray-800"}`}>
-                    <a 
-                      href={userDetails.profile_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary-600 hover:text-primary-500 underline break-all"
-                    >
-                      {userDetails.profile_url}
-                    </a>
-                  </p>
-                </div>
-              )}
-              {userDetails.created_at && (
-                <div>
-                    <span
-                      className={`text-sm font-medium ${
-                    isDark ? "text-gray-400" : "text-gray-600"
-                      }`}
-                    >
-                    Created At:
-                  </span>
-                    <p className={`${isDark ? "text-white" : "text-gray-800"}`}>
-                    {new Date(userDetails.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="mt-4">
-                <pre
-                  className={`text-xs p-4 rounded-lg overflow-auto ${
+            <div className="text-center">
+              <span
+                className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
                 isDark 
-                  ? "bg-slate-900 text-gray-300" 
-                  : "bg-gray-100 text-gray-700"
+                      ? "bg-green-900/30 text-green-400 border border-green-800"
+                      : "bg-green-100 text-green-800 border border-green-200"
                   }`}
-                >
-                {JSON.stringify(userDetails, null, 2)}
-              </pre>
+              >
+                ✨ New User
+              </span>
             </div>
           </div>
         )}
@@ -416,7 +299,108 @@ function Dashboard() {
         <div className="mb-8">
           <QuickStatsSection socialLinks={socialLinks} profileDetails={profileDetails} />
         </div>
-      </div>
+
+        {/* Hamburger Menu Overlay */}
+        <div className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${
+          isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}>
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={handleMenuClose}
+            />
+            
+            {/* Menu Panel */}
+            <div className={`absolute right-0 top-0 h-full w-80 max-w-sm transform transition-all duration-300 ease-out ${
+              isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+            } ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+              <div className="flex flex-col h-full">
+                {/* Menu Header */}
+                <div className={`flex items-center justify-between p-6 border-b ${
+                  isDark ? 'border-slate-700' : 'border-gray-200'
+                }`}>
+                  <h2 className={`text-lg font-semibold ${
+                    isDark ? 'text-white' : 'text-gray-800'
+                  }`}>
+                    Menu
+                  </h2>
+                  <button
+                    onClick={handleMenuClose}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDark 
+                        ? 'hover:bg-slate-700 text-gray-400 hover:text-white'
+                        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Menu Items */}
+                <div className="flex-1 p-6">
+                  <div className="space-y-2">
+                    {/* Settings */}
+                    <button
+                      onClick={handleSettingsClick}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-100 ${
+                        isDark
+                          ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
+                          : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      <Settings className="w-5 h-5" />
+                      <span className="font-medium">Settings</span>
+                    </button>
+
+                    {/* Profile */}
+                    <button
+                      onClick={handleMenuClose}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-200 ${
+                        isDark
+                          ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
+                          : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      <User className="w-5 h-5" />
+                      <span className="font-medium">Profile</span>
+                    </button>
+
+                    {/* Help */}
+                    <button
+                      onClick={handleMenuClose}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-300 ${
+                        isDark
+                          ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
+                          : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                      <span className="font-medium">Help & Support</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Logout Section */}
+                <div className={`p-6 border-t animate-in slide-in-from-right-4 delay-400 ${
+                  isDark ? 'border-slate-700' : 'border-gray-200'
+                }`}>
+                  <button
+                    onClick={handleSignOut}
+                    className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 ${
+                      isDark
+                        ? 'text-red-400 hover:text-red-300 hover:bg-red-900/20 border border-red-800/30'
+                        : 'text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200'
+                    }`}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </>
   );
