@@ -48,11 +48,11 @@ function Dashboard() {
             setShowOnboarding(true);
           }
         } catch (err) {
-          console.error('Error in initial onboarding check:', err);
+          console.error("Error in initial onboarding check:", err);
         }
       }
     };
-    
+
     checkInitialOnboarding();
   }, [user?.id, getUserDetails]);
 
@@ -66,12 +66,12 @@ function Dashboard() {
         try {
           const { data, error } = await getUserDetails(user.id);
           if (error) {
-            console.error('Error fetching user details:', error);
+            console.error("Error fetching user details:", error);
           } else if (data && data.first_login === true) {
             setShowOnboarding(true);
           }
         } catch (err) {
-          console.error('Error in fetchUserDetails:', err);
+          console.error("Error in fetchUserDetails:", err);
         }
       };
       fetchUserDetails();
@@ -83,35 +83,45 @@ function Dashboard() {
     const fetchUserData = async () => {
       if (userDetails && userDetails.first_login === false && user?.id) {
         setLoadingData(true);
-        
+
         try {
           // Try to get cached data from local storage
-          const cachedSocialLinks = localStorage.getItem(`socialLinks_${user.id}`);
-          const cachedProfileDetails = localStorage.getItem(`profileDetails_${user.id}`);
-          const cacheTimestamp = localStorage.getItem(`cacheTimestamp_${user.id}`);
-          
+          const cachedSocialLinks = localStorage.getItem(
+            `socialLinks_${user.id}`
+          );
+          const cachedProfileDetails = localStorage.getItem(
+            `profileDetails_${user.id}`
+          );
+          const cacheTimestamp = localStorage.getItem(
+            `cacheTimestamp_${user.id}`
+          );
+
           // Check if cache is still valid (less than 5 minutes old)
-          const isCacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 5 * 60 * 1000;
-          
+          const isCacheValid =
+            cacheTimestamp &&
+            Date.now() - parseInt(cacheTimestamp) < 5 * 60 * 1000;
+
           if (isCacheValid && cachedSocialLinks && cachedProfileDetails) {
             // Use cached data
-            console.log('Using cached dashboard data');
+            console.log("Using cached dashboard data");
             setSocialLinks(JSON.parse(cachedSocialLinks));
             setProfileDetails(JSON.parse(cachedProfileDetails));
             setLoadingData(false);
           } else {
             // Fetch fresh data from API
-            console.log('Fetching fresh dashboard data');
-            
+            console.log("Fetching fresh dashboard data");
+
             // Fetch social links
-            const { data: socialData, error: socialError } = await getSocialLinks(
-              user.id
-            );
+            const { data: socialData, error: socialError } =
+              await getSocialLinks(user.id);
             if (socialError) {
               console.error("Error fetching social links:", socialError);
             } else {
               setSocialLinks(socialData || []);
-              localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialData || []));
+              localStorage.setItem(
+                `socialLinks_${user.id}`,
+                JSON.stringify(socialData || [])
+              );
             }
 
             // Fetch profile details
@@ -121,11 +131,17 @@ function Dashboard() {
               console.error("Error fetching profile details:", profileError);
             } else {
               setProfileDetails(profileData);
-              localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileData));
+              localStorage.setItem(
+                `profileDetails_${user.id}`,
+                JSON.stringify(profileData)
+              );
             }
-            
+
             // Update cache timestamp
-            localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
+            localStorage.setItem(
+              `cacheTimestamp_${user.id}`,
+              Date.now().toString()
+            );
             setLoadingData(false);
           }
         } catch (error) {
@@ -142,7 +158,7 @@ function Dashboard() {
     console.log("Onboarding completed, refreshing user details...");
     // Refresh user details to get updated first_login status
     await getUserDetails(user.id);
-    
+
     // Also refresh social links and profile details
     if (user?.id) {
       const { data: socialData } = await getSocialLinks(user.id);
@@ -150,7 +166,7 @@ function Dashboard() {
       setSocialLinks(socialData || []);
       setProfileDetails(profileData);
     }
-    
+
     setShowOnboarding(false);
   };
 
@@ -168,28 +184,27 @@ function Dashboard() {
   };
 
   const handleProfileClick = () => {
-    navigate('/profile');
+    navigate("/profile");
     setIsMenuOpen(false);
   };
 
   const handleHelpClick = () => {
-    navigate('/help');
+    navigate("/help");
     setIsMenuOpen(false);
   };
-
 
   const handleSignOut = async () => {
     try {
       console.log("Dashboard: Starting sign out...");
       const { error } = await signOut();
       console.log("Dashboard: Sign out result:", { error });
-      
+
       if (error) {
         console.error("Error signing out:", error);
         // You might want to show an error message to the user here
         return;
       }
-      
+
       console.log("Dashboard: Sign out successful, redirecting to home");
       navigate("/");
     } catch (error) {
@@ -235,31 +250,31 @@ function Dashboard() {
       {/* Mobile Dashboard - Visible only on mobile */}
       <div
         className={`md:hidden min-h-screen transition-colors duration-300 ${
-        isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
+          isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
         }`}
       >
         <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-8">
-          <div className="flex items-center space-x-4">
-            {/* Profile Picture */}
-            <div className="relative">
-              {userDetails?.profile_url ? (
-                <img
-                  src={userDetails.profile_url}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full object-cover border-2 border-primary-500 shadow-lg"
-                  onError={(e) => {
+          {/* Header */}
+          <header className="flex justify-between items-center mb-8">
+            <div className="flex items-center space-x-4">
+              {/* Profile Picture */}
+              <div className="relative">
+                {userDetails?.profile_url ? (
+                  <img
+                    src={userDetails.profile_url}
+                    alt="Profile"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-primary-500 shadow-lg"
+                    onError={(e) => {
                       e.target.style.display = "none";
                       e.target.nextSibling.style.display = "flex";
-                  }}
-                />
-              ) : null}
-              <div 
-                className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold border-2 border-primary-500 shadow-lg ${
+                    }}
+                  />
+                ) : null}
+                <div
+                  className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold border-2 border-primary-500 shadow-lg ${
                     userDetails?.profile_url ? "hidden" : "flex"
-                } ${
-                  isDark 
+                  } ${
+                    isDark
                       ? "bg-slate-700 text-white border-slate-600"
                       : "bg-primary-100 text-primary-600"
                   }`}
@@ -268,30 +283,30 @@ function Dashboard() {
                     ? userDetails.name.charAt(0).toUpperCase()
                     : user?.email?.charAt(0).toUpperCase() || "U"}
                 </div>
-            </div>
-            
-            <div>
-              <h1 className="text-2xl font-bold brand-font mb-2">
-                Welcome to Flink
-              </h1>
+              </div>
+
+              <div>
+                <h1 className="text-2xl font-bold brand-font mb-2">
+                  Welcome to Flink
+                </h1>
                 <p
                   className={`text-lg ${
-                isDark ? "text-gray-300" : "text-gray-600"
+                    isDark ? "text-gray-300" : "text-gray-600"
                   }`}
                 >
-                {userDetails?.name || user?.email}
-              </p>
-              {userDetails?.name && (
+                  {userDetails?.name || user?.email}
+                </p>
+                {userDetails?.name && (
                   <p
                     className={`text-sm ${
-                  isDark ? "text-gray-400" : "text-gray-500"
+                      isDark ? "text-gray-400" : "text-gray-500"
                     }`}
                   >
-                  {user?.email}
-                </p>
-              )}
+                    {user?.email}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
 
             <div className="flex items-center">
               {/* Hamburger Menu */}
@@ -304,102 +319,119 @@ function Dashboard() {
                 }`}
                 title="Menu"
               >
-                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {isMenuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
               </button>
             </div>
-        </header>
+          </header>
 
-        {/* User Status Section - Only show for new users */}
-        {userDetails && userDetails.first_login && (
+          {/* User Status Section - Only show for new users */}
+          {userDetails && userDetails.first_login && (
             <div
               className={`mb-8 p-6 rounded-2xl ${
-            isDark 
-              ? "bg-slate-800/50 border border-slate-700/50" 
-              : "bg-white border border-gray-200"
-              }`}
-            >
-            <div className="text-center">
-              <span
-                className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                isDark 
-                      ? "bg-green-900/30 text-green-400 border border-green-800"
-                      : "bg-green-100 text-green-800 border border-green-200"
-                  }`}
-              >
-                ✨ New User
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Social Links Section */}
-        <div className="mb-8">
-          <SocialLinksSection socialLinks={socialLinks} />
-        </div>
-
-        {/* Profile Details Section */}
-        <div className="mb-8">
-          <ProfileSection profileDetails={profileDetails} />
-        </div>
-
-        {/* Loading State */}
-        {loadingData && (
-          <div className="mb-8">
-            <div
-              className={`p-6 rounded-2xl text-center ${
-                isDark 
-                  ? "bg-slate-800/50 border border-slate-700/50" 
+                isDark
+                  ? "bg-slate-800/50 border border-slate-700/50"
                   : "bg-white border border-gray-200"
               }`}
             >
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-              <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
-                Loading your profile data...
-              </p>
+              <div className="text-center">
+                <span
+                  className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
+                    isDark
+                      ? "bg-green-900/30 text-green-400 border border-green-800"
+                      : "bg-green-100 text-green-800 border border-green-200"
+                  }`}
+                >
+                  ✨ New User
+                </span>
+              </div>
             </div>
+          )}
+
+          {/* Social Links Section */}
+          <div className="mb-8">
+            <SocialLinksSection socialLinks={socialLinks} />
           </div>
-        )}
 
-        {/* Quick Actions - Coming Soon */}
-        <div className="mb-8">
-          <QuickActionsSection />
-        </div>
+          {/* Profile Details Section */}
+          <div className="mb-8">
+            <ProfileSection profileDetails={profileDetails} />
+          </div>
 
-        {/* Quick Stats - Without Views */}
-        <div className="mb-8">
-          <QuickStatsSection socialLinks={socialLinks} profileDetails={profileDetails} />
-        </div>
+          {/* Loading State */}
+          {loadingData && (
+            <div className="mb-8">
+              <div
+                className={`p-6 rounded-2xl text-center ${
+                  isDark
+                    ? "bg-slate-800/50 border border-slate-700/50"
+                    : "bg-white border border-gray-200"
+                }`}
+              >
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                  Loading your profile data...
+                </p>
+              </div>
+            </div>
+          )}
 
-        {/* Hamburger Menu Overlay */}
-        <div className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${
-          isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}>
+          {/* Quick Actions - Coming Soon */}
+          <div className="mb-8">
+            <QuickActionsSection />
+          </div>
+
+          {/* Quick Stats - Without Views */}
+          <div className="mb-8">
+            <QuickStatsSection
+              socialLinks={socialLinks}
+              profileDetails={profileDetails}
+            />
+          </div>
+
+          {/* Hamburger Menu Overlay */}
+          <div
+            className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${
+              isMenuOpen
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 pointer-events-none"
+            }`}
+          >
             {/* Backdrop */}
-            <div 
+            <div
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={handleMenuClose}
             />
-            
+
             {/* Menu Panel */}
-            <div className={`absolute right-0 top-0 h-full w-80 max-w-sm transform transition-all duration-300 ease-out ${
-              isMenuOpen ? 'translate-x-0' : 'translate-x-full'
-            } ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+            <div
+              className={`absolute right-0 top-0 h-full w-80 max-w-sm transform transition-all duration-300 ease-out ${
+                isMenuOpen ? "translate-x-0" : "translate-x-full"
+              } ${isDark ? "bg-slate-800" : "bg-white"}`}
+            >
               <div className="flex flex-col h-full">
                 {/* Menu Header */}
-                <div className={`flex items-center justify-between p-6 border-b ${
-                  isDark ? 'border-slate-700' : 'border-gray-200'
-                }`}>
-                  <h2 className={`text-lg font-semibold ${
-                    isDark ? 'text-white' : 'text-gray-800'
-                  }`}>
+                <div
+                  className={`flex items-center justify-between p-6 border-b ${
+                    isDark ? "border-slate-700" : "border-gray-200"
+                  }`}
+                >
+                  <h2
+                    className={`text-lg font-semibold ${
+                      isDark ? "text-white" : "text-gray-800"
+                    }`}
+                  >
                     Menu
                   </h2>
                   <button
                     onClick={handleMenuClose}
                     className={`p-2 rounded-lg transition-colors ${
-                      isDark 
-                        ? 'hover:bg-slate-700 text-gray-400 hover:text-white'
-                        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
+                      isDark
+                        ? "hover:bg-slate-700 text-gray-400 hover:text-white"
+                        : "hover:bg-gray-100 text-gray-500 hover:text-gray-800"
                     }`}
                   >
                     <X className="w-5 h-5" />
@@ -409,30 +441,30 @@ function Dashboard() {
                 {/* Menu Items */}
                 <div className="flex-1 p-6">
                   <div className="space-y-2">
-                    {/* Settings */}
-                    <button
-                      onClick={handleSettingsClick}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-100 ${
-                        isDark
-                          ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
-                          : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
-                      }`}
-                    >
-                      <Settings className="w-5 h-5" />
-                      <span className="font-medium">Settings</span>
-                    </button>
-
                     {/* Profile */}
                     <button
                       onClick={handleProfileClick}
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-200 ${
                         isDark
-                          ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
-                          : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                          ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                          : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
                       }`}
                     >
                       <User className="w-5 h-5" />
                       <span className="font-medium">Profile</span>
+                    </button>
+
+                    {/* Settings */}
+                    <button
+                      onClick={handleSettingsClick}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-100 ${
+                        isDark
+                          ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                          : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                      }`}
+                    >
+                      <Settings className="w-5 h-5" />
+                      <span className="font-medium">Settings</span>
                     </button>
 
                     {/* Help */}
@@ -440,8 +472,8 @@ function Dashboard() {
                       onClick={handleHelpClick}
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-300 ${
                         isDark
-                          ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
-                          : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                          ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                          : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
                       }`}
                     >
                       <HelpCircle className="w-5 h-5" />
@@ -456,8 +488,8 @@ function Dashboard() {
                       }}
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-[400ms] ${
                         isDark
-                          ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
-                          : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800'
+                          ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                          : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
                       }`}
                     >
                       {isDark ? (
@@ -476,15 +508,17 @@ function Dashboard() {
                 </div>
 
                 {/* Logout Section */}
-                <div className={`p-6 border-t animate-in slide-in-from-right-4 delay-400 ${
-                  isDark ? 'border-slate-700' : 'border-gray-200'
-                }`}>
+                <div
+                  className={`p-6 border-t animate-in slide-in-from-right-4 delay-400 ${
+                    isDark ? "border-slate-700" : "border-gray-200"
+                  }`}
+                >
                   <button
                     onClick={handleSignOut}
                     className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 ${
                       isDark
-                        ? 'text-red-400 hover:text-red-300 hover:bg-red-900/20 border border-red-800/30'
-                        : 'text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200'
+                        ? "text-red-400 hover:text-red-300 hover:bg-red-900/20 border border-red-800/30"
+                        : "text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200"
                     }`}
                   >
                     <LogOut className="w-4 h-4" />
@@ -495,7 +529,6 @@ function Dashboard() {
             </div>
           </div>
         </div>
-
       </div>
     </>
   );

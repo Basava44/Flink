@@ -36,6 +36,7 @@ const SettingsPage = () => {
   const [showActionBar, setShowActionBar] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showSnackbar, setShowSnackbar] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
   const scrollTimeoutRef = useRef(null);
   const idleTimeoutRef = useRef(null);
   
@@ -419,18 +420,39 @@ const SettingsPage = () => {
                     <span className="mr-2">{platform.icon}</span>
                     {platform.name}
                   </label>
-                  <input
-                    type={platform.type || "text"}
-                    id={platform.key}
-                    value={socialLinksData[platform.key] || ''}
-                    onChange={(e) => handleInputChange(platform.key, e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
-                      isDark
-                        ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                        : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                    }`}
-                    placeholder={platform.placeholder}
-                  />
+                  <div className="relative">
+                    <input
+                      type={platform.type || "text"}
+                      id={platform.key}
+                      value={socialLinksData[platform.key] || ''}
+                      onChange={(e) => handleInputChange(platform.key, e.target.value)}
+                      onFocus={() => setFocusedField(platform.key)}
+                      onBlur={() => setFocusedField(null)}
+                      className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
+                        isDark
+                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                          : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                      }`}
+                      placeholder={platform.placeholder}
+                    />
+                    {socialLinksData[platform.key] && focusedField === platform.key && (
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleInputChange(platform.key, '');
+                        }}
+                        className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 ${
+                          isDark
+                            ? "hover:bg-slate-600 text-gray-400 hover:text-white"
+                            : "hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                        }`}
+                        title="Clear field"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -481,18 +503,39 @@ const SettingsPage = () => {
                       <span className="mr-2"><MapPin className="w-4 h-4" /></span>
                       Location
                     </label>
-                  <input
-                    type="text"
-                    id="location"
-                    value={profileData.location}
-                    onChange={(e) => handleProfileChange('location', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
-                      isDark
-                        ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                        : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                    }`}
-                    placeholder="City, Country"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="location"
+                      value={profileData.location}
+                      onChange={(e) => handleProfileChange('location', e.target.value)}
+                      onFocus={() => setFocusedField('location')}
+                      onBlur={() => setFocusedField(null)}
+                      className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
+                        isDark
+                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                          : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                      }`}
+                      placeholder="City, Country"
+                    />
+                    {profileData.location && focusedField === 'location' && (
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleProfileChange('location', '');
+                        }}
+                        className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 ${
+                          isDark
+                            ? "hover:bg-slate-600 text-gray-400 hover:text-white"
+                            : "hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                        }`}
+                        title="Clear field"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Website */}
@@ -503,18 +546,39 @@ const SettingsPage = () => {
                       <span className="mr-2"><Globe className="w-4 h-4" /></span>
                       Website
                     </label>
-                  <input
-                    type="url"
-                    id="website"
-                    value={profileData.website}
-                    onChange={(e) => handleProfileChange('website', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
-                      isDark
-                        ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                        : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                    }`}
-                    placeholder="https://yourwebsite.com"
-                  />
+                  <div className="relative">
+                    <input
+                      type="url"
+                      id="website"
+                      value={profileData.website}
+                      onChange={(e) => handleProfileChange('website', e.target.value)}
+                      onFocus={() => setFocusedField('website')}
+                      onBlur={() => setFocusedField(null)}
+                      className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
+                        isDark
+                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                          : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                      }`}
+                      placeholder="https://yourwebsite.com"
+                    />
+                    {profileData.website && focusedField === 'website' && (
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleProfileChange('website', '');
+                        }}
+                        className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 ${
+                          isDark
+                            ? "hover:bg-slate-600 text-gray-400 hover:text-white"
+                            : "hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                        }`}
+                        title="Clear field"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
