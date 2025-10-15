@@ -21,7 +21,9 @@ import {
   Gamepad2,
   MapPin,
   Globe,
-  FileText
+  FileText,
+  Camera,
+  Upload
 } from 'lucide-react';
 
 const SettingsPage = () => {
@@ -30,15 +32,19 @@ const SettingsPage = () => {
   const { user, supabase, getSocialLinks, getProfileDetails } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [socialLinks, setSocialLinks] = useState([]);
   const [profileDetails, setProfileDetails] = useState(null);
   const [showActionBar, setShowActionBar] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [profileUrl, setProfileUrl] = useState('');
+  const [originalProfileUrl, setOriginalProfileUrl] = useState('');
   const scrollTimeoutRef = useRef(null);
   const idleTimeoutRef = useRef(null);
+  const fileInputRef = useRef(null);
   
   // Convert social links array to object format for editing
   const [socialLinksData, setSocialLinksData] = useState({});
@@ -73,9 +79,20 @@ const SettingsPage = () => {
           const { data: socialData } = await getSocialLinks(user.id);
           setSocialLinks(socialData || []);
           
-          // Load profile details
+          // Load profile details from flink_profiles table
           const { data: profileData } = await getProfileDetails(user.id);
           setProfileDetails(profileData);
+          
+          // Load user details from users table to get profile_url
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('profile_url')
+            .eq('id', user.id)
+            .single();
+          
+          if (userError) {
+            console.error('Error fetching user data:', userError);
+          }
           
           // Initialize form data
           if (socialData) {
@@ -93,6 +110,13 @@ const SettingsPage = () => {
               website: profileData.website || ''
             });
           }
+          
+          // Set profile picture URL from users table
+          const userProfileUrl = userData?.profile_url || '';
+          setProfileUrl(userProfileUrl);
+          setOriginalProfileUrl(userProfileUrl);
+          setPreviewUrl(userProfileUrl);
+          console.log('Loaded profile URL:', userProfileUrl);
         } catch (err) {
           console.error('Error loading user data:', err);
           setError('Failed to load profile data');
@@ -103,7 +127,7 @@ const SettingsPage = () => {
     };
 
     loadUserData();
-  }, [user?.id, getSocialLinks, getProfileDetails]);
+  }, [user?.id, getSocialLinks, getProfileDetails, supabase]);
 
   // Scroll detection and idle state management
   useEffect(() => {
@@ -163,11 +187,14 @@ const SettingsPage = () => {
       
       const profileChanged = JSON.stringify(currentProfileData) !== JSON.stringify(profileData);
       
-      setHasChanges(socialLinksChanged || profileChanged);
+      // Check if profile URL has changed
+      const profileUrlChanged = profileUrl !== originalProfileUrl;
+      
+      setHasChanges(socialLinksChanged || profileChanged || profileUrlChanged);
     };
 
     checkForChanges();
-  }, [socialLinksData, profileData, socialLinks, profileDetails]);
+  }, [socialLinksData, profileData, socialLinks, profileDetails, profileUrl, originalProfileUrl]);
 
   const handleInputChange = (platform, value) => {
     setSocialLinksData(prev => ({
@@ -183,16 +210,187 @@ const SettingsPage = () => {
     }));
   };
 
+  // Image compression function
+  const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.8) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Calculate new dimensions while maintaining aspect ratio
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to blob with compression
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                console.log(`Image compressed: ${(file.size / 1024).toFixed(2)}KB → ${(blob.size / 1024).toFixed(2)}KB`);
+                resolve(blob);
+              } else {
+                reject(new Error('Failed to compress image'));
+              }
+            },
+            file.type,
+            quality
+          );
+        };
+        
+        img.onerror = () => reject(new Error('Failed to load image'));
+      };
+      
+      reader.onerror = () => reject(new Error('Failed to read file'));
+    });
+  };
+
+  // Image upload functions
+  const handleImageSelect = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+
+      // Clear any previous errors
+      setError('');
+
+      try {
+        // Compress the image before uploading
+        setUploading(true);
+        const compressedBlob = await compressImage(file);
+        
+        // Create preview URL from compressed image
+        const preview = URL.createObjectURL(compressedBlob);
+        setPreviewUrl(preview);
+
+        // Upload compressed image
+        uploadImage(compressedBlob, file.name);
+      } catch (err) {
+        console.error('Error compressing image:', err);
+        setError('Failed to process image. Please try again.');
+        setUploading(false);
+      }
+    }
+  };
+
+  const uploadImage = async (blob, originalFileName) => {
+    try {
+      // Generate unique filename
+      const fileExt = originalFileName.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      // Upload compressed blob to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('profile_photos')
+        .upload(fileName, blob, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: blob.type
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL with transformation for faster loading
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile_photos')
+        .getPublicUrl(fileName);
+
+      // Update profile URL state
+      setProfileUrl(publicUrl);
+      setHasChanges(true);
+
+      console.log('Image uploaded successfully:', publicUrl);
+
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setError('Failed to upload image. Please try again.');
+      // Reset preview if upload fails
+      setPreviewUrl(profileDetails?.profile_url || '');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setPreviewUrl('');
+    setProfileUrl('');
+    setHasChanges(true);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess('');
 
     try {
       if (!user) {
         throw new Error('User not authenticated');
       }
+
+      // Track which data changed
+      let socialLinksChanged = false;
+      let profileDetailsChanged = false;
+      let profileUrlChanged = false;
+
+      // Check if social links changed
+      const currentSocialLinks = {};
+      socialLinks.forEach(link => {
+        currentSocialLinks[link.platform] = link.url;
+      });
+      socialLinksChanged = JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData);
+
+      // Check if profile details changed
+      const currentProfileData = {
+        bio: profileDetails?.bio || '',
+        location: profileDetails?.location || '',
+        website: profileDetails?.website || ''
+      };
+      profileDetailsChanged = JSON.stringify(currentProfileData) !== JSON.stringify(profileData);
+
+      // Check if profile URL changed
+      profileUrlChanged = profileUrl !== originalProfileUrl;
+
+      console.log('Changes detected:', { socialLinksChanged, profileDetailsChanged, profileUrlChanged });
+
+      // Only update social links if they changed
+      if (socialLinksChanged) {
+        console.log('Updating social links...');
 
       // Prepare all social links to insert (only non-empty ones)
       const linksToInsert = [];
@@ -201,7 +399,6 @@ const SettingsPage = () => {
         const newValue = socialLinksData[platform.key]?.trim() || '';
         
         if (newValue) {
-          // Only include non-empty links
           linksToInsert.push({
             user_id: user.id,
             platform: platform.key,
@@ -234,7 +431,13 @@ const SettingsPage = () => {
         }
       }
 
-      // Update profile details
+        console.log('Social links updated successfully');
+      }
+
+      // Only update profile details if they changed
+      if (profileDetailsChanged) {
+        console.log('Updating profile details...');
+        
       const { error: profileError } = await supabase
         .from('flink_profiles')
         .update({
@@ -249,22 +452,75 @@ const SettingsPage = () => {
         throw profileError;
       }
 
-      setSuccess('Profile and social links updated successfully!');
+        console.log('Profile details updated successfully');
+      }
+
+      // Only update profile_url if it changed
+      if (profileUrlChanged) {
+        console.log('Updating profile URL...');
+        
+        const { error: userUpdateError } = await supabase
+          .from('users')
+          .update({
+            profile_url: profileUrl || null
+          })
+          .eq('id', user.id);
+
+        if (userUpdateError) {
+          console.error('Error updating profile_url in users table:', userUpdateError);
+          throw userUpdateError;
+        }
+        
+        console.log('Profile URL updated in users table:', profileUrl);
+        setOriginalProfileUrl(profileUrl);
+      }
+
+      // If nothing changed, just show success and return
+      if (!socialLinksChanged && !profileDetailsChanged && !profileUrlChanged) {
+        console.log('No changes detected, skipping API calls');
+        setShowSnackbar(true);
+        setHasChanges(false);
+        setShowActionBar(false);
+        
+        setTimeout(() => {
+          setShowSnackbar(false);
+        }, 3000);
+        
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 600);
+        
+        setLoading(false);
+        return;
+      }
+
       setShowSnackbar(true);
       setHasChanges(false);
       setShowActionBar(false);
       
-      // Refresh the data
+      // Only refresh the data that was changed
+      if (socialLinksChanged) {
       const { data: socialData } = await getSocialLinks(user.id);
+        setSocialLinks(socialData || []);
+        localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialData || []));
+        console.log('Social links cache updated');
+      }
+
+      if (profileDetailsChanged) {
       const { data: updatedProfileData } = await getProfileDetails(user.id);
-      setSocialLinks(socialData || []);
       setProfileDetails(updatedProfileData);
 
-      // Update local storage cache with fresh data
-      localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialData || []));
-      localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(updatedProfileData));
+        // Update cache with profile details
+        const cacheData = {
+          ...updatedProfileData,
+          profile_url: profileUrl
+        };
+        localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(cacheData));
+        console.log('Profile details cache updated');
+      }
+
+      // Update cache timestamp
       localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
-      console.log('Cache updated with fresh data after settings save');
 
       // Auto-hide snackbar after 3 seconds
       setTimeout(() => {
@@ -294,7 +550,7 @@ const SettingsPage = () => {
     
     // Navigate after animation
     setTimeout(() => {
-      navigate('/dashboard');
+    navigate('/dashboard');
     }, 300);
   };
 
@@ -399,6 +655,109 @@ const SettingsPage = () => {
         </div>
 
         <form id="settings-form" onSubmit={handleSubmit} className="space-y-8">
+          {/* Profile Picture Section */}
+          <div className={`p-6 rounded-2xl ${
+            isDark 
+              ? "bg-slate-800/50 border border-slate-700/50" 
+              : "bg-white border border-gray-200"
+          }`}>
+            <h2 className={`text-lg font-semibold mb-4 ${
+              isDark ? "text-white" : "text-gray-800"
+            }`}>
+              Profile Picture
+            </h2>
+            
+            <div className="flex flex-col items-center space-y-4">
+              {/* Image Preview */}
+              <div className="relative">
+                {previewUrl ? (
+                  <div className="relative">
+                    <img
+                      src={previewUrl}
+                      alt="Profile preview"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-primary-500 shadow-lg"
+                      onLoad={(e) => {
+                        e.target.style.opacity = '1';
+                      }}
+                      style={{ opacity: 0, transition: 'opacity 0.1s ease-in-out' }}
+                    />
+                    {!uploading && (
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors duration-200 shadow-lg"
+                        title="Remove photo"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className={`w-32 h-32 rounded-full flex items-center justify-center border-4 ${
+                    isDark 
+                      ? "border-slate-600 bg-slate-700" 
+                      : "border-gray-300 bg-gray-100"
+                  }`}>
+                    <Camera className={`w-12 h-12 ${
+                      isDark ? "text-gray-500" : "text-gray-400"
+                    }`} />
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Button */}
+              <div className="w-full max-w-md">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className={`w-full py-3 px-4 rounded-xl border-2 border-dashed transition-all duration-200 flex items-center justify-center space-x-2 ${
+                    uploading
+                      ? isDark
+                        ? "border-gray-600 bg-gray-700/50 text-gray-400 cursor-not-allowed"
+                        : "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : isDark
+                      ? "border-slate-600 bg-slate-700/50 text-gray-300 hover:border-primary-500 hover:bg-slate-700"
+                      : "border-gray-300 bg-gray-50 text-gray-600 hover:border-primary-500 hover:bg-gray-100"
+                  }`}
+                >
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      <span>Uploading...</span>
+                    </>
+                  ) : previewUrl ? (
+                    <>
+                      <Camera className="w-4 h-4" />
+                      <span>Change Photo</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      <span>Upload Profile Photo</span>
+                    </>
+                  )}
+                </button>
+                
+                <p className={`mt-2 text-xs text-center ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}>
+                  JPG, PNG, or GIF. Max 5MB.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Social Links Section */}
           <div className={`p-6 rounded-2xl ${
             isDark 
@@ -421,20 +780,20 @@ const SettingsPage = () => {
                     {platform.name}
                   </label>
                   <div className="relative">
-                    <input
-                      type={platform.type || "text"}
-                      id={platform.key}
-                      value={socialLinksData[platform.key] || ''}
-                      onChange={(e) => handleInputChange(platform.key, e.target.value)}
+                  <input
+                    type={platform.type || "text"}
+                    id={platform.key}
+                    value={socialLinksData[platform.key] || ''}
+                    onChange={(e) => handleInputChange(platform.key, e.target.value)}
                       onFocus={() => setFocusedField(platform.key)}
                       onBlur={() => setFocusedField(null)}
                       className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
-                        isDark
-                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                          : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                      }`}
-                      placeholder={platform.placeholder}
-                    />
+                      isDark
+                        ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                        : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                    }`}
+                    placeholder={platform.placeholder}
+                  />
                     {socialLinksData[platform.key] && focusedField === platform.key && (
                       <button
                         type="button"
@@ -504,20 +863,20 @@ const SettingsPage = () => {
                       Location
                     </label>
                   <div className="relative">
-                    <input
-                      type="text"
-                      id="location"
-                      value={profileData.location}
-                      onChange={(e) => handleProfileChange('location', e.target.value)}
+                  <input
+                    type="text"
+                    id="location"
+                    value={profileData.location}
+                    onChange={(e) => handleProfileChange('location', e.target.value)}
                       onFocus={() => setFocusedField('location')}
                       onBlur={() => setFocusedField(null)}
                       className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
-                        isDark
-                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                          : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                      }`}
-                      placeholder="City, Country"
-                    />
+                      isDark
+                        ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                        : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                    }`}
+                    placeholder="City, Country"
+                  />
                     {profileData.location && focusedField === 'location' && (
                       <button
                         type="button"
@@ -547,20 +906,20 @@ const SettingsPage = () => {
                       Website
                     </label>
                   <div className="relative">
-                    <input
-                      type="url"
-                      id="website"
-                      value={profileData.website}
-                      onChange={(e) => handleProfileChange('website', e.target.value)}
+                  <input
+                    type="url"
+                    id="website"
+                    value={profileData.website}
+                    onChange={(e) => handleProfileChange('website', e.target.value)}
                       onFocus={() => setFocusedField('website')}
                       onBlur={() => setFocusedField(null)}
                       className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
-                        isDark
-                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                          : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                      }`}
-                      placeholder="https://yourwebsite.com"
-                    />
+                      isDark
+                        ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                        : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                    }`}
+                    placeholder="https://yourwebsite.com"
+                  />
                     {profileData.website && focusedField === 'website' && (
                       <button
                         type="button"
@@ -598,20 +957,6 @@ const SettingsPage = () => {
             </div>
           )}
 
-          {/* Success Message */}
-          {success && (
-            <div className={`p-4 rounded-xl ${
-              isDark 
-                ? "bg-green-900/20 border border-green-800 text-green-300" 
-                : "bg-green-50 border border-green-200 text-green-700"
-            }`}>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                <p className="text-sm">{success}</p>
-              </div>
-            </div>
-          )}
-
         </form>
       </div>
 
@@ -621,43 +966,43 @@ const SettingsPage = () => {
           showActionBar ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
         }`}>
           <div className={`backdrop-blur-lg rounded-2xl shadow-2xl border ${
-            isDark 
+              isDark 
               ? "bg-slate-800/90 border-slate-600/50" 
               : "bg-white/90 border-gray-200/50"
           }`}>
           <div className="p-3">
             <div className="flex space-x-2">
-              <button
-                type="button"
-                onClick={handleBack}
-                disabled={loading}
+            <button
+              type="button"
+              onClick={handleBack}
+              disabled={loading}
                 className={`flex-1 py-2 px-3 rounded-lg font-medium transition-all duration-200 text-sm ${
-                  isDark
+                isDark
                     ? "bg-slate-700/50 hover:bg-slate-600/50 text-gray-300 hover:text-white disabled:opacity-50 border border-slate-600/30"
                     : "bg-gray-100/50 hover:bg-gray-200/50 text-gray-600 hover:text-gray-800 disabled:opacity-50 border border-gray-200/50"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
                 form="settings-form"
-                disabled={loading}
+              disabled={loading}
                 className="flex-1 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-primary-400 disabled:to-primary-500 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none disabled:shadow-lg text-sm"
-              >
-                {loading ? (
+            >
+              {loading ? (
                   <div className="flex items-center justify-center space-x-1">
                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Saving...</span>
-                  </div>
-                ) : (
-                  'Save Changes'
-                )}
-              </button>
-            </div>
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                'Save Changes'
+              )}
+            </button>
           </div>
           </div>
-        </div>
+          </div>
+      </div>
       )}
     </div>
   );

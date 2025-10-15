@@ -1,16 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useTheme } from "../hooks/useTheme";
+import { useAuth } from "../hooks/useAuth";
 
 const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
   const { isDark } = useTheme();
+  const { supabase } = useAuth();
+  const fileInputRef = useRef(null);
+  
   const [formData, setFormData] = useState({
     handle: initialData.handle || "",
     bio: initialData.bio || "",
     location: initialData.location || "",
     website: initialData.website || "",
+    profile_url: initialData.profile_url || "",
   });
 
   const [errors, setErrors] = useState({});
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(initialData.profile_url || "");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -63,6 +70,95 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
     }
   };
 
+  // Image upload functions
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({
+          ...prev,
+          profile_pic: 'Please select a valid image file'
+        }));
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({
+          ...prev,
+          profile_pic: 'Image size must be less than 5MB'
+        }));
+        return;
+      }
+
+      // Clear any previous errors
+      setErrors(prev => ({
+        ...prev,
+        profile_pic: ''
+      }));
+
+      // Create preview URL
+      const preview = URL.createObjectURL(file);
+      setPreviewUrl(preview);
+
+      // Upload image
+      uploadImage(file);
+    }
+  };
+
+  const uploadImage = async (file) => {
+    setUploading(true);
+    try {
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      // Upload to Supabase storage
+      const { error } = await supabase.storage
+        .from('profile_photos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile_photos')
+        .getPublicUrl(fileName);
+
+      // Update form data with the new URL
+      setFormData(prev => ({
+        ...prev,
+        profile_url: publicUrl
+      }));
+
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setErrors(prev => ({
+        ...prev,
+        profile_pic: 'Failed to upload image. Please try again.'
+      }));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setPreviewUrl('');
+    setFormData(prev => ({
+      ...prev,
+      profile_url: ''
+    }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -72,6 +168,7 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
         bio: formData.bio.trim(),
         location: formData.location.trim(),
         website: formData.website.trim(),
+        profile_url: formData.profile_url,
       });
     }
   };
@@ -286,6 +383,93 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
               {errors.website && (
                 <p className="mt-2 text-sm text-red-500">{errors.website}</p>
               )}
+            </div>
+
+            {/* Profile Picture Upload */}
+            <div>
+              <label
+                className={`block text-sm font-medium mb-2 ${
+                  isDark ? "text-gray-200" : "text-gray-700"
+                }`}
+              >
+                Profile Picture
+              </label>
+              
+              {/* Image Preview */}
+              {previewUrl && (
+                <div className="mb-4 flex justify-center">
+                  <div className="relative">
+                    <img
+                      src={previewUrl}
+                      alt="Profile preview"
+                      className="w-24 h-24 rounded-full object-cover border-4 border-primary-500 shadow-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs transition-colors duration-200"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Button */}
+              <div className="flex flex-col items-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className={`w-full py-3 px-4 rounded-xl border-2 border-dashed transition-all duration-200 ${
+                    uploading
+                      ? isDark
+                        ? "border-gray-600 bg-gray-700/50 text-gray-400 cursor-not-allowed"
+                        : "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : errors.profile_pic
+                      ? isDark
+                        ? "border-red-500 bg-slate-700/50 text-red-400 hover:border-red-400"
+                        : "border-red-500 bg-gray-50 text-red-400 hover:border-red-400"
+                      : isDark
+                      ? "border-slate-600 bg-slate-700/50 text-gray-300 hover:border-primary-500 hover:bg-slate-700"
+                      : "border-gray-300 bg-gray-50 text-gray-600 hover:border-primary-500 hover:bg-gray-100"
+                  }`}
+                >
+                  {uploading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                      Uploading...
+                    </div>
+                  ) : previewUrl ? (
+                    "Change Photo"
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Upload Profile Photo
+                    </div>
+                  )}
+                </button>
+                
+                {errors.profile_pic && (
+                  <p className="mt-2 text-sm text-red-500">{errors.profile_pic}</p>
+                )}
+                
+                <p className={`mt-2 text-xs text-center ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}>
+                  JPG, PNG, or GIF. Max 5MB.
+                </p>
+              </div>
             </div>
 
             <div className="flex justify-between pt-6">

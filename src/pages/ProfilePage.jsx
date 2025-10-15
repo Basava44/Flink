@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
@@ -32,53 +32,67 @@ const ProfilePage = () => {
   const [profileDetails, setProfileDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const hasLoadedData = useRef(false);
 
   // Load user data with local storage caching
   useEffect(() => {
     const loadUserData = async () => {
-      if (user?.id) {
-        setLoading(true);
+      // Prevent multiple loads
+      if (hasLoadedData.current || !user?.id) {
+        return;
+      }
+
+      setLoading(true);
+      
+      try {
+        console.log('Loading profile page data...');
+
+        // Try to get cached data from local storage
+        const cachedSocialLinks = localStorage.getItem(`socialLinks_${user.id}`);
+        const cachedProfileDetails = localStorage.getItem(`profileDetails_${user.id}`);
+        const cacheTimestamp = localStorage.getItem(`cacheTimestamp_${user.id}`);
         
-        try {
-          // Try to get cached data from local storage
-          const cachedSocialLinks = localStorage.getItem(`socialLinks_${user.id}`);
-          const cachedProfileDetails = localStorage.getItem(`profileDetails_${user.id}`);
-          const cacheTimestamp = localStorage.getItem(`cacheTimestamp_${user.id}`);
+        // Check if cache is still valid (less than 5 minutes old)
+        const isCacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 5 * 60 * 1000;
+        
+        if (isCacheValid && cachedSocialLinks && cachedProfileDetails) {
+          // Use cached data
+          console.log('Using cached profile data');
+          setSocialLinks(JSON.parse(cachedSocialLinks));
+          setProfileDetails(JSON.parse(cachedProfileDetails));
+        } else {
+          // Fetch fresh data from API
+          console.log('Fetching fresh profile data');
           
-          // Check if cache is still valid (less than 5 minutes old)
-          const isCacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 5 * 60 * 1000;
+          const [socialResult, profileResult] = await Promise.all([
+            getSocialLinks(user.id),
+            getProfileDetails(user.id)
+          ]);
           
-          if (isCacheValid && cachedSocialLinks && cachedProfileDetails) {
-            // Use cached data
-            console.log('Using cached profile data');
-            setSocialLinks(JSON.parse(cachedSocialLinks));
-            setProfileDetails(JSON.parse(cachedProfileDetails));
-            setLoading(false);
-          } else {
-            // Fetch fresh data from API
-            console.log('Fetching fresh profile data');
-            const { data: socialData } = await getSocialLinks(user.id);
-            const { data: profileData } = await getProfileDetails(user.id);
-            
-            setSocialLinks(socialData || []);
-            setProfileDetails(profileData);
-            
-            // Cache the data in local storage
-            localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialData || []));
-            localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileData));
-            localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
-            
-            setLoading(false);
+          if (!socialResult.error) {
+            setSocialLinks(socialResult.data || []);
+            localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialResult.data || []));
           }
-        } catch (err) {
-          console.error('Error loading user data:', err);
-          setLoading(false);
+
+          if (!profileResult.error) {
+            setProfileDetails(profileResult.data);
+            localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileResult.data));
+          }
+
+          localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
         }
+        
+        setLoading(false);
+        hasLoadedData.current = true;
+      } catch (err) {
+        console.error('Error loading user data:', err);
+        setLoading(false);
       }
     };
 
     loadUserData();
-  }, [user?.id, getSocialLinks, getProfileDetails]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Only depend on user.id to prevent infinite loops
 
   const handleBack = () => {
     navigate('/dashboard');
@@ -245,11 +259,17 @@ const ProfilePage = () => {
                   <img
                     src={userDetails.profile_url}
                     alt="Profile"
+                    loading="lazy"
+                    decoding="async"
                     className="w-32 h-32 rounded-full object-cover border-4 border-white/20 shadow-2xl"
+                    onLoad={(e) => {
+                      e.target.style.opacity = '1';
+                    }}
                     onError={(e) => {
                       e.target.style.display = "none";
                       e.target.nextSibling.style.display = "flex";
                     }}
+                    style={{ opacity: 0, transition: 'opacity 0.1s ease-in-out' }}
                   />
                 ) : null}
                 <div 

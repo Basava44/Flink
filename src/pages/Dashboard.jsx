@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
@@ -37,136 +37,114 @@ function Dashboard() {
   const [profileDetails, setProfileDetails] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const hasLoadedData = useRef(false);
 
-  // Initial check for onboarding when component mounts
+  // Single useEffect to handle all data loading
   useEffect(() => {
-    const checkInitialOnboarding = async () => {
-      if (user?.id && !userDetails) {
-        try {
-          const { data, error } = await getUserDetails(user.id);
-          if (!error && data && data.first_login === true) {
-            setShowOnboarding(true);
-          }
-        } catch (err) {
-          console.error("Error in initial onboarding check:", err);
-        }
+    const loadAllData = async () => {
+      // Prevent multiple loads
+      if (hasLoadedData.current || !user?.id) {
+        return;
       }
-    };
 
-    checkInitialOnboarding();
-  }, [user?.id, getUserDetails]);
-
-  // Check if user needs onboarding
-  useEffect(() => {
-    if (userDetails && userDetails.first_login === true) {
-      setShowOnboarding(true);
-    } else if (user && !userDetails && !loadingData) {
-      // If user exists but userDetails is not loaded yet, fetch it
-      const fetchUserDetails = async () => {
-        try {
+      try {
+        // Step 1: Get user details if not already loaded
+        if (!userDetails) {
+          console.log("Loading user details...");
           const { data, error } = await getUserDetails(user.id);
           if (error) {
             console.error("Error fetching user details:", error);
-          } else if (data && data.first_login === true) {
-            setShowOnboarding(true);
+            return;
           }
-        } catch (err) {
-          console.error("Error in fetchUserDetails:", err);
+          
+          // Check for onboarding
+          if (data && data.first_login === true) {
+            setShowOnboarding(true);
+            hasLoadedData.current = true;
+            return; // Don't load other data during onboarding
+          }
         }
-      };
-      fetchUserDetails();
-    }
-  }, [userDetails, user, loadingData, getUserDetails]);
 
-  // Fetch social links and profile details when user is not in first login (with caching)
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (userDetails && userDetails.first_login === false && user?.id) {
-        setLoadingData(true);
+        // Step 2: Check if already in onboarding
+        if (userDetails?.first_login === true) {
+          setShowOnboarding(true);
+          hasLoadedData.current = true;
+          return;
+        }
 
-        try {
-          // Try to get cached data from local storage
-          const cachedSocialLinks = localStorage.getItem(
-            `socialLinks_${user.id}`
-          );
-          const cachedProfileDetails = localStorage.getItem(
-            `profileDetails_${user.id}`
-          );
-          const cacheTimestamp = localStorage.getItem(
-            `cacheTimestamp_${user.id}`
-          );
+        // Step 3: Load dashboard data (only for non-first-time users)
+        if (userDetails?.first_login === false) {
+          setLoadingData(true);
+          console.log("Loading dashboard data...");
 
-          // Check if cache is still valid (less than 5 minutes old)
-          const isCacheValid =
-            cacheTimestamp &&
-            Date.now() - parseInt(cacheTimestamp) < 5 * 60 * 1000;
+          // Check cache first
+          const cachedSocialLinks = localStorage.getItem(`socialLinks_${user.id}`);
+          const cachedProfileDetails = localStorage.getItem(`profileDetails_${user.id}`);
+          const cacheTimestamp = localStorage.getItem(`cacheTimestamp_${user.id}`);
+
+          const isCacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 5 * 60 * 1000;
 
           if (isCacheValid && cachedSocialLinks && cachedProfileDetails) {
-            // Use cached data
             console.log("Using cached dashboard data");
             setSocialLinks(JSON.parse(cachedSocialLinks));
             setProfileDetails(JSON.parse(cachedProfileDetails));
-            setLoadingData(false);
           } else {
-            // Fetch fresh data from API
             console.log("Fetching fresh dashboard data");
 
-            // Fetch social links
-            const { data: socialData, error: socialError } =
-              await getSocialLinks(user.id);
-            if (socialError) {
-              console.error("Error fetching social links:", socialError);
-            } else {
-              setSocialLinks(socialData || []);
-              localStorage.setItem(
-                `socialLinks_${user.id}`,
-                JSON.stringify(socialData || [])
-              );
+            // Fetch all data in parallel
+            const [socialResult, profileResult] = await Promise.all([
+              getSocialLinks(user.id),
+              getProfileDetails(user.id)
+            ]);
+
+            if (!socialResult.error) {
+              setSocialLinks(socialResult.data || []);
+              localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialResult.data || []));
             }
 
-            // Fetch profile details
-            const { data: profileData, error: profileError } =
-              await getProfileDetails(user.id);
-            if (profileError) {
-              console.error("Error fetching profile details:", profileError);
-            } else {
-              setProfileDetails(profileData);
-              localStorage.setItem(
-                `profileDetails_${user.id}`,
-                JSON.stringify(profileData)
-              );
+            if (!profileResult.error) {
+              setProfileDetails(profileResult.data);
+              localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileResult.data));
             }
 
-            // Update cache timestamp
-            localStorage.setItem(
-              `cacheTimestamp_${user.id}`,
-              Date.now().toString()
-            );
-            setLoadingData(false);
+            localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
+
           setLoadingData(false);
+          hasLoadedData.current = true;
         }
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        setLoadingData(false);
       }
     };
 
-    fetchUserData();
-  }, [userDetails, user?.id, getSocialLinks, getProfileDetails]);
+    loadAllData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, userDetails]); // Only depend on user.id and userDetails to prevent infinite loops
 
   const handleOnboardingComplete = async () => {
     console.log("Onboarding completed, refreshing user details...");
+    
+    // Reset the ref to allow data loading
+    hasLoadedData.current = false;
+    
     // Refresh user details to get updated first_login status
     await getUserDetails(user.id);
-
+    
     // Also refresh social links and profile details
     if (user?.id) {
       const { data: socialData } = await getSocialLinks(user.id);
       const { data: profileData } = await getProfileDetails(user.id);
       setSocialLinks(socialData || []);
       setProfileDetails(profileData);
+      
+      // Update cache
+      localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialData || []));
+      localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileData));
+      localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
     }
-
+    
     setShowOnboarding(false);
   };
 
@@ -198,13 +176,13 @@ function Dashboard() {
       console.log("Dashboard: Starting sign out...");
       const { error } = await signOut();
       console.log("Dashboard: Sign out result:", { error });
-
+      
       if (error) {
         console.error("Error signing out:", error);
         // You might want to show an error message to the user here
         return;
       }
-
+      
       console.log("Dashboard: Sign out successful, redirecting to home");
       navigate("/");
     } catch (error) {
@@ -250,31 +228,37 @@ function Dashboard() {
       {/* Mobile Dashboard - Visible only on mobile */}
       <div
         className={`md:hidden min-h-screen transition-colors duration-300 ${
-          isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
+        isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
         }`}
       >
         <div className="container mx-auto px-4 py-8">
-          {/* Header */}
-          <header className="flex justify-between items-center mb-8">
-            <div className="flex items-center space-x-4">
-              {/* Profile Picture */}
-              <div className="relative">
-                {userDetails?.profile_url ? (
-                  <img
-                    src={userDetails.profile_url}
-                    alt="Profile"
-                    className="w-16 h-16 rounded-full object-cover border-2 border-primary-500 shadow-lg"
-                    onError={(e) => {
+        {/* Header */}
+        <header className="flex justify-between items-center mb-8">
+          <div className="flex items-center space-x-4">
+            {/* Profile Picture */}
+            <div className="relative">
+              {userDetails?.profile_url ? (
+                <img
+                  src={userDetails.profile_url}
+                  alt="Profile"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-primary-500 shadow-lg"
+                  onLoad={(e) => {
+                    e.target.style.opacity = '1';
+                  }}
+                  onError={(e) => {
                       e.target.style.display = "none";
                       e.target.nextSibling.style.display = "flex";
-                    }}
-                  />
-                ) : null}
-                <div
-                  className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold border-2 border-primary-500 shadow-lg ${
+                  }}
+                  style={{ opacity: 0, transition: 'opacity 0.1s ease-in-out' }}
+                />
+              ) : null}
+              <div 
+                className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold border-2 border-primary-500 shadow-lg ${
                     userDetails?.profile_url ? "hidden" : "flex"
-                  } ${
-                    isDark
+                } ${
+                  isDark 
                       ? "bg-slate-700 text-white border-slate-600"
                       : "bg-primary-100 text-primary-600"
                   }`}
@@ -283,30 +267,30 @@ function Dashboard() {
                     ? userDetails.name.charAt(0).toUpperCase()
                     : user?.email?.charAt(0).toUpperCase() || "U"}
                 </div>
-              </div>
-
-              <div>
+            </div>
+            
+            <div>
                 <h1 className="text-2xl font-bold brand-font mb-2">
-                  Welcome to Flink
-                </h1>
+                Welcome to Flink
+              </h1>
                 <p
                   className={`text-lg ${
-                    isDark ? "text-gray-300" : "text-gray-600"
+                isDark ? "text-gray-300" : "text-gray-600"
                   }`}
                 >
-                  {userDetails?.name || user?.email}
-                </p>
-                {userDetails?.name && (
+                {userDetails?.name || user?.email}
+              </p>
+              {userDetails?.name && (
                   <p
                     className={`text-sm ${
-                      isDark ? "text-gray-400" : "text-gray-500"
+                  isDark ? "text-gray-400" : "text-gray-500"
                     }`}
                   >
-                    {user?.email}
-                  </p>
-                )}
-              </div>
+                  {user?.email}
+                </p>
+              )}
             </div>
+          </div>
 
             <div className="flex items-center">
               {/* Hamburger Menu */}
@@ -324,68 +308,68 @@ function Dashboard() {
                 ) : (
                   <Menu className="w-5 h-5" />
                 )}
-              </button>
+          </button>
             </div>
-          </header>
+        </header>
 
           {/* User Status Section - Only show for new users */}
           {userDetails && userDetails.first_login && (
             <div
               className={`mb-8 p-6 rounded-2xl ${
-                isDark
-                  ? "bg-slate-800/50 border border-slate-700/50"
-                  : "bg-white border border-gray-200"
+            isDark 
+              ? "bg-slate-800/50 border border-slate-700/50" 
+              : "bg-white border border-gray-200"
               }`}
             >
               <div className="text-center">
-                <span
+                    <span
                   className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                    isDark
-                      ? "bg-green-900/30 text-green-400 border border-green-800"
-                      : "bg-green-100 text-green-800 border border-green-200"
-                  }`}
-                >
+                    isDark 
+                          ? "bg-green-900/30 text-green-400 border border-green-800"
+                          : "bg-green-100 text-green-800 border border-green-200"
+                      }`}
+                    >
                   ✨ New User
                 </span>
-              </div>
             </div>
-          )}
-
-          {/* Social Links Section */}
-          <div className="mb-8">
-            <SocialLinksSection socialLinks={socialLinks} />
           </div>
+        )}
 
-          {/* Profile Details Section */}
+        {/* Social Links Section */}
+        <div className="mb-8">
+          <SocialLinksSection socialLinks={socialLinks} />
+        </div>
+
+        {/* Profile Details Section */}
+        <div className="mb-8">
+          <ProfileSection profileDetails={profileDetails} />
+        </div>
+
+        {/* Loading State */}
+        {loadingData && (
           <div className="mb-8">
-            <ProfileSection profileDetails={profileDetails} />
-          </div>
-
-          {/* Loading State */}
-          {loadingData && (
-            <div className="mb-8">
-              <div
-                className={`p-6 rounded-2xl text-center ${
-                  isDark
-                    ? "bg-slate-800/50 border border-slate-700/50"
-                    : "bg-white border border-gray-200"
-                }`}
-              >
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
-                  Loading your profile data...
-                </p>
-              </div>
+            <div
+              className={`p-6 rounded-2xl text-center ${
+                isDark 
+                  ? "bg-slate-800/50 border border-slate-700/50" 
+                  : "bg-white border border-gray-200"
+              }`}
+            >
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+              <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                Loading your profile data...
+              </p>
             </div>
-          )}
-
-          {/* Quick Actions - Coming Soon */}
-          <div className="mb-8">
-            <QuickActionsSection />
           </div>
+        )}
 
-          {/* Quick Stats - Without Views */}
-          <div className="mb-8">
+        {/* Quick Actions - Coming Soon */}
+        <div className="mb-8">
+          <QuickActionsSection />
+        </div>
+
+        {/* Quick Stats - Without Views */}
+        <div className="mb-8">
             <QuickStatsSection
               socialLinks={socialLinks}
               profileDetails={profileDetails}
@@ -451,7 +435,7 @@ function Dashboard() {
                       }`}
                     >
                       <User className="w-5 h-5" />
-                      <span className="font-medium">Profile</span>
+                      <span className="font-medium">Profile Preview</span>
                     </button>
 
                     {/* Settings */}
@@ -527,8 +511,8 @@ function Dashboard() {
                 </div>
               </div>
             </div>
-          </div>
         </div>
+      </div>
       </div>
     </>
   );
