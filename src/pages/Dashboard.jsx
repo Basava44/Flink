@@ -58,8 +58,11 @@ function Dashboard() {
             return;
           }
           
+          console.log("User details loaded:", { first_login: data?.first_login, user_id: data?.id });
+          
           // Check for onboarding
           if (data && data.first_login === true) {
+            console.log("New user detected, showing onboarding");
             setShowOnboarding(true);
             hasLoadedData.current = true;
             return; // Don't load other data during onboarding
@@ -68,6 +71,7 @@ function Dashboard() {
 
         // Step 2: Check if already in onboarding
         if (userDetails?.first_login === true) {
+          console.log("User details show first_login=true, showing onboarding");
           setShowOnboarding(true);
           hasLoadedData.current = true;
           return;
@@ -120,9 +124,128 @@ function Dashboard() {
       }
     };
 
+    // If settings signaled a force refresh, bypass cache and fetch everything fresh
+    const forceKey = localStorage.getItem(`forceRefresh_${user?.id}`);
+    if (forceKey && user?.id) {
+      console.log('Force refresh detected from settings, fetching fresh data');
+      localStorage.removeItem(`forceRefresh_${user?.id}`);
+      // Fetch all three datasets fresh
+      (async () => {
+        try {
+          setLoadingData(true);
+          const [_, socialResult, profileResult] = await Promise.all([
+            getUserDetails(user.id),
+            getSocialLinks(user.id),
+            getProfileDetails(user.id)
+          ]);
+
+          if (!socialResult.error) {
+            setSocialLinks(socialResult.data || []);
+            localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialResult.data || []));
+          }
+
+          if (!profileResult.error) {
+            setProfileDetails(profileResult.data);
+            localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileResult.data));
+          }
+
+          localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
+          hasLoadedData.current = true;
+        } catch (err) {
+          console.error('Error during forced refresh:', err);
+        } finally {
+          setLoadingData(false);
+        }
+      })();
+      return; // Skip normal load flow
+    }
+
     loadAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, userDetails]); // Only depend on user.id and userDetails to prevent infinite loops
+
+  // Refresh data when returning from settings or other pages
+  useEffect(() => {
+    const handleFocus = () => {
+      // Check if we have a user and data is already loaded
+      if (user?.id && userDetails?.first_login === false) {
+        console.log("Page focused, checking for data updates...");
+        // Check for force refresh from settings
+        const forceKey = localStorage.getItem(`forceRefresh_${user.id}`);
+        if (forceKey) {
+          console.log('Force refresh flag found, refreshing now');
+          localStorage.removeItem(`forceRefresh_${user.id}`);
+          refreshDashboardData();
+          return;
+        }
+        
+        // Check if cache is stale (older than 1 minute)
+        const cacheTimestamp = localStorage.getItem(`cacheTimestamp_${user.id}`);
+        const isCacheStale = !cacheTimestamp || (Date.now() - parseInt(cacheTimestamp)) > 60 * 1000;
+        
+        if (isCacheStale) {
+          console.log("Cache is stale, refreshing data...");
+          refreshDashboardData();
+        }
+      }
+    };
+
+    const refreshDashboardData = async () => {
+      try {
+        setLoadingData(true);
+        
+        // Fetch fresh data, including user details
+        const [__, socialResult, profileResult] = await Promise.all([
+          getUserDetails(user.id),
+          getSocialLinks(user.id),
+          getProfileDetails(user.id)
+        ]);
+
+        if (!socialResult.error) {
+          setSocialLinks(socialResult.data || []);
+          localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialResult.data || []));
+        }
+
+        if (!profileResult.error) {
+          setProfileDetails(profileResult.data);
+          localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileResult.data));
+        }
+
+        // Update cache timestamp
+        localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
+        console.log("Dashboard data refreshed successfully");
+        hasLoadedData.current = true;
+      } catch (error) {
+        console.error("Error refreshing dashboard data:", error);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    // Listen for page focus (when user returns from settings)
+    window.addEventListener('focus', handleFocus);
+    
+    // Also listen for visibility change (when switching tabs)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        handleFocus();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [user?.id, userDetails, getSocialLinks, getProfileDetails]);
+
+  // Watch for userDetails changes and trigger onboarding if needed
+  useEffect(() => {
+    if (userDetails && userDetails.first_login === true && !showOnboarding) {
+      console.log("UserDetails changed to first_login=true, triggering onboarding");
+      setShowOnboarding(true);
+      hasLoadedData.current = true;
+    }
+  }, [userDetails, showOnboarding]);
 
   const handleOnboardingComplete = async () => {
     console.log("Onboarding completed, refreshing user details...");
@@ -231,17 +354,17 @@ function Dashboard() {
         <BackgroundPattern />
         <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
-        <header className="flex justify-between items-center mb-8">
-          <div className="flex items-center space-x-4">
+        <header className="flex justify-between items-center mb-8 min-h-[80px]">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
             {/* Profile Picture */}
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               {userDetails?.profile_url ? (
                 <img
                   src={userDetails.profile_url}
                   alt="Profile"
                   loading="lazy"
                   decoding="async"
-                  className="w-16 h-16 rounded-full object-cover border-2 border-primary-500 shadow-lg"
+                  className="w-14 h-14 rounded-full object-cover border-2 border-primary-500 shadow-lg"
                   onLoad={(e) => {
                     e.target.style.opacity = '1';
                   }}
@@ -253,7 +376,7 @@ function Dashboard() {
                 />
               ) : null}
               <div 
-                className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold border-2 border-primary-500 shadow-lg ${
+                className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold border-2 border-primary-500 shadow-lg ${
                     userDetails?.profile_url ? "hidden" : "flex"
                 } ${
                   isDark 
@@ -267,22 +390,21 @@ function Dashboard() {
                 </div>
             </div>
             
-            <div>
-                <h1 className="text-2xl font-bold brand-font mb-2">
-                Welcome to Flink
-              </h1>
+            <div className="flex-1 min-w-0">
                 <p
-                  className={`text-lg ${
+                  className={`text-base font-medium truncate ${
                 isDark ? "text-gray-300" : "text-gray-600"
                   }`}
+                  title={userDetails?.name || user?.email}
                 >
                 {userDetails?.name || user?.email}
               </p>
               {userDetails?.name && (
                   <p
-                    className={`text-sm ${
+                    className={`text-xs truncate ${
                   isDark ? "text-gray-400" : "text-gray-500"
                     }`}
+                    title={user?.email}
                   >
                   {user?.email}
                 </p>
@@ -290,7 +412,7 @@ function Dashboard() {
             </div>
           </div>
 
-            <div className="flex items-center">
+            <div className="flex items-center flex-shrink-0 ml-2">
               {/* Hamburger Menu */}
               <button
                 onClick={handleMenuToggle}

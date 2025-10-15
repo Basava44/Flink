@@ -275,20 +275,22 @@ export const AuthProvider = ({ children }) => {
 
       console.log('User successfully added to database:', data);
       
-      // Automatically add email as a social link for Google OAuth users
+      // Automatically add email as a social link for OAuth or email users
       if (user.email) {
         try {
           console.log('Adding email social link for user:', user.email);
           const { error: socialLinkError } = await supabase
             .from('social_links')
-            .insert([{
-              user_id: user.id,
-              platform: 'email',
-              url: `mailto:${user.email}`,
-              private: false,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }]);
+            .insert([
+              {
+                user_id: user.id,
+                platform: 'email',
+                url: `mailto:${user.email}`,
+                private: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+            ]);
           
           if (socialLinkError) {
             console.error('Error adding email social link:', socialLinkError);

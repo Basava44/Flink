@@ -101,20 +101,20 @@ function Home() {
       <section className="pb-10 px-4">
         <div className="max-w-md mx-auto">
           <div
-            className={`rounded-2xl p-8 shadow-soft ${
+            className={`rounded-2xl p-6 sm:p-8 shadow-soft ${
               isDark
                 ? "bg-slate-800/50 border border-slate-700/50"
                 : "bg-white border border-gray-200"
             }`}
           >
             <label
-              className={`block text-sm font-semibold mb-4 ${
+              className={`block text-sm font-semibold mb-3 ${
                 isDark ? "text-gray-200" : "text-gray-700"
               }`}
             >
               Check your Flink handle
             </label>
-            <div className="flex items-center space-x-2 mb-4">
+            <div className="flex items-center space-x-2 mb-3">
               <span
                 className={`font-mono text-sm ${
                   isDark ? "text-gray-400" : "text-gray-500"
@@ -125,7 +125,7 @@ function Home() {
               <input
                 type="text"
                 placeholder="yourname"
-                className={`flex-1 px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
+                className={`flex-1 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl focus:outline-none transition-all duration-200 text-sm ${
                   isDark
                     ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
                     : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"

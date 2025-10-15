@@ -76,7 +76,8 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
         .update({ 
           first_login: false,
           name: formData.userName,
-          profile_url: formData.profile.profile_url || null
+          // Use the freshly submitted data to avoid stale state
+          profile_url: data.profile_url || null
         })
         .eq('id', formData.userId);
 
@@ -101,28 +102,6 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
     }
   };
 
-  const handleSkip = () => {
-    // Skip onboarding and just update first_login status
-    setLoading(true);
-    setError('');
-
-    supabase
-      .from('users')
-      .update({ first_login: false })
-      .eq('id', formData.userId)
-      .then(({ error }) => {
-        if (error) {
-          console.error('Error updating first_login status:', error);
-          setError('Failed to skip setup. Please try again.');
-        } else {
-          console.log('Onboarding skipped successfully');
-          onComplete();
-        }
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
 
   if (loading) {
     return (
@@ -195,17 +174,6 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
         />
       )}
 
-      {/* Skip button - only show on first step */}
-      {currentStep === 1 && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2">
-          <button
-            onClick={handleSkip}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm underline"
-          >
-            Skip for now
-          </button>
-        </div>
-      )}
       </div>
     </>
   );

@@ -472,7 +472,7 @@ const ProfilePage = () => {
         )}
 
         {/* Additional Info Card */}
-        <div className={`p-6 rounded-2xl ${
+        {/* <div className={`p-6 rounded-2xl ${
           isDark 
             ? "bg-slate-800 border border-slate-700" 
             : "bg-white border border-gray-200"
@@ -586,7 +586,7 @@ const ProfilePage = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

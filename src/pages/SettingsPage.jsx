@@ -36,7 +36,6 @@ const SettingsPage = () => {
   const [error, setError] = useState('');
   const [socialLinks, setSocialLinks] = useState([]);
   const [profileDetails, setProfileDetails] = useState(null);
-  const [showActionBar, setShowActionBar] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
@@ -139,16 +138,9 @@ const SettingsPage = () => {
 
   // Scroll detection and idle state management
   useEffect(() => {
+    const idleTimeout = idleTimeoutRef.current;
+    
     const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      
-      // Check if user is at bottom (within 100px)
-      const atBottom = scrollTop + windowHeight >= documentHeight - 100;
-      
-      setShowActionBar(false);
-      
       // Clear existing timeout
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
@@ -156,14 +148,7 @@ const SettingsPage = () => {
       
       // Set timeout to detect when scrolling stops
       scrollTimeoutRef.current = setTimeout(() => {
-        // Show action bar immediately if at bottom, or if user has changes and is idle
-        if (atBottom) {
-          setShowActionBar(true);
-        } else if (hasChanges) {
-          idleTimeoutRef.current = setTimeout(() => {
-            setShowActionBar(true);
-          }, 500); // 500ms idle delay
-        }
+        // Action bar logic removed - now shows immediately when hasChanges is true
       }, 150); // 150ms after scroll stops
     };
 
@@ -171,7 +156,7 @@ const SettingsPage = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+      if (idleTimeout) clearTimeout(idleTimeout);
     };
   }, [hasChanges]);
 
@@ -200,11 +185,19 @@ const SettingsPage = () => {
       // Check if display name changed
       const displayNameChanged = displayName !== originalDisplayName;
       
-      setHasChanges(socialLinksChanged || profileChanged || profileUrlChanged || displayNameChanged);
+      const hasChanges = socialLinksChanged || profileChanged || profileUrlChanged || displayNameChanged;
+      console.log('Change detection:', { 
+        socialLinksChanged, 
+        profileChanged, 
+        profileUrlChanged, 
+        displayNameChanged, 
+        hasChanges 
+      });
+      setHasChanges(hasChanges);
     };
 
     checkForChanges();
-  }, [socialLinksData, profileData, socialLinks, profileDetails, profileUrl, originalProfileUrl]);
+  }, [socialLinksData, profileData, socialLinks, profileDetails, profileUrl, originalProfileUrl, displayName, originalDisplayName]);
 
   const handleInputChange = (platform, value) => {
     setSocialLinksData(prev => ({
@@ -511,7 +504,6 @@ const SettingsPage = () => {
         console.log('No changes detected, skipping API calls');
         setShowSnackbar(true);
         setHasChanges(false);
-        setShowActionBar(false);
         
         setTimeout(() => {
           setShowSnackbar(false);
@@ -527,7 +519,12 @@ const SettingsPage = () => {
 
       setShowSnackbar(true);
       setHasChanges(false);
-      setShowActionBar(false);
+      // Signal dashboard to force-refresh upon return
+      try {
+        localStorage.setItem(`forceRefresh_${user.id}`, Date.now().toString());
+      } catch (e) {
+        console.warn('Unable to set forceRefresh flag:', e);
+      }
       
       // Only refresh the data that was changed
       if (socialLinksChanged) {
@@ -567,6 +564,13 @@ const SettingsPage = () => {
       setTimeout(() => {
         setShowSnackbar(false);
       }, 3000);
+
+      // Signal dashboard to force-refresh upon return
+      try {
+        localStorage.setItem(`forceRefresh_${user.id}`, Date.now().toString());
+      } catch (e) {
+        console.warn('Unable to set forceRefresh flag:', e);
+      }
 
       // Auto-redirect to dashboard after 2 seconds
       setTimeout(() => {
@@ -681,7 +685,7 @@ const SettingsPage = () => {
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 py-6 pb-24">
+      <div className={`container mx-auto px-4 py-6 ${hasChanges ? 'pb-32' : 'pb-24'}`}>
         {/* Info Message */}
         <div className={`mb-6 p-3 rounded-lg ${
           isDark 
@@ -818,18 +822,39 @@ const SettingsPage = () => {
                 <span className="mr-2"><User className="w-4 h-4" /></span>
                 Display Name
               </label>
-              <input
-                id="displayName"
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all duration-200 ${
-                  isDark
-                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                }`}
-                placeholder="Your name as shown on your profile"
-              />
+              <div className="relative">
+                <input
+                  id="displayName"
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  onFocus={() => setFocusedField('displayName')}
+                  onBlur={() => setFocusedField(null)}
+                  className={`w-full px-4 py-2.5 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
+                    isDark
+                      ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                      : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                  }`}
+                  placeholder="Your name as shown on your profile"
+                />
+                {displayName && focusedField === 'displayName' && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setDisplayName('');
+                    }}
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 ${
+                      isDark
+                        ? "hover:bg-slate-600 text-gray-400 hover:text-white"
+                        : "hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                    }`}
+                    title="Clear field"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1036,10 +1061,8 @@ const SettingsPage = () => {
       </div>
 
       {/* Smart Floating Action Bar */}
-      {showActionBar && (
-        <div className={`fixed bottom-6 left-4 right-4 z-20 transform transition-all duration-500 ease-out ${
-          showActionBar ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
-        }`}>
+      {hasChanges && (
+        <div className={`fixed bottom-6 left-4 right-4 z-20 transform transition-all duration-300 ease-out translate-y-0 opacity-100`}>
           <div className={`backdrop-blur-lg rounded-2xl shadow-2xl border ${
               isDark 
               ? "bg-slate-800/90 border-slate-600/50" 
