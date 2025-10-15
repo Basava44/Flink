@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
+import BackgroundPattern from '../components/BackgroundPattern';
 import { 
   ArrowLeft, 
   HelpCircle, 
@@ -93,9 +94,10 @@ Sent from Flink App
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
+    <div className={`min-h-screen relative ${
+      isDark ? "text-white" : "text-gray-900"
     }`}>
+      <BackgroundPattern />
       {/* Header */}
       <div className={`sticky top-0 z-10 border-b ${
         isDark 
@@ -135,7 +137,7 @@ Sent from Flink App
         {/* Support Form */}
         <div className={`p-6 rounded-2xl ${
           isDark 
-            ? "bg-slate-800/50 border border-slate-700/50" 
+            ? "bg-slate-800 border border-slate-700" 
             : "bg-white border border-gray-200"
         }`}>
           <div className="text-center mb-8">

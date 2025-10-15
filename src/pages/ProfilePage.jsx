@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
+import BackgroundPattern from '../components/BackgroundPattern';
 import { 
   ArrowLeft, 
   User, 
@@ -201,9 +202,10 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
+    <div className={`min-h-screen relative ${
+      isDark ? "text-white" : "text-gray-900"
     }`}>
+      <BackgroundPattern />
       {/* Header */}
       <div className={`sticky top-0 z-10 border-b ${
         isDark 
@@ -386,7 +388,7 @@ const ProfilePage = () => {
         {socialLinks.length > 0 && (
           <div className={`p-6 rounded-2xl mb-8 ${
             isDark 
-              ? "bg-slate-800/50 border border-slate-700/50" 
+              ? "bg-slate-800 border border-slate-700" 
               : "bg-white border border-gray-200"
           }`}>
             <div className="flex items-center justify-between mb-6">
@@ -472,7 +474,7 @@ const ProfilePage = () => {
         {/* Additional Info Card */}
         <div className={`p-6 rounded-2xl ${
           isDark 
-            ? "bg-slate-800/50 border border-slate-700/50" 
+            ? "bg-slate-800 border border-slate-700" 
             : "bg-white border border-gray-200"
         }`}>
           <h2 className={`text-xl font-semibold mb-6 ${

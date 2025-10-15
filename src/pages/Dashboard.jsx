@@ -7,6 +7,7 @@ import ProfileSection from "../components/ProfileSection";
 import SocialLinksSection from "../components/SocialLinksSection";
 import QuickActionsSection from "../components/QuickActionsSection";
 import QuickStatsSection from "../components/QuickStatsSection";
+import BackgroundPattern from "../components/BackgroundPattern";
 import {
   Settings,
   LogOut,
@@ -226,12 +227,9 @@ function Dashboard() {
       </div>
 
       {/* Mobile Dashboard - Visible only on mobile */}
-      <div
-        className={`md:hidden min-h-screen transition-colors duration-300 ${
-        isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
-        }`}
-      >
-        <div className="container mx-auto px-4 py-8">
+      <div className={`md:hidden min-h-screen relative ${isDark ? "text-white" : "text-gray-900"}`}>
+        <BackgroundPattern />
+        <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
         <header className="flex justify-between items-center mb-8">
           <div className="flex items-center space-x-4">
@@ -317,7 +315,7 @@ function Dashboard() {
             <div
               className={`mb-8 p-6 rounded-2xl ${
             isDark 
-              ? "bg-slate-800/50 border border-slate-700/50" 
+              ? "bg-slate-800 border border-slate-700" 
               : "bg-white border border-gray-200"
               }`}
             >
@@ -351,7 +349,7 @@ function Dashboard() {
             <div
               className={`p-6 rounded-2xl text-center ${
                 isDark 
-                  ? "bg-slate-800/50 border border-slate-700/50" 
+                  ? "bg-slate-800 border border-slate-700" 
                   : "bg-white border border-gray-200"
               }`}
             >

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
+import BackgroundPattern from '../components/BackgroundPattern';
 import { 
   ArrowLeft, 
   Settings, 
@@ -572,9 +573,10 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className={`settings-page min-h-screen transition-colors duration-300 slide-in-from-right ${
-      isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
+    <div className={`settings-page min-h-screen relative slide-in-from-right ${
+      isDark ? "text-white" : "text-gray-900"
     }`}>
+      <BackgroundPattern />
       {/* Success Snackbar */}
       {showSnackbar && (
         <div className="fixed top-4 left-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
@@ -658,7 +660,7 @@ const SettingsPage = () => {
           {/* Profile Picture Section */}
           <div className={`p-6 rounded-2xl ${
             isDark 
-              ? "bg-slate-800/50 border border-slate-700/50" 
+              ? "bg-slate-800 border border-slate-700" 
               : "bg-white border border-gray-200"
           }`}>
             <h2 className={`text-lg font-semibold mb-4 ${
@@ -761,7 +763,7 @@ const SettingsPage = () => {
           {/* Social Links Section */}
           <div className={`p-6 rounded-2xl ${
             isDark 
-              ? "bg-slate-800/50 border border-slate-700/50" 
+              ? "bg-slate-800 border border-slate-700" 
               : "bg-white border border-gray-200"
           }`}>
             <h2 className={`text-lg font-semibold mb-4 ${
@@ -820,7 +822,7 @@ const SettingsPage = () => {
           {/* Profile Details Section */}
           <div className={`p-6 rounded-2xl ${
             isDark 
-              ? "bg-slate-800/50 border border-slate-700/50" 
+              ? "bg-slate-800 border border-slate-700" 
               : "bg-white border border-gray-200"
           }`}>
             <h2 className={`text-lg font-semibold mb-4 ${

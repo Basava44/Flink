@@ -117,7 +117,7 @@ const SocialLinksSection = ({ socialLinks }) => {
     <div
       className={`p-6 rounded-xl shadow-soft ${
         isDark
-          ? "bg-slate-800/50 border border-slate-700/50"
+          ? "bg-slate-800 border border-slate-700"
           : "bg-white border border-gray-200"
       }`}
     >
