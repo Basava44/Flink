@@ -24,7 +24,8 @@ import {
   Globe,
   FileText,
   Camera,
-  Upload
+  Upload,
+  User
 } from 'lucide-react';
 
 const SettingsPage = () => {
@@ -43,6 +44,8 @@ const SettingsPage = () => {
   const [previewUrl, setPreviewUrl] = useState('');
   const [profileUrl, setProfileUrl] = useState('');
   const [originalProfileUrl, setOriginalProfileUrl] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [originalDisplayName, setOriginalDisplayName] = useState('');
   const scrollTimeoutRef = useRef(null);
   const idleTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -84,10 +87,10 @@ const SettingsPage = () => {
           const { data: profileData } = await getProfileDetails(user.id);
           setProfileDetails(profileData);
           
-          // Load user details from users table to get profile_url
+          // Load user details from users table to get profile_url and name
           const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('profile_url')
+            .select('profile_url, name')
             .eq('id', user.id)
             .single();
           
@@ -112,12 +115,16 @@ const SettingsPage = () => {
             });
           }
           
-          // Set profile picture URL from users table
+          // Set profile picture URL and display name from users table
           const userProfileUrl = userData?.profile_url || '';
           setProfileUrl(userProfileUrl);
           setOriginalProfileUrl(userProfileUrl);
           setPreviewUrl(userProfileUrl);
           console.log('Loaded profile URL:', userProfileUrl);
+
+          const userDisplayName = userData?.name || '';
+          setDisplayName(userDisplayName);
+          setOriginalDisplayName(userDisplayName);
         } catch (err) {
           console.error('Error loading user data:', err);
           setError('Failed to load profile data');
@@ -190,8 +197,10 @@ const SettingsPage = () => {
       
       // Check if profile URL has changed
       const profileUrlChanged = profileUrl !== originalProfileUrl;
+      // Check if display name changed
+      const displayNameChanged = displayName !== originalDisplayName;
       
-      setHasChanges(socialLinksChanged || profileChanged || profileUrlChanged);
+      setHasChanges(socialLinksChanged || profileChanged || profileUrlChanged || displayNameChanged);
     };
 
     checkForChanges();
@@ -368,6 +377,7 @@ const SettingsPage = () => {
       let socialLinksChanged = false;
       let profileDetailsChanged = false;
       let profileUrlChanged = false;
+      let displayNameChanged = false;
 
       // Check if social links changed
       const currentSocialLinks = {};
@@ -386,8 +396,9 @@ const SettingsPage = () => {
 
       // Check if profile URL changed
       profileUrlChanged = profileUrl !== originalProfileUrl;
+      displayNameChanged = displayName !== originalDisplayName;
 
-      console.log('Changes detected:', { socialLinksChanged, profileDetailsChanged, profileUrlChanged });
+      console.log('Changes detected:', { socialLinksChanged, profileDetailsChanged, profileUrlChanged, displayNameChanged });
 
       // Only update social links if they changed
       if (socialLinksChanged) {
@@ -476,8 +487,27 @@ const SettingsPage = () => {
         setOriginalProfileUrl(profileUrl);
       }
 
+      // Only update display name if it changed
+      if (displayNameChanged) {
+        console.log('Updating display name...');
+
+        const { error: nameUpdateError } = await supabase
+          .from('users')
+          .update({
+            name: displayName.trim() || null
+          })
+          .eq('id', user.id);
+
+        if (nameUpdateError) {
+          console.error('Error updating name in users table:', nameUpdateError);
+          throw nameUpdateError;
+        }
+
+        setOriginalDisplayName(displayName);
+      }
+
       // If nothing changed, just show success and return
-      if (!socialLinksChanged && !profileDetailsChanged && !profileUrlChanged) {
+      if (!socialLinksChanged && !profileDetailsChanged && !profileUrlChanged && !displayNameChanged) {
         console.log('No changes detected, skipping API calls');
         setShowSnackbar(true);
         setHasChanges(false);
@@ -510,6 +540,16 @@ const SettingsPage = () => {
       if (profileDetailsChanged) {
       const { data: updatedProfileData } = await getProfileDetails(user.id);
       setProfileDetails(updatedProfileData);
+      // Refresh display name if changed
+      if (displayNameChanged) {
+        const { data: refreshedUser } = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+        setDisplayName(refreshedUser?.name || '');
+        setOriginalDisplayName(refreshedUser?.name || '');
+      }
 
         // Update cache with profile details
         const cacheData = {
@@ -658,18 +698,18 @@ const SettingsPage = () => {
 
         <form id="settings-form" onSubmit={handleSubmit} className="space-y-8">
           {/* Profile Picture Section */}
-          <div className={`p-6 rounded-2xl ${
+          <div className={`p-4 rounded-2xl ${
             isDark 
               ? "bg-slate-800 border border-slate-700" 
               : "bg-white border border-gray-200"
           }`}>
-            <h2 className={`text-lg font-semibold mb-4 ${
+            <h2 className={`text-base font-semibold mb-3 ${
               isDark ? "text-white" : "text-gray-800"
             }`}>
               Profile Picture
             </h2>
             
-            <div className="flex flex-col items-center space-y-4">
+            <div className="flex flex-col items-center space-y-3">
               {/* Image Preview */}
               <div className="relative">
                 {previewUrl ? (
@@ -679,7 +719,7 @@ const SettingsPage = () => {
                       alt="Profile preview"
                       loading="lazy"
                       decoding="async"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-primary-500 shadow-lg"
+                      className="w-24 h-24 rounded-full object-cover border-2 border-primary-500 shadow-md"
                       onLoad={(e) => {
                         e.target.style.opacity = '1';
                       }}
@@ -689,20 +729,20 @@ const SettingsPage = () => {
                       <button
                         type="button"
                         onClick={removeImage}
-                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors duration-200 shadow-lg"
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center transition-colors duration-200 shadow"
                         title="Remove photo"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
                 ) : (
-                  <div className={`w-32 h-32 rounded-full flex items-center justify-center border-4 ${
+                  <div className={`w-24 h-24 rounded-full flex items-center justify-center border-2 ${
                     isDark 
                       ? "border-slate-600 bg-slate-700" 
                       : "border-gray-300 bg-gray-100"
                   }`}>
-                    <Camera className={`w-12 h-12 ${
+                    <Camera className={`w-8 h-8 ${
                       isDark ? "text-gray-500" : "text-gray-400"
                     }`} />
                   </div>
@@ -723,11 +763,11 @@ const SettingsPage = () => {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className={`w-full py-3 px-4 rounded-xl border-2 border-dashed transition-all duration-200 flex items-center justify-center space-x-2 ${
+                  className={`w-full py-2.5 px-3 rounded-xl border-2 border-dashed transition-all duration-200 flex items-center justify-center space-x-2 ${
                     uploading
                       ? isDark
-                        ? "border-gray-600 bg-gray-700/50 text-gray-400 cursor-not-allowed"
-                        : "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
+                        ? "border-gray-600 bg-gray-700/40 text-gray-400 cursor-not-allowed"
+                        : "border-gray-300 bg-gray-100/80 text-gray-400 cursor-not-allowed"
                       : isDark
                       ? "border-slate-600 bg-slate-700/50 text-gray-300 hover:border-primary-500 hover:bg-slate-700"
                       : "border-gray-300 bg-gray-50 text-gray-600 hover:border-primary-500 hover:bg-gray-100"
@@ -735,7 +775,7 @@ const SettingsPage = () => {
                 >
                   {uploading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-current border-t-transparent"></div>
                       <span>Uploading...</span>
                     </>
                   ) : previewUrl ? (
@@ -751,12 +791,45 @@ const SettingsPage = () => {
                   )}
                 </button>
                 
-                <p className={`mt-2 text-xs text-center ${
+                <p className={`mt-1.5 text-xs text-center ${
                   isDark ? "text-gray-400" : "text-gray-500"
                 }`}>
                   JPG, PNG, or GIF. Max 5MB.
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Display Name Section */}
+          <div className={`p-4 rounded-2xl ${
+            isDark 
+              ? "bg-slate-800 border border-slate-700" 
+              : "bg-white border border-gray-200"
+          }`}>
+            <h2 className={`text-base font-semibold mb-3 ${
+              isDark ? "text-white" : "text-gray-800"
+            }`}>
+              Display Name
+            </h2>
+            <div className="relative max-w-xl">
+              <label htmlFor="displayName" className={`flex items-center text-sm font-medium mb-2 ${
+                isDark ? "text-gray-200" : "text-gray-700"
+              }`}>
+                <span className="mr-2"><User className="w-4 h-4" /></span>
+                Display Name
+              </label>
+              <input
+                id="displayName"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className={`w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all duration-200 ${
+                  isDark
+                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                }`}
+                placeholder="Your name as shown on your profile"
+              />
             </div>
           </div>
 
