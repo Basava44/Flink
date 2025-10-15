@@ -66,10 +66,10 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
   const hasAnyLinks = Object.values(socialLinks).some(value => value.trim() !== '');
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-4 transition-colors duration-300 ${
+    <div className={`min-h-screen px-4 py-8 transition-colors duration-300 ${
       isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
     }`}>
-      <div className="max-w-2xl w-full">
+      <div className="max-w-2xl w-full mx-auto">
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">

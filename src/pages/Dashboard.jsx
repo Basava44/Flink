@@ -496,7 +496,7 @@ function Dashboard() {
 
         {/* Quick Actions - Coming Soon */}
         <div className="mb-8">
-          <QuickActionsSection />
+          <QuickActionsSection profileDetails={profileDetails} />
         </div>
 
         {/* Quick Stats - Without Views */}
