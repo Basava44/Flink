@@ -409,6 +409,17 @@ function Dashboard() {
                   {user?.email}
                 </p>
               )}
+              {/* Flink Branding */}
+              <div className="flex items-center mt-1">
+                <span className={`text-xs ${
+                  isDark ? "text-gray-500" : "text-gray-400"
+                }`}>
+                  Powered by
+                </span>
+                <span className={`ml-1 text-xs font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent`}>
+                  Flink
+                </span>
+              </div>
             </div>
           </div>
 
@@ -495,6 +506,20 @@ function Dashboard() {
               profileDetails={profileDetails}
             />
           </div>
+
+        {/* Footer with Flink Branding */}
+        <div className="mt-6 mb-2">
+          <div className={`text-center ${
+            isDark ? "text-gray-500" : "text-gray-400"
+          }`}>
+            <div className="text-xs opacity-60">
+              Made with ❤️ by <span className="font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Flink</span>
+            </div>
+            <div className="text-xs opacity-50 mt-1">
+              © 2025 Flink. All rights reserved.
+            </div>
+          </div>
+        </div>
 
           {/* Hamburger Menu Overlay */}
           <div
