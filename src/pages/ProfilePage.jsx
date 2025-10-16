@@ -390,42 +390,23 @@ const ProfilePage = () => {
               {/* Profile Info */}
               <div className="flex-1 text-center md:text-center">
                 <h1
-                  className={`text-2xl font-bold mb-1 ${
+                  className={`text-2xl font-bold mb-3 ${
                     isDark ? "text-white" : "text-gray-900"
                   }`}
                 >
                   {userDetails?.name || "User Profile"}
                 </h1>
-                <p
-                  className={`text-sm mb-3 ${
-                    isDark ? "text-gray-300" : "text-gray-600"
-                  }`}
-                >
-                  {userDetails?.email || user?.email}
-                </p>
 
                 {/* Bio */}
                 {profileDetails?.bio && (
                   <p
-                    className={`text-sm mb-3 max-w-2xl ${
+                    className={`text-sm mb-4 max-w-2xl ${
                       isDark ? "text-gray-300" : "text-gray-600"
                     }`}
                   >
                     {profileDetails.bio}
                   </p>
                 )}
-
-                {/* Flink Branding */}
-                <div className="flex items-center justify-center mt-2 mb-3">
-                  <span className={`text-xs ${
-                    isDark ? "text-gray-500" : "text-gray-400"
-                  }`}>
-                    Powered by
-                  </span>
-                  <span className={`ml-1 text-xs font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent`}>
-                    Flink
-                  </span>
-                </div>
 
                 {/* Profile Stats */}
                 <div className="flex flex-wrap gap-2 justify-center">
@@ -467,7 +448,7 @@ const ProfilePage = () => {
                   )}
 
                   <div
-                    className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
+                    className={`flex items-center space-x-1.5 px-2 py-1 my-2 rounded-full ${
                       isDark
                         ? "bg-slate-700/50 text-gray-300"
                         : "bg-gray-100 text-gray-600"
@@ -485,31 +466,20 @@ const ProfilePage = () => {
                     </span>
                   </div>
                 </div>
+
               </div>
 
-              {/* Share Button */}
-              <div className="flex flex-col space-y-3">
-                <button
-                  onClick={handleShare}
-                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center space-x-2 ${
-                    isDark
-                      ? "bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 shadow-lg hover:shadow-xl"
-                      : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 shadow-lg hover:shadow-xl"
-                  }`}
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="w-4 h-4" />
-                      <span>Share Profile</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              {/* Flink Branding */}
+              {/* <div className="flex items-center justify-center mt-4">
+                <span className={`text-xs ${
+                  isDark ? "text-gray-500" : "text-gray-400"
+                }`}>
+                  Powered by
+                </span>
+                <span className={`ml-1 text-xs font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent`}>
+                  Flink
+                </span>
+              </div> */}
             </div>
           </div>
         </div>
