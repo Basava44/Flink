@@ -79,7 +79,6 @@ const SocialLinksSection = ({ socialLinks }) => {
       }
       // Remove any extra characters and ensure it's a valid email
       cleanEmail = cleanEmail.trim();
-      console.log('Email formatting - Original:', url, 'Clean:', cleanEmail);
       return `mailto:${cleanEmail}`;
     } else if (platform === "phone") {
       return url.startsWith("tel:") ? url : `tel:${url}`;
@@ -113,6 +112,20 @@ const SocialLinksSection = ({ socialLinks }) => {
 
   if (!socialLinks || socialLinks.length === 0) return null;
 
+  // Deduplicate email social links - keep only the first one
+  const deduplicatedLinks = socialLinks.reduce((acc, link) => {
+    if (link.platform === 'email') {
+      // Check if we already have an email link
+      const hasEmail = acc.some(existingLink => existingLink.platform === 'email');
+      if (!hasEmail) {
+        acc.push(link);
+      }
+    } else {
+      acc.push(link);
+    }
+    return acc;
+  }, []);
+
   return (
     <div
       className={`p-6 rounded-xl shadow-soft ${
@@ -129,17 +142,12 @@ const SocialLinksSection = ({ socialLinks }) => {
         Social Links
       </h2>
       <div className="space-y-3">
-        {socialLinks.map((link, index) => {
+        {deduplicatedLinks.map((link, index) => {
           const clickUrl = formatUrlForClick(link.url, link.platform);
-          
-          // Debug logging
-          console.log('Social link:', { platform: link.platform, url: link.url, clickUrl });
           
           const handleClick = (e) => {
             if (link.platform === "email") {
               e.preventDefault();
-              console.log('Email clicked - Original URL:', link.url);
-              console.log('Email clicked - Formatted URL:', clickUrl);
               
               // Try multiple methods to open email
               try {

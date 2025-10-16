@@ -58,10 +58,6 @@ export const AuthProvider = ({ children }) => {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        console.log(
-          "AuthContext: Initial session result:",
-          session?.user?.id ? "User found" : "No user"
-        );
         setUser(session?.user ?? null);
 
         // Cache the session if valid
@@ -89,7 +85,6 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state change:", { event, session: session?.user?.id });
       setUser(session?.user ?? null);
 
       // Cache the session if valid
@@ -108,12 +103,6 @@ export const AuthProvider = ({ children }) => {
 
       // Handle user signup and signin
       if (session?.user && (event === "SIGNED_IN" || event === "SIGNED_UP")) {
-        console.log("User signed in/up, handling user data...", {
-          event,
-          userId: session.user.id,
-          emailConfirmed: session.user.email_confirmed_at,
-          userConfirmed: session.user.confirmed_at,
-        });
 
         // For OAuth users (Google), add them to database immediately
         // For email signups, they should already be added in the signUp function
@@ -252,12 +241,6 @@ export const AuthProvider = ({ children }) => {
   // Add user to users table after successful signup
   const addUserToDatabase = async (user, additionalData = {}) => {
     try {
-      console.log("addUserToDatabase called with:", {
-        userId: user.id,
-        email: user.email,
-        metadata: user.user_metadata,
-        additionalData,
-      });
 
       // First check if user already exists in database
       const { data: existingUser, error: checkError } = await supabase
@@ -315,34 +298,51 @@ export const AuthProvider = ({ children }) => {
 
       console.log("User successfully added to database:", data);
 
-      // Automatically add email as a social link for OAuth or email users
-      if (user.email) {
+      // Only add email as a social link for OAuth users (not email/password users)
+      // OAuth users have app_metadata.provider, email/password users don't
+      const isOAuthUser = user.app_metadata?.provider && user.app_metadata.provider !== 'email';
+      
+      if (user.email && isOAuthUser) {
         try {
-          console.log("Adding email social link for user:", user.email);
-          const { error: socialLinkError } = await supabase
+          // Check if email social link already exists to prevent duplicates
+          const { data: existingEmailLink } = await supabase
             .from("social_links")
-            .insert([
-              {
-                user_id: user.id,
-                platform: "email",
-                url: `mailto:${user.email}`,
-                private: false,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              },
-            ]);
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("platform", "email")
+            .single();
 
-          if (socialLinkError) {
-            console.error("Error adding email social link:", socialLinkError);
+          if (!existingEmailLink) {
+            console.log("Adding email social link for OAuth user:", user.email);
+            const { error: socialLinkError } = await supabase
+              .from("social_links")
+              .insert([
+                {
+                  user_id: user.id,
+                  platform: "email",
+                  url: `mailto:${user.email}`,
+                  private: false,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                },
+              ]);
+
+            if (socialLinkError) {
+              console.error("Error adding email social link:", socialLinkError);
+            } else {
+              console.log(
+                "Email social link added successfully for:",
+                user.email
+              );
+            }
           } else {
-            console.log(
-              "Email social link added successfully for:",
-              user.email
-            );
+            console.log("Email social link already exists for user, skipping");
           }
         } catch (err) {
           console.error("Unexpected error adding email social link:", err);
         }
+      } else if (user.email && !isOAuthUser) {
+        console.log("Email/password user - not adding email social link automatically");
       } else {
         console.log("No email found for user, skipping email social link");
       }

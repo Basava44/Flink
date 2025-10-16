@@ -33,8 +33,6 @@ function ProtectedRoute({ children }) {
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
   
-  console.log('PublicRoute: loading:', loading, 'user:', user?.id);
-  
   if (loading) {
     console.log('PublicRoute: Showing loading screen');
     return (
@@ -48,7 +46,6 @@ function PublicRoute({ children }) {
     );
   }
   
-  console.log('PublicRoute: Loading complete, user:', user?.id ? 'logged in' : 'not logged in');
   return user ? <Navigate to="/dashboard" replace /> : children;
 }
 

@@ -35,6 +35,21 @@ const ProfilePage = () => {
   const [copied, setCopied] = useState(false);
   const hasLoadedData = useRef(false);
 
+  // Helper function to deduplicate email social links
+  const deduplicateSocialLinks = (links) => {
+    return links.reduce((acc, link) => {
+      if (link.platform === 'email') {
+        const hasEmail = acc.some(existingLink => existingLink.platform === 'email');
+        if (!hasEmail) acc.push(link);
+      } else {
+        acc.push(link);
+      }
+      return acc;
+    }, []);
+  };
+
+  const deduplicatedLinks = deduplicateSocialLinks(socialLinks || []);
+
   // Load user data with local storage caching
   useEffect(() => {
     const loadUserData = async () => {
@@ -402,12 +417,12 @@ const ProfilePage = () => {
                   ? "bg-slate-700 text-gray-300" 
                   : "bg-gray-100 text-gray-600"
               }`}>
-                {socialLinks.length} {socialLinks.length === 1 ? 'Link' : 'Links'}
+                {deduplicatedLinks.length} {deduplicatedLinks.length === 1 ? 'Link' : 'Links'}
               </div>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {socialLinks.map((link, index) => {
+              {deduplicatedLinks.map((link, index) => {
                 const clickUrl = formatUrlForClick(link.url, link.platform);
                 
                 // Platform-specific colors
