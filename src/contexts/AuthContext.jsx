@@ -207,7 +207,7 @@ export const AuthProvider = ({ children }) => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: "https://cool-hamster-4702ff.netlify.app",
+        redirectTo: `${window.location.origin}`,
       },
     });
 
