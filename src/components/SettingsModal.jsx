@@ -19,7 +19,7 @@ const SettingsModal = ({ isOpen, onClose, socialLinks, profileDetails, onUpdate 
   });
   
   const socialPlatforms = [
-    { key: 'phone', name: 'Phone', icon: '📱', placeholder: '+91 9876543210', type: 'tel' },
+    { key: 'phone', name: 'Phone', icon: '📱', placeholder: 'phone number', type: 'tel' },
     { key: 'instagram', name: 'Instagram', icon: '📷', placeholder: '@username' },
     { key: 'twitter', name: 'Twitter/X', icon: '🐦', placeholder: '@username' },
     { key: 'linkedin', name: 'LinkedIn', icon: '💼', placeholder: 'linkedin.com/in/username' },

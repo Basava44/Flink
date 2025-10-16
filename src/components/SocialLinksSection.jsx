@@ -11,7 +11,9 @@ import {
   Facebook, 
   MessageCircle, 
   Gamepad2, 
-  Link 
+  Link,
+  Lock,
+  Globe
 } from 'lucide-react';
 
 const SocialLinksSection = ({ socialLinks }) => {
@@ -188,13 +190,31 @@ const SocialLinksSection = ({ socialLinks }) => {
                 {getSocialIcon(link.platform)}
               </div>
               <div className="min-w-0 flex-1">
-                <p
-                  className={`font-medium ${
-                    isDark ? "text-white" : "text-gray-800"
-                  }`}
-                >
-                  {getSocialName(link.platform)}
-                </p>
+                <div className="flex items-center space-x-2">
+                  <p
+                    className={`font-medium ${
+                      isDark ? "text-white" : "text-gray-800"
+                    }`}
+                  >
+                    {getSocialName(link.platform)}
+                  </p>
+                  {/* Privacy indicator */}
+                  <div className={`flex items-center ${
+                    link.private === false
+                      ? isDark 
+                        ? "text-green-400" 
+                        : "text-green-600"
+                      : isDark
+                        ? "text-orange-400"
+                        : "text-orange-600"
+                  }`} title={link.private === false ? "Public" : "Private"}>
+                    {link.private === false ? (
+                      <Globe className="w-3 h-3" />
+                    ) : (
+                      <Lock className="w-3 h-3" />
+                    )}
+                  </div>
+                </div>
                 <p
                   className={`text-sm truncate ${
                     isDark ? "text-gray-400" : "text-gray-500"

@@ -43,6 +43,13 @@ function Dashboard() {
   // Single useEffect to handle all data loading
   useEffect(() => {
     const loadAllData = async () => {
+      // Check if we need to force refresh (cache was cleared)
+      const cacheCleared = localStorage.getItem(`cacheCleared_${user.id}`);
+      if (cacheCleared) {
+        localStorage.removeItem(`cacheCleared_${user.id}`);
+        hasLoadedData.current = false; // Force refresh
+      }
+      
       // Prevent multiple loads
       if (hasLoadedData.current || !user?.id) {
         return;
@@ -236,7 +243,7 @@ function Dashboard() {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
     };
-  }, [user?.id, userDetails, getSocialLinks, getProfileDetails]);
+  }, [user?.id, userDetails, getSocialLinks, getProfileDetails, getUserDetails]);
 
   // Watch for userDetails changes and trigger onboarding if needed
   useEffect(() => {
