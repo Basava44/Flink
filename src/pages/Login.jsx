@@ -22,6 +22,7 @@ function Login() {
   const [countdown, setCountdown] = useState(0);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Countdown timer effect
   useEffect(() => {
@@ -345,21 +346,61 @@ function Login() {
               }`}>
                 Password
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                disabled={signupSuccess}
-                className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isDark
-                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                }`}
-                placeholder="Enter your password"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  disabled={signupSuccess}
+                  className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed pr-20 ${
+                    isDark
+                      ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                      : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                  }`}
+                  placeholder="Enter your password"
+                  required
+                />
+                {!signupSuccess && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                    <button
+                      type="button"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? (
+                        // Eye off icon
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19.5c-4.5 0-8.325-2.625-10.5-6.75a18.7 18.7 0 013.375-4.275M6.22 6.22A18.5 18.5 0 0112 4.5c4.5 0 8.325 2.625 10.5 6.75a18.7 18.7 0 01-2.275 3.375M3 3l18 18" />
+                        </svg>
+                      ) : (
+                        // Eye icon
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                    {formData.password && (
+                      <button
+                        type="button"
+                        aria-label="Clear password"
+                        onClick={() => {
+                          setFormData({ ...formData, password: "" });
+                          setPasswordsMatch(true);
+                          const el = document.getElementById("password");
+                          if (el) el.focus();
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {isSignUp && (
@@ -393,16 +434,33 @@ function Login() {
                     placeholder="Confirm your password"
                     required
                   />
-                  {formData.confirmPassword && formData.password && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      {passwordsMatch ? (
-                        <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                  {formData.confirmPassword && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                      {formData.password && (
+                        passwordsMatch ? (
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )
+                      )}
+                      {!signupSuccess && (
+                        <button
+                          type="button"
+                          aria-label="Clear confirm password"
+                          onClick={() => {
+                            setFormData({ ...formData, confirmPassword: "" });
+                            setPasswordsMatch(true);
+                            const el = document.getElementById("confirmPassword");
+                            if (el) el.focus();
+                          }}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          ×
+                        </button>
                       )}
                     </div>
                   )}
