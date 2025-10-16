@@ -34,7 +34,6 @@ const ProfilePage = () => {
   const [socialLinks, setSocialLinks] = useState([]);
   const [profileDetails, setProfileDetails] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
   const hasLoadedData = useRef(false);
 
   // Helper function to deduplicate email social links
@@ -136,27 +135,6 @@ const ProfilePage = () => {
 
   const handleBack = () => {
     navigate("/dashboard");
-  };
-
-  const handleShare = async () => {
-    const profileUrl = window.location.origin + "/profile";
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `${userDetails?.name || user?.email}'s Profile`,
-          text: `Check out ${
-            userDetails?.name || user?.email
-          }'s profile on Flink`,
-          url: profileUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(profileUrl);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    } catch (err) {
-      console.error("Error sharing:", err);
-    }
   };
 
   // Helper function to get social media icon
