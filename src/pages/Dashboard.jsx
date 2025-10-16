@@ -371,7 +371,7 @@ function Dashboard() {
                   alt="Profile"
                   loading="lazy"
                   decoding="async"
-                  className="w-14 h-14 rounded-full object-cover border-2 border-primary-500 shadow-lg"
+                  className="w-18 h-18 rounded-full object-cover border-2 border-primary-500 shadow-lg"
                   onLoad={(e) => {
                     e.target.style.opacity = '1';
                   }}
@@ -383,7 +383,7 @@ function Dashboard() {
                 />
               ) : null}
               <div 
-                className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold border-2 border-primary-500 shadow-lg ${
+                className={`w-18 h-18 rounded-full flex items-center justify-center text-xl font-bold border-2 border-primary-500 shadow-lg ${
                     userDetails?.profile_url ? "hidden" : "flex"
                 } ${
                   isDark 
