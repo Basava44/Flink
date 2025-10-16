@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import { 
   Mail,
@@ -29,6 +29,25 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
     twitch: initialData.twitch || '',
   });
 
+  // Keep local state in sync when navigating back to this step
+  useEffect(() => {
+    setSocialLinks(prev => ({
+      ...prev,
+      email: initialData.email || userEmail || '',
+      phone: initialData.phone || '',
+      instagram: initialData.instagram || '',
+      twitter: initialData.twitter || '',
+      linkedin: initialData.linkedin || '',
+      github: initialData.github || '',
+      youtube: initialData.youtube || '',
+      facebook: initialData.facebook || '',
+      snapchat: initialData.snapchat || '',
+      discord: initialData.discord || '',
+      twitch: initialData.twitch || '',
+    }));
+    // We depend on both initialData and userEmail to rehydrate
+  }, [initialData, userEmail]);
+
   const socialPlatforms = [
     { key: 'email', name: 'Email', icon: <Mail className="w-5 h-5" />, placeholder: 'your.email@example.com', type: 'email' },
     { key: 'phone', name: 'Phone', icon: <Phone className="w-5 h-5" />, placeholder: '+91 9876543210', type: 'tel' },
@@ -52,15 +71,8 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Filter out empty values
-    const filteredLinks = Object.entries(socialLinks)
-      .filter(([, value]) => value.trim() !== '')
-      .reduce((acc, [key, value]) => {
-        acc[key] = value.trim();
-        return acc;
-      }, {});
-    
-    onNext({ socialLinks: filteredLinks });
+    // Submit full set so navigating back restores exact values
+    onNext({ socialLinks });
   };
 
   const hasAnyLinks = Object.values(socialLinks).some(value => value.trim() !== '');
