@@ -204,13 +204,10 @@ export const AuthProvider = ({ children }) => {
 
   // Sign in with Google
   const signInWithGoogle = async () => {
-    const redirectUrl = import.meta.env.PROD
-      ? import.meta.env.VITE_SITE_URL
-      : "http://localhost:5173";
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: "https://cool-hamster-4702ff.netlify.app",
       },
     });
 
