@@ -24,6 +24,7 @@ import {
   Check,
   ExternalLink,
   Lock,
+  Smartphone,
 } from "lucide-react";
 
 const ProfilePage = () => {
@@ -161,19 +162,19 @@ const ProfilePage = () => {
   // Helper function to get social media icon
   const getSocialIcon = (platform) => {
     const icons = {
-      email: <Mail className="w-5 h-5" />,
-      phone: <Phone className="w-5 h-5" />,
-      instagram: <Instagram className="w-5 h-5" />,
-      twitter: <Twitter className="w-5 h-5" />,
-      linkedin: <Linkedin className="w-5 h-5" />,
-      github: <Github className="w-5 h-5" />,
-      youtube: <Youtube className="w-5 h-5" />,
-      facebook: <Facebook className="w-5 h-5" />,
-      snapchat: <MessageCircle className="w-5 h-5" />,
-      discord: <MessageCircle className="w-5 h-5" />,
-      twitch: <Gamepad2 className="w-5 h-5" />,
+      email: <Mail className="w-4 h-4" />,
+      phone: <Phone className="w-4 h-4" />,
+      instagram: <Instagram className="w-4 h-4" />,
+      twitter: <Twitter className="w-4 h-4" />,
+      linkedin: <Linkedin className="w-4 h-4" />,
+      github: <Github className="w-4 h-4" />,
+      youtube: <Youtube className="w-4 h-4" />,
+      facebook: <Facebook className="w-4 h-4" />,
+      snapchat: <MessageCircle className="w-4 h-4" />,
+      discord: <MessageCircle className="w-4 h-4" />,
+      twitch: <Gamepad2 className="w-4 h-4" />,
     };
-    return icons[platform] || <ExternalLink className="w-5 h-5" />;
+    return icons[platform] || <ExternalLink className="w-4 h-4" />;
   };
 
   // Helper function to get social media name
@@ -262,12 +263,36 @@ const ProfilePage = () => {
   }
 
   return (
-    <div
-      className={`min-h-screen relative ${
-        isDark ? "text-white" : "text-gray-900"
-      }`}
-    >
-      <BackgroundPattern />
+    <>
+      {/* Desktop Warning Message - Hidden on mobile */}
+      <div className="hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+        <div className="text-center p-8 max-w-md">
+          <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Smartphone className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+            Mobile Only
+          </h1>
+          <p className="text-gray-300 text-lg mb-6">
+            Profile is designed for mobile devices. Please access it from your
+            phone or resize your browser window.
+          </p>
+          <button
+            onClick={() => navigate("/")}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transform hover:scale-105 transition-all duration-300"
+          >
+            Go to Home
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Content */}
+      <div
+        className={`min-h-screen relative md:hidden ${
+          isDark ? "text-white" : "text-gray-900"
+        }`}
+      >
+        <BackgroundPattern />
       {/* Header */}
       <div
         className={`sticky top-0 z-10 border-b ${
@@ -305,8 +330,8 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        {/* Content */}
+        <div className="container mx-auto px-4 py-6 max-w-4xl md:hidden">
         {/* Profile Header Card */}
         <div
           className={`relative overflow-hidden rounded-3xl mb-8 ${
@@ -321,8 +346,8 @@ const ProfilePage = () => {
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-500 to-orange-500 rounded-full transform -translate-x-24 translate-y-24"></div>
           </div>
 
-          <div className="relative p-8">
-            <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
+          <div className="relative p-4">
+            <div className="flex flex-col md:flex-row items-center md:items-center space-y-6 md:space-y-0 md:space-x-6">
               {/* Profile Picture */}
               <div className="relative">
                 {userDetails?.profile_url ? (
@@ -363,16 +388,16 @@ const ProfilePage = () => {
               </div>
 
               {/* Profile Info */}
-              <div className="flex-1 text-center md:text-left">
+              <div className="flex-1 text-center md:text-center">
                 <h1
-                  className={`text-3xl font-bold mb-2 ${
+                  className={`text-2xl font-bold mb-1 ${
                     isDark ? "text-white" : "text-gray-900"
                   }`}
                 >
                   {userDetails?.name || "User Profile"}
                 </h1>
                 <p
-                  className={`text-lg mb-4 ${
+                  className={`text-sm mb-3 ${
                     isDark ? "text-gray-300" : "text-gray-600"
                   }`}
                 >
@@ -382,7 +407,7 @@ const ProfilePage = () => {
                 {/* Bio */}
                 {profileDetails?.bio && (
                   <p
-                    className={`text-base mb-4 max-w-2xl ${
+                    className={`text-sm mb-3 max-w-2xl ${
                       isDark ? "text-gray-300" : "text-gray-600"
                     }`}
                   >
@@ -390,30 +415,42 @@ const ProfilePage = () => {
                   </p>
                 )}
 
+                {/* Flink Branding */}
+                <div className="flex items-center justify-center mt-2 mb-3">
+                  <span className={`text-xs ${
+                    isDark ? "text-gray-500" : "text-gray-400"
+                  }`}>
+                    Powered by
+                  </span>
+                  <span className={`ml-1 text-xs font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent`}>
+                    Flink
+                  </span>
+                </div>
+
                 {/* Profile Stats */}
-                <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                <div className="flex flex-wrap gap-2 justify-center">
                   {profileDetails?.location && (
                     <div
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-full ${
+                      className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
                         isDark
                           ? "bg-slate-700/50 text-gray-300"
                           : "bg-gray-100 text-gray-600"
                       }`}
                     >
-                      <MapPin className="w-4 h-4" />
-                      <span className="text-sm">{profileDetails.location}</span>
+                      <MapPin className="w-3 h-3" />
+                      <span className="text-xs">{profileDetails.location}</span>
                     </div>
                   )}
 
                   {profileDetails?.website && (
                     <div
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-full ${
+                      className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
                         isDark
                           ? "bg-slate-700/50 text-gray-300"
                           : "bg-gray-100 text-gray-600"
                       }`}
                     >
-                      <Globe className="w-4 h-4" />
+                      <Globe className="w-3 h-3" />
                       <a
                         href={
                           profileDetails.website.startsWith("http")
@@ -422,7 +459,7 @@ const ProfilePage = () => {
                         }
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm hover:underline"
+                        className="text-xs hover:underline"
                       >
                         Website
                       </a>
@@ -430,14 +467,14 @@ const ProfilePage = () => {
                   )}
 
                   <div
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-full ${
+                    className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
                       isDark
                         ? "bg-slate-700/50 text-gray-300"
                         : "bg-gray-100 text-gray-600"
                     }`}
                   >
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-sm">
+                    <Calendar className="w-3 h-3" />
+                    <span className="text-xs">
                       Joined{" "}
                       {userDetails?.created_at
                         ? new Date(userDetails.created_at).toLocaleDateString(
@@ -477,6 +514,29 @@ const ProfilePage = () => {
           </div>
         </div>
 
+        {/* User Status Section - Only show for new users */}
+        {userDetails && userDetails.first_login && (
+          <div
+            className={`mb-6 p-4 rounded-2xl ${
+              isDark 
+                ? "bg-slate-800 border border-slate-700" 
+                : "bg-white border border-gray-200"
+            }`}
+          >
+            <div className="text-center">
+              <span
+                className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
+                  isDark 
+                    ? "bg-green-900/30 text-green-400 border border-green-800"
+                    : "bg-green-100 text-green-800 border border-green-200"
+                }`}
+              >
+                ✨ New User
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Social Links Grid */}
         {socialLinks.length > 0 && (
           <div
@@ -514,7 +574,7 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
               {(isOwnProfile
                 ? deduplicatedLinks
                 : deduplicatedLinks.filter((link) => link.private === false)
@@ -577,7 +637,7 @@ const ProfilePage = () => {
                         ? ""
                         : "noopener noreferrer"
                     }
-                    className={`group p-4 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg relative ${
+                    className={`group p-3 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg relative ${
                       isOwnProfile && link.private === true
                         ? isDark
                           ? "bg-orange-900/20 hover:bg-orange-900/30 border border-orange-800/50 hover:border-orange-700/50"
@@ -587,7 +647,7 @@ const ProfilePage = () => {
                         : "bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300"
                     }`}
                   >
-                    <div className="flex flex-col items-center text-center space-y-3">
+                    <div className="flex flex-col items-center text-center space-y-2">
                       {/* Private indicator for own profile */}
                       {isOwnProfile && link.private === true && (
                         <div className="absolute top-2 right-2">
@@ -604,7 +664,7 @@ const ProfilePage = () => {
 
                       {/* Platform Icon */}
                       <div
-                        className={`p-3 rounded-xl ${
+                        className={`p-2 rounded-lg ${
                           platformColor.split(" ")[1]
                         } group-hover:scale-110 transition-transform duration-200 ${
                           isOwnProfile && link.private === true
@@ -620,14 +680,14 @@ const ProfilePage = () => {
                       {/* Platform Name */}
                       <div className="min-w-0 w-full">
                         <p
-                          className={`font-medium text-sm ${
+                          className={`font-medium text-xs ${
                             isDark ? "text-white" : "text-gray-800"
                           }`}
                         >
                           {getSocialName(link.platform)}
                         </p>
                         <p
-                          className={`text-xs truncate mt-1 ${
+                          className={`text-xs truncate mt-0.5 ${
                             isDark ? "text-gray-400" : "text-gray-500"
                           }`}
                         >
@@ -778,7 +838,8 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

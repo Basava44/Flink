@@ -6,25 +6,25 @@ const QuickStatsSection = ({ socialLinks, profileDetails }) => {
   const { isDark } = useTheme();
 
   return (
-    <div className="mt-8">
+    <div className="mt-6">
       <h2
-        className={`text-lg font-semibold mb-4 ${
+        className={`text-base font-semibold mb-3 ${
           isDark ? "text-gray-300" : "text-gray-600"
         }`}
       >
         Quick Stats
       </h2>
       <div
-        className={`text-center p-4 rounded-lg ${
+        className={`text-center p-3 rounded-lg ${
           isDark
-            ? "bg-slate-800/20 border border-slate-700/30"
-            : "bg-gray-50 border border-gray-200"
+            ? "bg-slate-800/30 border border-slate-700/50"
+            : "bg-gray-100 border border-gray-200"
         }`}
       >
-        <div className="flex justify-center items-center space-x-6 text-sm">
+        <div className="flex justify-center items-center space-x-4 text-xs">
           <div className="flex items-center space-x-1">
             <Link
-              className={`w-4 h-4 ${
+              className={`w-3 h-3 ${
                 isDark ? "text-gray-400" : "text-gray-500"
               }`}
             />
@@ -36,7 +36,7 @@ const QuickStatsSection = ({ socialLinks, profileDetails }) => {
           </div>
           <div className="flex items-center space-x-1">
             <MousePointer
-              className={`w-4 h-4 ${
+              className={`w-3 h-3 ${
                 isDark ? "text-gray-400" : "text-gray-500"
               }`}
             />
@@ -48,7 +48,7 @@ const QuickStatsSection = ({ socialLinks, profileDetails }) => {
           </div>
           <div className="flex items-center space-x-1">
             <FileText
-              className={`w-4 h-4 ${
+              className={`w-3 h-3 ${
                 isDark ? "text-gray-400" : "text-gray-500"
               }`}
             />

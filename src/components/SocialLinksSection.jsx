@@ -13,28 +13,119 @@ import {
   Gamepad2, 
   Link,
   Lock,
-  Globe
+  Globe,
+  ExternalLink
 } from 'lucide-react';
 
 const SocialLinksSection = ({ socialLinks }) => {
   const { isDark } = useTheme();
 
-  // Helper function to get social media icon
+  // Helper function to get social media icon and color
   const getSocialIcon = (platform) => {
     const icons = {
-      email: <Mail className="w-5 h-5" />,
-      phone: <Phone className="w-5 h-5" />,
-      instagram: <Instagram className="w-5 h-5" />,
-      twitter: <Twitter className="w-5 h-5" />,
-      linkedin: <Linkedin className="w-5 h-5" />,
-      github: <Github className="w-5 h-5" />,
-      youtube: <Youtube className="w-5 h-5" />,
-      facebook: <Facebook className="w-5 h-5" />,
-      snapchat: <MessageCircle className="w-5 h-5" />,
-      discord: <MessageCircle className="w-5 h-5" />,
-      twitch: <Gamepad2 className="w-5 h-5" />,
+      email: <Mail className="w-4 h-4" />,
+      phone: <Phone className="w-4 h-4" />,
+      instagram: <Instagram className="w-4 h-4" />,
+      twitter: <Twitter className="w-4 h-4" />,
+      linkedin: <Linkedin className="w-4 h-4" />,
+      github: <Github className="w-4 h-4" />,
+      youtube: <Youtube className="w-4 h-4" />,
+      facebook: <Facebook className="w-4 h-4" />,
+      snapchat: <MessageCircle className="w-4 h-4" />,
+      discord: <MessageCircle className="w-4 h-4" />,
+      twitch: <Gamepad2 className="w-4 h-4" />,
     };
-    return icons[platform] || <Link className="w-5 h-5" />;
+    return icons[platform] || <Link className="w-4 h-4" />;
+  };
+
+  // Helper function to get platform-specific colors
+  const getPlatformColors = (platform) => {
+    const colors = {
+      email: {
+        bg: isDark ? 'bg-gradient-to-br from-blue-500/10 to-blue-600/5' : 'bg-gradient-to-br from-blue-50/80 to-blue-100/60',
+        border: isDark ? 'border-blue-400/20' : 'border-blue-200',
+        icon: isDark ? 'text-blue-300' : 'text-blue-600',
+        hover: isDark ? 'hover:from-blue-500/15 hover:to-blue-600/10' : 'hover:from-blue-100/90 hover:to-blue-200/80',
+        shadow: isDark ? 'shadow-blue-500/10' : 'shadow-blue-200/30'
+      },
+      phone: {
+        bg: isDark ? 'bg-gradient-to-br from-green-500/10 to-green-600/5' : 'bg-gradient-to-br from-green-50/80 to-green-100/60',
+        border: isDark ? 'border-green-400/20' : 'border-green-200',
+        icon: isDark ? 'text-green-300' : 'text-green-600',
+        hover: isDark ? 'hover:from-green-500/15 hover:to-green-600/10' : 'hover:from-green-100/90 hover:to-green-200/80',
+        shadow: isDark ? 'shadow-green-500/10' : 'shadow-green-200/30'
+      },
+      instagram: {
+        bg: isDark ? 'bg-gradient-to-br from-pink-500/10 to-rose-500/5' : 'bg-gradient-to-br from-pink-50/80 to-rose-100/60',
+        border: isDark ? 'border-pink-400/20' : 'border-pink-200',
+        icon: isDark ? 'text-pink-300' : 'text-pink-600',
+        hover: isDark ? 'hover:from-pink-500/15 hover:to-rose-500/10' : 'hover:from-pink-100/90 hover:to-rose-200/80',
+        shadow: isDark ? 'shadow-pink-500/10' : 'shadow-pink-200/30'
+      },
+      twitter: {
+        bg: isDark ? 'bg-gradient-to-br from-sky-500/10 to-cyan-500/5' : 'bg-gradient-to-br from-sky-50/80 to-cyan-100/60',
+        border: isDark ? 'border-sky-400/20' : 'border-sky-200',
+        icon: isDark ? 'text-sky-300' : 'text-sky-600',
+        hover: isDark ? 'hover:from-sky-500/15 hover:to-cyan-500/10' : 'hover:from-sky-100/90 hover:to-cyan-200/80',
+        shadow: isDark ? 'shadow-sky-500/10' : 'shadow-sky-200/30'
+      },
+      linkedin: {
+        bg: isDark ? 'bg-gradient-to-br from-blue-600/10 to-blue-700/5' : 'bg-gradient-to-br from-blue-50/80 to-blue-100/60',
+        border: isDark ? 'border-blue-400/20' : 'border-blue-200',
+        icon: isDark ? 'text-blue-300' : 'text-blue-700',
+        hover: isDark ? 'hover:from-blue-600/15 hover:to-blue-700/10' : 'hover:from-blue-100/90 hover:to-blue-200/80',
+        shadow: isDark ? 'shadow-blue-600/10' : 'shadow-blue-200/30'
+      },
+      github: {
+        bg: isDark ? 'bg-gradient-to-br from-gray-600/10 to-gray-700/5' : 'bg-gradient-to-br from-gray-50/80 to-gray-100/60',
+        border: isDark ? 'border-gray-400/20' : 'border-gray-200',
+        icon: isDark ? 'text-gray-300' : 'text-gray-700',
+        hover: isDark ? 'hover:from-gray-600/15 hover:to-gray-700/10' : 'hover:from-gray-100/90 hover:to-gray-200/80',
+        shadow: isDark ? 'shadow-gray-600/10' : 'shadow-gray-200/30'
+      },
+      youtube: {
+        bg: isDark ? 'bg-gradient-to-br from-red-500/10 to-red-600/5' : 'bg-gradient-to-br from-red-50/80 to-red-100/60',
+        border: isDark ? 'border-red-400/20' : 'border-red-200',
+        icon: isDark ? 'text-red-300' : 'text-red-600',
+        hover: isDark ? 'hover:from-red-500/15 hover:to-red-600/10' : 'hover:from-red-100/90 hover:to-red-200/80',
+        shadow: isDark ? 'shadow-red-500/10' : 'shadow-red-200/30'
+      },
+      facebook: {
+        bg: isDark ? 'bg-gradient-to-br from-blue-700/10 to-blue-800/5' : 'bg-gradient-to-br from-blue-50/80 to-blue-100/60',
+        border: isDark ? 'border-blue-500/20' : 'border-blue-200',
+        icon: isDark ? 'text-blue-300' : 'text-blue-700',
+        hover: isDark ? 'hover:from-blue-700/15 hover:to-blue-800/10' : 'hover:from-blue-100/90 hover:to-blue-200/80',
+        shadow: isDark ? 'shadow-blue-700/10' : 'shadow-blue-200/30'
+      },
+      snapchat: {
+        bg: isDark ? 'bg-gradient-to-br from-yellow-500/10 to-yellow-600/5' : 'bg-gradient-to-br from-yellow-50/80 to-yellow-100/60',
+        border: isDark ? 'border-yellow-400/20' : 'border-yellow-200',
+        icon: isDark ? 'text-yellow-300' : 'text-yellow-600',
+        hover: isDark ? 'hover:from-yellow-500/15 hover:to-yellow-600/10' : 'hover:from-yellow-100/90 hover:to-yellow-200/80',
+        shadow: isDark ? 'shadow-yellow-500/10' : 'shadow-yellow-200/30'
+      },
+      discord: {
+        bg: isDark ? 'bg-gradient-to-br from-indigo-500/10 to-indigo-600/5' : 'bg-gradient-to-br from-indigo-50/80 to-indigo-100/60',
+        border: isDark ? 'border-indigo-400/20' : 'border-indigo-200',
+        icon: isDark ? 'text-indigo-300' : 'text-indigo-600',
+        hover: isDark ? 'hover:from-indigo-500/15 hover:to-indigo-600/10' : 'hover:from-indigo-100/90 hover:to-indigo-200/80',
+        shadow: isDark ? 'shadow-indigo-500/10' : 'shadow-indigo-200/30'
+      },
+      twitch: {
+        bg: isDark ? 'bg-gradient-to-br from-purple-500/10 to-purple-600/5' : 'bg-gradient-to-br from-purple-50/80 to-purple-100/60',
+        border: isDark ? 'border-purple-400/20' : 'border-purple-200',
+        icon: isDark ? 'text-purple-300' : 'text-purple-600',
+        hover: isDark ? 'hover:from-purple-500/15 hover:to-purple-600/10' : 'hover:from-purple-100/90 hover:to-purple-200/80',
+        shadow: isDark ? 'shadow-purple-500/10' : 'shadow-purple-200/30'
+      }
+    };
+    return colors[platform] || {
+      bg: isDark ? 'bg-gradient-to-br from-gray-500/10 to-gray-600/5' : 'bg-gradient-to-br from-gray-50/80 to-gray-100/60',
+      border: isDark ? 'border-gray-400/20' : 'border-gray-200',
+      icon: isDark ? 'text-gray-300' : 'text-gray-600',
+      hover: isDark ? 'hover:from-gray-500/15 hover:to-gray-600/10' : 'hover:from-gray-100/90 hover:to-gray-200/80',
+      shadow: isDark ? 'shadow-gray-500/10' : 'shadow-gray-200/30'
+    };
   };
 
   // Helper function to get social media name
@@ -130,22 +221,35 @@ const SocialLinksSection = ({ socialLinks }) => {
 
   return (
     <div
-      className={`p-6 rounded-xl shadow-soft ${
+      className={`p-6 rounded-2xl ${
         isDark
-          ? "bg-slate-800 border border-slate-700"
-          : "bg-white border border-gray-200"
-      }`}
+          ? "bg-slate-800/60 border border-slate-700/60"
+          : "bg-white/90 border border-gray-200/60"
+      } backdrop-blur-sm shadow-lg`}
     >
-      <h2
-        className={`text-lg font-semibold mb-4 ${
-          isDark ? "text-white" : "text-gray-800"
+      <div className="flex items-center justify-between mb-6">
+        <h2
+          className={`text-xl font-bold ${
+            isDark ? "text-white" : "text-gray-900"
         }`}
       >
         Social Links
       </h2>
-      <div className="space-y-3">
+        <span
+          className={`text-sm px-3 py-1.5 rounded-full font-medium ${
+            isDark 
+              ? "bg-slate-700/80 text-slate-200 border border-slate-600" 
+              : "bg-gray-100 text-gray-700 border border-gray-200"
+          }`}
+        >
+          {deduplicatedLinks.length} link{deduplicatedLinks.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {deduplicatedLinks.map((link, index) => {
           const clickUrl = formatUrlForClick(link.url, link.platform);
+          const colors = getPlatformColors(link.platform);
           
           const handleClick = (e) => {
             if (link.platform === "email") {
@@ -179,27 +283,12 @@ const SocialLinksSection = ({ socialLinks }) => {
               onClick={handleClick}
               target={link.platform === "email" || link.platform === "phone" ? "_self" : "_blank"}
               rel={link.platform === "email" || link.platform === "phone" ? "" : "noopener noreferrer"}
-              className={`block p-4 rounded-lg transition-all duration-200 hover:scale-[1.02] ${
-                isDark
-                  ? "bg-slate-700/50 hover:bg-slate-700 border border-slate-600"
-                  : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-              }`}
+              className={`group relative p-2 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-xl ${colors.bg} ${colors.border} ${colors.hover} ${colors.shadow} shadow-lg`}
+              title={`${getSocialName(link.platform)} - ${formatUrlForDisplay(link.url, link.platform)}`}
             >
-            <div className="flex items-center space-x-3">
-              <div className="text-2xl">
-                {getSocialIcon(link.platform)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center space-x-2">
-                  <p
-                    className={`font-medium ${
-                      isDark ? "text-white" : "text-gray-800"
-                    }`}
-                  >
-                    {getSocialName(link.platform)}
-                  </p>
                   {/* Privacy indicator */}
-                  <div className={`flex items-center ${
+              <div className="absolute top-2 right-2">
+                <div className={`${
                     link.private === false
                       ? isDark 
                         ? "text-green-400" 
@@ -209,21 +298,28 @@ const SocialLinksSection = ({ socialLinks }) => {
                         : "text-orange-600"
                   }`} title={link.private === false ? "Public" : "Private"}>
                     {link.private === false ? (
-                      <Globe className="w-3 h-3" />
+                    <Globe className="w-4 h-4" />
                     ) : (
-                      <Lock className="w-3 h-3" />
+                    <Lock className="w-4 h-4" />
                     )}
                   </div>
                 </div>
-                <p
-                  className={`text-sm truncate ${
-                    isDark ? "text-gray-400" : "text-gray-500"
-                  }`}
-                  title={link.url}
-                >
-                  {formatUrlForDisplay(link.url, link.platform)}
-                </p>
+
+              {/* Platform icon */}
+              <div className={`${colors.icon} mb-2 flex justify-center`}>
+                {getSocialIcon(link.platform)}
               </div>
+
+              {/* Platform name */}
+              <div className="text-center">
+                <p
+                  className={`text-xs font-semibold truncate ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  {getSocialName(link.platform)}
+                </p>
+                
             </div>
           </a>
           );
