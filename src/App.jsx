@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import HelpSupportPage from "./pages/HelpSupportPage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 // Protected Route component
 function ProtectedRoute({ children }) {
@@ -64,6 +65,7 @@ function AppContent() {
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute><HelpSupportPage /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" replace />} />

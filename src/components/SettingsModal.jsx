@@ -142,6 +142,7 @@ const SettingsModal = ({ isOpen, onClose, socialLinks, profileDetails, onUpdate 
           bio: profileData.bio.trim() || null,
           location: profileData.location.trim() || null,
           website: profileData.website.trim() || null,
+          private: profileData.private || false,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);

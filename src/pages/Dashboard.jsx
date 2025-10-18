@@ -19,6 +19,7 @@ import {
   User,
   Sun,
   Moon,
+  Bell,
 } from "lucide-react";
 // import ThemeToggle from "../components/ThemeToggle";
 
@@ -49,7 +50,7 @@ function Dashboard() {
         localStorage.removeItem(`cacheCleared_${user.id}`);
         hasLoadedData.current = false; // Force refresh
       }
-      
+
       // Prevent multiple loads
       if (hasLoadedData.current || !user?.id) {
         return;
@@ -64,9 +65,12 @@ function Dashboard() {
             console.error("Error fetching user details:", error);
             return;
           }
-          
-          console.log("User details loaded:", { first_login: data?.first_login, user_id: data?.id });
-          
+
+          console.log("User details loaded:", {
+            first_login: data?.first_login,
+            user_id: data?.id,
+          });
+
           // Check for onboarding
           if (data && data.first_login === true) {
             console.log("New user detected, showing onboarding");
@@ -90,11 +94,19 @@ function Dashboard() {
           console.log("Loading dashboard data...");
 
           // Check cache first
-          const cachedSocialLinks = localStorage.getItem(`socialLinks_${user.id}`);
-          const cachedProfileDetails = localStorage.getItem(`profileDetails_${user.id}`);
-          const cacheTimestamp = localStorage.getItem(`cacheTimestamp_${user.id}`);
+          const cachedSocialLinks = localStorage.getItem(
+            `socialLinks_${user.id}`
+          );
+          const cachedProfileDetails = localStorage.getItem(
+            `profileDetails_${user.id}`
+          );
+          const cacheTimestamp = localStorage.getItem(
+            `cacheTimestamp_${user.id}`
+          );
 
-          const isCacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 5 * 60 * 1000;
+          const isCacheValid =
+            cacheTimestamp &&
+            Date.now() - parseInt(cacheTimestamp) < 5 * 60 * 1000;
 
           if (isCacheValid && cachedSocialLinks && cachedProfileDetails) {
             console.log("Using cached dashboard data");
@@ -106,20 +118,29 @@ function Dashboard() {
             // Fetch all data in parallel
             const [socialResult, profileResult] = await Promise.all([
               getSocialLinks(user.id),
-              getProfileDetails(user.id)
+              getProfileDetails(user.id),
             ]);
 
             if (!socialResult.error) {
               setSocialLinks(socialResult.data || []);
-              localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialResult.data || []));
+              localStorage.setItem(
+                `socialLinks_${user.id}`,
+                JSON.stringify(socialResult.data || [])
+              );
             }
 
             if (!profileResult.error) {
               setProfileDetails(profileResult.data);
-              localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileResult.data));
+              localStorage.setItem(
+                `profileDetails_${user.id}`,
+                JSON.stringify(profileResult.data)
+              );
             }
 
-            localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
+            localStorage.setItem(
+              `cacheTimestamp_${user.id}`,
+              Date.now().toString()
+            );
           }
 
           setLoadingData(false);
@@ -134,7 +155,7 @@ function Dashboard() {
     // If settings signaled a force refresh, bypass cache and fetch everything fresh
     const forceKey = localStorage.getItem(`forceRefresh_${user?.id}`);
     if (forceKey && user?.id) {
-      console.log('Force refresh detected from settings, fetching fresh data');
+      console.log("Force refresh detected from settings, fetching fresh data");
       localStorage.removeItem(`forceRefresh_${user?.id}`);
       // Fetch all three datasets fresh
       (async () => {
@@ -143,23 +164,32 @@ function Dashboard() {
           const [_, socialResult, profileResult] = await Promise.all([
             getUserDetails(user.id),
             getSocialLinks(user.id),
-            getProfileDetails(user.id)
+            getProfileDetails(user.id),
           ]);
 
           if (!socialResult.error) {
             setSocialLinks(socialResult.data || []);
-            localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialResult.data || []));
+            localStorage.setItem(
+              `socialLinks_${user.id}`,
+              JSON.stringify(socialResult.data || [])
+            );
           }
 
           if (!profileResult.error) {
             setProfileDetails(profileResult.data);
-            localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileResult.data));
+            localStorage.setItem(
+              `profileDetails_${user.id}`,
+              JSON.stringify(profileResult.data)
+            );
           }
 
-          localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
+          localStorage.setItem(
+            `cacheTimestamp_${user.id}`,
+            Date.now().toString()
+          );
           hasLoadedData.current = true;
         } catch (err) {
-          console.error('Error during forced refresh:', err);
+          console.error("Error during forced refresh:", err);
         } finally {
           setLoadingData(false);
         }
@@ -180,16 +210,19 @@ function Dashboard() {
         // Check for force refresh from settings
         const forceKey = localStorage.getItem(`forceRefresh_${user.id}`);
         if (forceKey) {
-          console.log('Force refresh flag found, refreshing now');
+          console.log("Force refresh flag found, refreshing now");
           localStorage.removeItem(`forceRefresh_${user.id}`);
           refreshDashboardData();
           return;
         }
-        
+
         // Check if cache is stale (older than 1 minute)
-        const cacheTimestamp = localStorage.getItem(`cacheTimestamp_${user.id}`);
-        const isCacheStale = !cacheTimestamp || (Date.now() - parseInt(cacheTimestamp)) > 60 * 1000;
-        
+        const cacheTimestamp = localStorage.getItem(
+          `cacheTimestamp_${user.id}`
+        );
+        const isCacheStale =
+          !cacheTimestamp || Date.now() - parseInt(cacheTimestamp) > 60 * 1000;
+
         if (isCacheStale) {
           console.log("Cache is stale, refreshing data...");
           refreshDashboardData();
@@ -200,26 +233,35 @@ function Dashboard() {
     const refreshDashboardData = async () => {
       try {
         setLoadingData(true);
-        
+
         // Fetch fresh data, including user details
         const [__, socialResult, profileResult] = await Promise.all([
           getUserDetails(user.id),
           getSocialLinks(user.id),
-          getProfileDetails(user.id)
+          getProfileDetails(user.id),
         ]);
 
         if (!socialResult.error) {
           setSocialLinks(socialResult.data || []);
-          localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialResult.data || []));
+          localStorage.setItem(
+            `socialLinks_${user.id}`,
+            JSON.stringify(socialResult.data || [])
+          );
         }
 
         if (!profileResult.error) {
           setProfileDetails(profileResult.data);
-          localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileResult.data));
+          localStorage.setItem(
+            `profileDetails_${user.id}`,
+            JSON.stringify(profileResult.data)
+          );
         }
 
         // Update cache timestamp
-        localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
+        localStorage.setItem(
+          `cacheTimestamp_${user.id}`,
+          Date.now().toString()
+        );
         console.log("Dashboard data refreshed successfully");
         hasLoadedData.current = true;
       } catch (error) {
@@ -230,25 +272,33 @@ function Dashboard() {
     };
 
     // Listen for page focus (when user returns from settings)
-    window.addEventListener('focus', handleFocus);
-    
+    window.addEventListener("focus", handleFocus);
+
     // Also listen for visibility change (when switching tabs)
-    document.addEventListener('visibilitychange', () => {
+    document.addEventListener("visibilitychange", () => {
       if (!document.hidden) {
         handleFocus();
       }
     });
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
     };
-  }, [user?.id, userDetails, getSocialLinks, getProfileDetails, getUserDetails]);
+  }, [
+    user?.id,
+    userDetails,
+    getSocialLinks,
+    getProfileDetails,
+    getUserDetails,
+  ]);
 
   // Watch for userDetails changes and trigger onboarding if needed
   useEffect(() => {
     if (userDetails && userDetails.first_login === true && !showOnboarding) {
-      console.log("UserDetails changed to first_login=true, triggering onboarding");
+      console.log(
+        "UserDetails changed to first_login=true, triggering onboarding"
+      );
       setShowOnboarding(true);
       hasLoadedData.current = true;
     }
@@ -256,26 +306,32 @@ function Dashboard() {
 
   const handleOnboardingComplete = async () => {
     console.log("Onboarding completed, refreshing user details...");
-    
+
     // Reset the ref to allow data loading
     hasLoadedData.current = false;
-    
+
     // Refresh user details to get updated first_login status
     await getUserDetails(user.id);
-    
+
     // Also refresh social links and profile details
     if (user?.id) {
       const { data: socialData } = await getSocialLinks(user.id);
       const { data: profileData } = await getProfileDetails(user.id);
       setSocialLinks(socialData || []);
       setProfileDetails(profileData);
-      
+
       // Update cache
-      localStorage.setItem(`socialLinks_${user.id}`, JSON.stringify(socialData || []));
-      localStorage.setItem(`profileDetails_${user.id}`, JSON.stringify(profileData));
+      localStorage.setItem(
+        `socialLinks_${user.id}`,
+        JSON.stringify(socialData || [])
+      );
+      localStorage.setItem(
+        `profileDetails_${user.id}`,
+        JSON.stringify(profileData)
+      );
       localStorage.setItem(`cacheTimestamp_${user.id}`, Date.now().toString());
     }
-    
+
     setShowOnboarding(false);
   };
 
@@ -307,13 +363,13 @@ function Dashboard() {
       console.log("Dashboard: Starting sign out...");
       const { error } = await signOut();
       console.log("Dashboard: Sign out result:", { error });
-      
+
       if (error) {
         console.error("Error signing out:", error);
         // You might want to show an error message to the user here
         return;
       }
-      
+
       console.log("Dashboard: Sign out successful, redirecting to home");
       navigate("/");
     } catch (error) {
@@ -357,36 +413,43 @@ function Dashboard() {
       </div>
 
       {/* Mobile Dashboard - Visible only on mobile */}
-      <div className={`md:hidden min-h-screen relative ${isDark ? "text-white" : "text-gray-900"}`}>
+      <div
+        className={`md:hidden min-h-screen relative ${
+          isDark ? "text-white" : "text-gray-900"
+        }`}
+      >
         <BackgroundPattern />
         <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-8 min-h-[80px]">
-          <div className="flex items-center space-x-3 flex-1 min-w-0">
-            {/* Profile Picture */}
-            <div className="relative flex-shrink-0">
-              {userDetails?.profile_url ? (
-                <img
-                  src={userDetails.profile_url}
-                  alt="Profile"
-                  loading="lazy"
-                  decoding="async"
-                  className="w-18 h-18 rounded-full object-cover border-2 border-primary-500 shadow-lg"
-                  onLoad={(e) => {
-                    e.target.style.opacity = '1';
-                  }}
-                  onError={(e) => {
+          {/* Header */}
+          <header className="flex justify-between items-center mb-8 min-h-[80px]">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              {/* Profile Picture */}
+              <div className="relative flex-shrink-0">
+                {userDetails?.profile_url ? (
+                  <img
+                    src={userDetails.profile_url}
+                    alt="Profile"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-18 h-18 rounded-full object-cover border-2 border-primary-500 shadow-lg"
+                    onLoad={(e) => {
+                      e.target.style.opacity = "1";
+                    }}
+                    onError={(e) => {
                       e.target.style.display = "none";
                       e.target.nextSibling.style.display = "flex";
-                  }}
-                  style={{ opacity: 0, transition: 'opacity 0.1s ease-in-out' }}
-                />
-              ) : null}
-              <div 
-                className={`w-18 h-18 rounded-full flex items-center justify-center text-xl font-bold border-2 border-primary-500 shadow-lg ${
+                    }}
+                    style={{
+                      opacity: 0,
+                      transition: "opacity 0.1s ease-in-out",
+                    }}
+                  />
+                ) : null}
+                <div
+                  className={`w-18 h-18 rounded-full flex items-center justify-center text-xl font-bold border-2 border-primary-500 shadow-lg ${
                     userDetails?.profile_url ? "hidden" : "flex"
-                } ${
-                  isDark 
+                  } ${
+                    isDark
                       ? "bg-slate-700 text-white border-slate-600"
                       : "bg-primary-100 text-primary-600"
                   }`}
@@ -395,42 +458,60 @@ function Dashboard() {
                     ? userDetails.name.charAt(0).toUpperCase()
                     : user?.email?.charAt(0).toUpperCase() || "U"}
                 </div>
-            </div>
-            
-            <div className="flex-1 min-w-0">
+              </div>
+
+              <div className="flex-1 min-w-0">
                 <p
                   className={`text-base font-medium truncate ${
-                isDark ? "text-gray-300" : "text-gray-600"
+                    isDark ? "text-gray-300" : "text-gray-600"
                   }`}
                   title={userDetails?.name || user?.email}
                 >
-                {userDetails?.name || user?.email}
-              </p>
-              {userDetails?.name && (
+                  {userDetails?.name || user?.email}
+                </p>
+                {userDetails?.name && (
                   <p
                     className={`text-xs truncate ${
-                  isDark ? "text-gray-400" : "text-gray-500"
+                      isDark ? "text-gray-400" : "text-gray-500"
                     }`}
                     title={user?.email}
                   >
-                  {user?.email}
-                </p>
-              )}
-              {/* Flink Branding */}
-              <div className="flex items-center mt-1">
-                <span className={`text-xs ${
-                  isDark ? "text-gray-500" : "text-gray-400"
-                }`}>
-                  Powered by
-                </span>
-                <span className={`ml-1 text-xs font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent`}>
-                  Flink
-                </span>
+                    {user?.email}
+                  </p>
+                )}
+                {/* Flink Branding */}
+                <div className="flex items-center mt-1">
+                  <span
+                    className={`text-xs ${
+                      isDark ? "text-gray-500" : "text-gray-400"
+                    }`}
+                  >
+                    Powered by
+                  </span>
+                  <span
+                    className={`ml-1 text-xs font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent`}
+                  >
+                    Flink
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-            <div className="flex items-center flex-shrink-0 ml-2">
+            <div className="flex items-center flex-shrink-0 ml-2 space-x-2">
+              {/* Notifications Button */}
+              {/* <button
+                onClick={() => navigate("/notifications")}
+                className={`relative p-2 transition-all duration-200 hover:scale-105 ${
+                  isDark
+                    ? "text-gray-300 hover:text-white"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+                title="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button> */}
+
               {/* Hamburger Menu */}
               <button
                 onClick={handleMenuToggle}
@@ -446,87 +527,92 @@ function Dashboard() {
                 ) : (
                   <Menu className="w-5 h-5" />
                 )}
-          </button>
+              </button>
             </div>
-        </header>
+          </header>
 
           {/* User Status Section - Only show for new users */}
           {userDetails && userDetails.first_login && (
             <div
               className={`mb-8 p-6 rounded-2xl ${
-            isDark 
-              ? "bg-slate-800 border border-slate-700" 
-              : "bg-white border border-gray-200"
-              }`}
-            >
-              <div className="text-center">
-                    <span
-                  className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                    isDark 
-                          ? "bg-green-900/30 text-green-400 border border-green-800"
-                          : "bg-green-100 text-green-800 border border-green-200"
-                      }`}
-                    >
-                  ✨ New User
-                </span>
-            </div>
-          </div>
-        )}
-
-        {/* Social Links Section */}
-        <div className="mb-8">
-          <SocialLinksSection socialLinks={socialLinks} />
-        </div>
-
-        {/* Profile Details Section */}
-        <div className="mb-8">
-          <ProfileSection profileDetails={profileDetails} />
-        </div>
-
-        {/* Loading State */}
-        {loadingData && (
-          <div className="mb-8">
-            <div
-              className={`p-6 rounded-2xl text-center ${
-                isDark 
-                  ? "bg-slate-800 border border-slate-700" 
+                isDark
+                  ? "bg-slate-800 border border-slate-700"
                   : "bg-white border border-gray-200"
               }`}
             >
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-              <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
-                Loading your profile data...
-              </p>
+              <div className="text-center">
+                <span
+                  className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
+                    isDark
+                      ? "bg-green-900/30 text-green-400 border border-green-800"
+                      : "bg-green-100 text-green-800 border border-green-200"
+                  }`}
+                >
+                  ✨ New User
+                </span>
+              </div>
             </div>
+          )}
+
+          {/* Social Links Section */}
+          <div className="mb-8">
+            <SocialLinksSection socialLinks={socialLinks} profileDetails={profileDetails} />
           </div>
-        )}
 
-        {/* Quick Actions - Coming Soon */}
-        <div className="mb-8">
-          <QuickActionsSection profileDetails={profileDetails} />
-        </div>
+          {/* Profile Details Section */}
+          <div className="mb-8">
+            <ProfileSection profileDetails={profileDetails} />
+          </div>
 
-        {/* Quick Stats - Without Views */}
-        <div className="mb-8">
+          {/* Loading State */}
+          {loadingData && (
+            <div className="mb-8">
+              <div
+                className={`p-6 rounded-2xl text-center ${
+                  isDark
+                    ? "bg-slate-800 border border-slate-700"
+                    : "bg-white border border-gray-200"
+                }`}
+              >
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                  Loading your profile data...
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions - Coming Soon */}
+          <div className="mb-8">
+            <QuickActionsSection profileDetails={profileDetails} />
+          </div>
+
+          {/* Quick Stats - Without Views */}
+          <div className="mb-8">
             <QuickStatsSection
               socialLinks={socialLinks}
               profileDetails={profileDetails}
             />
           </div>
 
-        {/* Footer with Flink Branding */}
-        <div className="mt-6 mb-2">
-          <div className={`text-center ${
-            isDark ? "text-gray-500" : "text-gray-400"
-          }`}>
-            <div className="text-xs opacity-60">
-              Made with ❤️ by <span className="font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Flink</span>
-            </div>
-            <div className="text-xs opacity-50 mt-1">
-              © 2025 Flink. All rights reserved.
+          {/* Footer with Flink Branding */}
+          <div className="mt-6 mb-2">
+            <div
+              className={`text-center ${
+                isDark ? "text-gray-500" : "text-gray-400"
+              }`}
+            >
+              <div className="text-xs opacity-60">
+                Made with ❤️ by{" "}
+                <span className="font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                  Flink
+                </span>
+              </div>
+              <div className="text-xs opacity-50 mt-1">
+                © 2025 Flink. All rights reserved.
+              </div>
             </div>
           </div>
-        </div>
 
           {/* Hamburger Menu Overlay */}
           <div
@@ -663,8 +749,8 @@ function Dashboard() {
                 </div>
               </div>
             </div>
+          </div>
         </div>
-      </div>
       </div>
     </>
   );

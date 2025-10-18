@@ -17,7 +17,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 
-const SocialLinksSection = ({ socialLinks }) => {
+const SocialLinksSection = ({ socialLinks, profileDetails }) => {
   const { isDark } = useTheme();
 
   // Helper function to get social media icon and color
@@ -231,19 +231,32 @@ const SocialLinksSection = ({ socialLinks }) => {
         <h2
           className={`text-xl font-bold ${
             isDark ? "text-white" : "text-gray-900"
-        }`}
-      >
-        Social Links
-      </h2>
-        <span
-          className={`text-sm px-3 py-1.5 rounded-full font-medium ${
-            isDark 
-              ? "bg-slate-700/80 text-slate-200 border border-slate-600" 
-              : "bg-gray-100 text-gray-700 border border-gray-200"
           }`}
         >
-          {deduplicatedLinks.length} link{deduplicatedLinks.length !== 1 ? 's' : ''}
-        </span>
+          Social Links
+        </h2>
+        <div className="flex items-center space-x-2">
+          <span
+            className={`text-sm px-3 py-1.5 rounded-full font-medium ${
+              isDark 
+                ? "bg-slate-700/80 text-slate-200 border border-slate-600" 
+                : "bg-gray-100 text-gray-700 border border-gray-200"
+            }`}
+          >
+            {deduplicatedLinks.length} link{deduplicatedLinks.length !== 1 ? 's' : ''}
+          </span>
+          {/* Global privacy indicator */}
+          {profileDetails?.private && (
+            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
+              isDark 
+                ? "bg-orange-900/30 text-orange-400 border border-orange-800" 
+                : "bg-orange-100 text-orange-800 border border-orange-200"
+            }`}>
+              <Lock className="w-3 h-3" />
+              <span>Private</span>
+            </div>
+          )}
+        </div>
       </div>
       
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
@@ -283,27 +296,9 @@ const SocialLinksSection = ({ socialLinks }) => {
               onClick={handleClick}
               target={link.platform === "email" || link.platform === "phone" ? "_self" : "_blank"}
               rel={link.platform === "email" || link.platform === "phone" ? "" : "noopener noreferrer"}
-              className={`group relative p-2 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-xl ${colors.bg} ${colors.border} ${colors.hover} ${colors.shadow} shadow-lg`}
+              className={`group p-2 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-xl ${colors.bg} ${colors.border} ${colors.hover} ${colors.shadow} shadow-lg`}
               title={`${getSocialName(link.platform)} - ${formatUrlForDisplay(link.url, link.platform)}`}
             >
-                  {/* Privacy indicator */}
-              <div className="absolute top-2 right-2">
-                <div className={`${
-                    link.private === false
-                      ? isDark 
-                        ? "text-green-400" 
-                        : "text-green-600"
-                      : isDark
-                        ? "text-orange-400"
-                        : "text-orange-600"
-                  }`} title={link.private === false ? "Public" : "Private"}>
-                    {link.private === false ? (
-                    <Globe className="w-4 h-4" />
-                    ) : (
-                    <Lock className="w-4 h-4" />
-                    )}
-                  </div>
-                </div>
 
               {/* Platform icon */}
               <div className={`${colors.icon} mb-2 flex justify-center`}>

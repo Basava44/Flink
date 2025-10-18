@@ -42,6 +42,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
           bio: data.bio || null,
           location: data.location || null,
           website: data.website || null,
+          private: data.private || false, // Default to public profile
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }]);
@@ -56,7 +57,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
           user_id: formData.userId,
           platform,
           url,
-          private: platform === 'email' ? false : true, // Email is always public, others are private by default
+          private: data.private || false, // Use global profile privacy setting for all social links
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));

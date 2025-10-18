@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
+import { Lock, Globe } from "lucide-react";
 
 const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
   const { isDark } = useTheme();
@@ -13,6 +14,7 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
     location: initialData.location || "",
     website: initialData.website || "",
     profile_url: initialData.profile_url || "",
+    private: initialData.private || false,
   });
 
   const [errors, setErrors] = useState({});
@@ -169,6 +171,7 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
         location: formData.location.trim(),
         website: formData.website.trim(),
         profile_url: formData.profile_url,
+        private: formData.private,
       });
     }
   };
@@ -383,6 +386,75 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
               {errors.website && (
                 <p className="mt-2 text-sm text-red-500">{errors.website}</p>
               )}
+            </div>
+
+            {/* Profile Privacy Setting */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${
+                isDark ? "text-gray-200" : "text-gray-700"
+              }`}>
+                Profile Visibility
+              </label>
+              <div className={`p-4 rounded-xl ${
+                isDark 
+                  ? "bg-slate-700/50 border border-slate-600" 
+                  : "bg-gray-50 border border-gray-300"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h3 className={`font-medium ${
+                        isDark ? "text-white" : "text-gray-800"
+                      }`}>
+                        {formData.private ? "Private Profile" : "Public Profile"}
+                      </h3>
+                      {formData.private ? (
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          isDark 
+                            ? "bg-orange-900/30 text-orange-400 border border-orange-800" 
+                            : "bg-orange-100 text-orange-800 border border-orange-200"
+                        }`}>
+                          <Lock className="w-3 h-3 inline mr-1" />
+                          Private
+                        </div>
+                      ) : (
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          isDark 
+                            ? "bg-green-900/30 text-green-400 border border-green-800" 
+                            : "bg-green-100 text-green-800 border border-green-200"
+                        }`}>
+                          <Globe className="w-3 h-3 inline mr-1" />
+                          Public
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-sm ${
+                      isDark ? "text-gray-300" : "text-gray-600"
+                    }`}>
+                      {formData.private 
+                        ? "Only you can see your profile details and social links"
+                        : "Anyone can view your profile and social links"
+                      }
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, private: !prev.private }))}
+                    aria-label={`Toggle profile visibility to ${formData.private ? 'public' : 'private'}`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                      formData.private
+                        ? isDark ? "bg-orange-600" : "bg-orange-500"
+                        : isDark ? "bg-green-600" : "bg-green-500"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                        formData.private ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Profile Picture Upload */}

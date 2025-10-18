@@ -52,13 +52,12 @@ const SettingsPage = () => {
   
   // Convert social links array to object format for editing
   const [socialLinksData, setSocialLinksData] = useState({});
-  // Privacy settings for social links
-  const [socialLinksPrivacy, setSocialLinksPrivacy] = useState({});
   // Profile details for editing
   const [profileData, setProfileData] = useState({
     bio: '',
     location: '',
-    website: ''
+    website: '',
+    private: false
   });
 
   const socialPlatforms = [
@@ -103,26 +102,18 @@ const SettingsPage = () => {
           // Initialize form data
           if (socialData) {
             const linksObject = {};
-            const privacyObject = {};
             socialData.forEach(link => {
               linksObject[link.platform] = link.url;
-              privacyObject[link.platform] = link.private;
             });
             setSocialLinksData(linksObject);
-            setSocialLinksPrivacy(privacyObject);
-            
-            // Debug logging
-            console.log('Loaded social links with privacy:', {
-              links: linksObject,
-              privacy: privacyObject
-            });
           }
           
           if (profileData) {
             setProfileData({
               bio: profileData.bio || '',
               location: profileData.location || '',
-              website: profileData.website || ''
+              website: profileData.website || '',
+              private: profileData.private || false
             });
           }
           
@@ -177,35 +168,19 @@ const SettingsPage = () => {
     const checkForChanges = () => {
       // Check if social links have changed
       const currentSocialLinks = {};
-      const currentPrivacySettings = {};
       socialLinks.forEach(link => {
         currentSocialLinks[link.platform] = link.url;
-        currentPrivacySettings[link.platform] = link.private;
       });
       
-      const socialLinksChanged = JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData) ||
-                                JSON.stringify(currentPrivacySettings) !== JSON.stringify(socialLinksPrivacy);
+      const socialLinksChanged = JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData);
       
-      
-      // Debug logging
-      if (JSON.stringify(currentPrivacySettings) !== JSON.stringify(socialLinksPrivacy)) {
-        console.log('Privacy settings changed:', {
-          current: currentPrivacySettings,
-          new: socialLinksPrivacy
-        });
-      }
-      
-      console.log('Privacy state comparison:', {
-        current: currentPrivacySettings,
-        new: socialLinksPrivacy,
-        areEqual: JSON.stringify(currentPrivacySettings) === JSON.stringify(socialLinksPrivacy)
-      });
       
       // Check if profile data has changed
       const currentProfileData = {
         bio: profileDetails?.bio || '',
         location: profileDetails?.location || '',
-        website: profileDetails?.website || ''
+        website: profileDetails?.website || '',
+        private: profileDetails?.private || false
       };
       
       const profileChanged = JSON.stringify(currentProfileData) !== JSON.stringify(profileData);
@@ -227,7 +202,7 @@ const SettingsPage = () => {
     };
 
     checkForChanges();
-  }, [socialLinksData, socialLinksPrivacy, profileData, socialLinks, profileDetails, profileUrl, originalProfileUrl, displayName, originalDisplayName]);
+  }, [socialLinksData, profileData, socialLinks, profileDetails, profileUrl, originalProfileUrl, displayName, originalDisplayName]);
 
   const handleInputChange = (platform, value) => {
     setSocialLinksData(prev => ({
@@ -236,16 +211,6 @@ const SettingsPage = () => {
     }));
   };
 
-  const handlePrivacyChange = (platform, isPrivate) => {
-    console.log(`Privacy change for ${platform}:`, { 
-      from: socialLinksPrivacy[platform], 
-      to: isPrivate 
-    });
-    setSocialLinksPrivacy(prev => ({
-      ...prev,
-      [platform]: isPrivate
-    }));
-  };
 
   const handleProfileChange = (field, value) => {
     setProfileData(prev => ({
@@ -414,21 +379,19 @@ const SettingsPage = () => {
       let profileUrlChanged = false;
       let displayNameChanged = false;
 
-      // Check if social links changed (URLs or privacy)
+      // Check if social links changed (URLs only)
       const currentSocialLinks = {};
-      const currentPrivacySettings = {};
       socialLinks.forEach(link => {
         currentSocialLinks[link.platform] = link.url;
-        currentPrivacySettings[link.platform] = link.private;
       });
-      socialLinksChanged = JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData) ||
-                          JSON.stringify(currentPrivacySettings) !== JSON.stringify(socialLinksPrivacy);
+      socialLinksChanged = JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData);
 
       // Check if profile details changed
       const currentProfileData = {
         bio: profileDetails?.bio || '',
         location: profileDetails?.location || '',
-        website: profileDetails?.website || ''
+        website: profileDetails?.website || '',
+        private: profileDetails?.private || false
       };
       profileDetailsChanged = JSON.stringify(currentProfileData) !== JSON.stringify(profileData);
 
@@ -443,11 +406,6 @@ const SettingsPage = () => {
         displayNameChanged
       });
       
-      console.log('Form submission privacy comparison:', {
-        current: currentPrivacySettings,
-        new: socialLinksPrivacy,
-        areEqual: JSON.stringify(currentPrivacySettings) === JSON.stringify(socialLinksPrivacy)
-      });
 
       // Only update social links if they changed (URLs or privacy)
       if (socialLinksChanged) {
@@ -460,21 +418,14 @@ const SettingsPage = () => {
         const newValue = socialLinksData[platform.key]?.trim() || '';
         
         if (newValue) {
-          const privacyValue = platform.key === 'email' ? false : (socialLinksPrivacy[platform.key] ?? true);
+          // Use global profile privacy setting for all social links
           linksToInsert.push({
             user_id: user.id,
             platform: platform.key,
             url: newValue,
-            private: privacyValue,
+            private: profileData.private,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          });
-          
-          // Debug logging
-          console.log(`Platform ${platform.key}:`, {
-            url: newValue,
-            private: privacyValue,
-            fromState: socialLinksPrivacy[platform.key]
           });
         }
       });
@@ -519,6 +470,7 @@ const SettingsPage = () => {
           bio: profileData.bio.trim() || null,
           location: profileData.location.trim() || null,
           website: profileData.website.trim() || null,
+          private: profileData.private || false,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
@@ -950,39 +902,6 @@ const SettingsPage = () => {
                       <span className="mr-2">{platform.icon}</span>
                       {platform.name}
                     </label>
-                    {/* Privacy Toggle - Only show for non-email platforms */}
-                    {platform.key !== 'email' && socialLinksData[platform.key] && (
-                      <div className="flex items-center space-x-2">
-                        <div className={`flex items-center space-x-1 text-xs ${
-                          socialLinksPrivacy[platform.key] === false
-                            ? isDark ? "text-blue-300" : "text-blue-600"
-                            : isDark ? "text-slate-400" : "text-slate-500"
-                        }`}>
-                          {socialLinksPrivacy[platform.key] === false ? (
-                            <Globe className="w-3 h-3" />
-                          ) : (
-                            <Lock className="w-3 h-3" />
-                          )}
-                          <span>{socialLinksPrivacy[platform.key] === false ? 'Public' : 'Private'}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handlePrivacyChange(platform.key, !socialLinksPrivacy[platform.key])}
-                          aria-label={`Toggle ${platform.name} privacy to ${socialLinksPrivacy[platform.key] === false ? 'private' : 'public'}`}
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
-                            socialLinksPrivacy[platform.key] === false
-                              ? isDark ? "bg-blue-600/70" : "bg-blue-500/70"
-                              : isDark ? "bg-slate-600" : "bg-slate-400"
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ${
-                              socialLinksPrivacy[platform.key] === false ? "translate-x-5" : "translate-x-1"
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    )}
                   </div>
                   <div className="relative">
                     <input
@@ -1017,14 +936,6 @@ const SettingsPage = () => {
                       </button>
                     )}
                   </div>
-                  {/* Email privacy note */}
-                  {platform.key === 'email' && socialLinksData[platform.key] && (
-                    <p className={`text-xs ${
-                      isDark ? "text-blue-300" : "text-blue-600"
-                    }`}>
-                      ✓ Email is always public
-                    </p>
-                  )}
                 </div>
               ))}
             </div>
@@ -1152,6 +1063,80 @@ const SettingsPage = () => {
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Privacy Section */}
+          <div className={`p-6 rounded-2xl ${
+            isDark 
+              ? "bg-slate-800 border border-slate-700" 
+              : "bg-white border border-gray-200"
+          }`}>
+            <h2 className={`text-lg font-semibold mb-4 ${
+              isDark ? "text-white" : "text-gray-800"
+            }`}>
+              Profile Visibility
+            </h2>
+            
+            <div className={`p-4 rounded-xl ${
+              isDark 
+                ? "bg-slate-700/50 border border-slate-600" 
+                : "bg-gray-50 border border-gray-300"
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h3 className={`font-medium ${
+                      isDark ? "text-white" : "text-gray-800"
+                    }`}>
+                      {profileData.private ? "Private Profile" : "Public Profile"}
+                    </h3>
+                    {profileData.private ? (
+                      <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                        isDark 
+                          ? "bg-orange-900/30 text-orange-400 border border-orange-800" 
+                          : "bg-orange-100 text-orange-800 border border-orange-200"
+                      }`}>
+                        <Lock className="w-3 h-3 inline mr-1" />
+                        Private
+                      </div>
+                    ) : (
+                      <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                        isDark 
+                          ? "bg-green-900/30 text-green-400 border border-green-800" 
+                          : "bg-green-100 text-green-800 border border-green-200"
+                      }`}>
+                        <Globe className="w-3 h-3 inline mr-1" />
+                        Public
+                      </div>
+                    )}
+                  </div>
+                  <p className={`text-sm leading-relaxed ${
+                    isDark ? "text-gray-300" : "text-gray-600"
+                  }`}>
+                    {profileData.private 
+                      ? "Only you can see your profile details and social links"
+                      : "Anyone can view your profile and social links"
+                    }
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleProfileChange('private', !profileData.private)}
+                  aria-label={`Toggle profile visibility to ${profileData.private ? 'public' : 'private'}`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                    profileData.private
+                      ? isDark ? "bg-orange-600" : "bg-orange-500"
+                      : isDark ? "bg-green-600" : "bg-green-500"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                      profileData.private ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
               </div>
             </div>
           </div>

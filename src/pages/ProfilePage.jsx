@@ -55,6 +55,9 @@ const ProfilePage = () => {
 
   // Check if current user is viewing their own profile
   const isOwnProfile = user && userDetails && user.id === userDetails.id;
+  
+  // Check if profile is private and user is not the owner
+  const isProfilePrivate = profileDetails?.private && !isOwnProfile;
 
   // Load user data with local storage caching
   useEffect(() => {
@@ -376,7 +379,7 @@ const ProfilePage = () => {
                 </h1>
 
                 {/* Bio */}
-                {profileDetails?.bio && (
+                {profileDetails?.bio && !isProfilePrivate && (
                   <p
                     className={`text-sm mb-4 max-w-2xl ${
                       isDark ? "text-gray-300" : "text-gray-600"
@@ -387,63 +390,65 @@ const ProfilePage = () => {
                 )}
 
                 {/* Profile Stats */}
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {profileDetails?.location && (
-                    <div
-                      className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
-                        isDark
-                          ? "bg-slate-700/50 text-gray-300"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      <MapPin className="w-3 h-3" />
-                      <span className="text-xs">{profileDetails.location}</span>
-                    </div>
-                  )}
-
-                  {profileDetails?.website && (
-                    <div
-                      className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
-                        isDark
-                          ? "bg-slate-700/50 text-gray-300"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      <Globe className="w-3 h-3" />
-                      <a
-                        href={
-                          profileDetails.website.startsWith("http")
-                            ? profileDetails.website
-                            : `https://${profileDetails.website}`
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs hover:underline"
+                {!isProfilePrivate && (
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {profileDetails?.location && (
+                      <div
+                        className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
+                          isDark
+                            ? "bg-slate-700/50 text-gray-300"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
                       >
-                        Website
-                      </a>
-                    </div>
-                  )}
+                        <MapPin className="w-3 h-3" />
+                        <span className="text-xs">{profileDetails.location}</span>
+                      </div>
+                    )}
 
-                  <div
-                    className={`flex items-center space-x-1.5 px-2 py-1 my-2 rounded-full ${
-                      isDark
-                        ? "bg-slate-700/50 text-gray-300"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    <Calendar className="w-3 h-3" />
-                    <span className="text-xs">
-                      Joined{" "}
-                      {userDetails?.created_at
-                        ? new Date(userDetails.created_at).toLocaleDateString(
-                            "en-US",
-                            { month: "long", year: "numeric" }
-                          )
-                        : "Recently"}
-                    </span>
+                    {profileDetails?.website && (
+                      <div
+                        className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
+                          isDark
+                            ? "bg-slate-700/50 text-gray-300"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        <Globe className="w-3 h-3" />
+                        <a
+                          href={
+                            profileDetails.website.startsWith("http")
+                              ? profileDetails.website
+                              : `https://${profileDetails.website}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs hover:underline"
+                        >
+                          Website
+                        </a>
+                      </div>
+                    )}
+
+                    <div
+                      className={`flex items-center space-x-1.5 px-2 py-1 my-2 rounded-full ${
+                        isDark
+                          ? "bg-slate-700/50 text-gray-300"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      <Calendar className="w-3 h-3" />
+                      <span className="text-xs">
+                        Joined{" "}
+                        {userDetails?.created_at
+                          ? new Date(userDetails.created_at).toLocaleDateString(
+                              "en-US",
+                              { month: "long", year: "numeric" }
+                            )
+                          : "Recently"}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
 
               </div>
 
@@ -485,8 +490,37 @@ const ProfilePage = () => {
           </div>
         )}
 
+        {/* Private Profile Message */}
+        {isProfilePrivate && (
+          <div
+            className={`mb-6 p-6 rounded-2xl text-center ${
+              isDark 
+                ? "bg-slate-800 border border-slate-700" 
+                : "bg-white border border-gray-200"
+            }`}
+          >
+            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-white" />
+            </div>
+            <h2
+              className={`text-xl font-bold mb-2 ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Private Profile
+            </h2>
+            <p
+              className={`text-sm ${
+                isDark ? "text-gray-300" : "text-gray-600"
+              }`}
+            >
+              This profile is private. Only the owner can view the details and social links.
+            </p>
+          </div>
+        )}
+
         {/* Social Links Grid */}
-        {socialLinks.length > 0 && (
+        {socialLinks.length > 0 && !isProfilePrivate && (
           <div
             className={`p-6 rounded-2xl mb-8 ${
               isDark
