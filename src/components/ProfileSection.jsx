@@ -2,10 +2,10 @@ import React from 'react';
 import { useTheme } from '../hooks/useTheme';
 import { Globe, FileText, MapPin, User } from 'lucide-react';
 
-const ProfileSection = ({ profileDetails }) => {
+const ProfileSection = ({ userDetails, profileDetails }) => {
   const { isDark } = useTheme();
 
-  if (!profileDetails) return null;
+  if (!profileDetails || !userDetails) return null;
 
   return (
     <div
@@ -23,6 +23,7 @@ const ProfileSection = ({ profileDetails }) => {
       >
         Your Flink Profile
       </h2>
+
 
       {/* Flink Profile Link */}
       <div className={`text-center p-3 rounded-lg mb-3 ${
@@ -64,7 +65,7 @@ const ProfileSection = ({ profileDetails }) => {
         )}
 
         <div className="flex flex-wrap gap-3">
-          {profileDetails.location && (
+          {userDetails.location && (
             <div className="flex items-center space-x-1.5">
               <MapPin className={`w-3 h-3 ${
                 isDark ? "text-gray-400" : "text-gray-500"
@@ -72,7 +73,7 @@ const ProfileSection = ({ profileDetails }) => {
               <span className={`text-xs ${
                 isDark ? "text-gray-200" : "text-gray-700"
               }`}>
-                {profileDetails.location}
+                {userDetails.location}
               </span>
             </div>
           )}
@@ -96,6 +97,22 @@ const ProfileSection = ({ profileDetails }) => {
               >
                 {profileDetails.website}
               </a>
+            </div>
+          )}
+
+          {userDetails.created_at && (
+            <div className="flex items-center space-x-1.5">
+              <User className={`w-3 h-3 ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`} />
+              <span className={`text-xs ${
+                isDark ? "text-gray-200" : "text-gray-700"
+              }`}>
+                Joined {new Date(userDetails.created_at).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  year: 'numeric' 
+                })}
+              </span>
             </div>
           )}
         </div>

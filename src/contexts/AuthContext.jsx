@@ -15,14 +15,13 @@ export const AuthProvider = ({ children }) => {
         if (cachedSession) {
           const session = JSON.parse(cachedSession);
           if (session?.user && session.expires_at > Date.now() / 1000) {
-            console.log("AuthContext: Using cached session");
             setUser(session.user);
             setLoading(false);
             return true;
           }
         }
-      } catch (error) {
-        console.log("Error reading cached session:", error);
+      } catch {
+        // console.log("Error reading cached session");
       }
       return false;
     };
@@ -48,13 +47,12 @@ export const AuthProvider = ({ children }) => {
                 );
               }
             })
-            .catch((err) =>
-              console.log("Background session fetch failed:", err)
-            );
+            .catch(() => {
+              // console.log("Background session fetch failed");
+            });
           return;
         }
 
-        console.log("AuthContext: Getting fresh session...");
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -71,7 +69,6 @@ export const AuthProvider = ({ children }) => {
           );
         }
 
-        console.log("AuthContext: Setting loading to false");
         setLoading(false);
       } catch (error) {
         console.error("Error getting initial session:", error);
@@ -103,7 +100,6 @@ export const AuthProvider = ({ children }) => {
 
       // Handle user signup and signin
       if (session?.user && (event === "SIGNED_IN" || event === "SIGNED_UP")) {
-
         // For OAuth users (Google), add them to database immediately
         // For email signups, they should already be added in the signUp function
         if (
@@ -111,27 +107,26 @@ export const AuthProvider = ({ children }) => {
           (event === "SIGNED_UP" &&
             (session.user.email_confirmed_at || session.user.confirmed_at))
         ) {
-          console.log("Adding user to database via auth state change...");
           addUserToDatabase(session.user).then(({ error }) => {
             if (error) {
               console.error("Failed to add user to database:", error);
             } else {
-              console.log("User successfully added to database");
+              // console.log("User successfully added to database");
             }
           });
         } else {
-          console.log(
-            "User not yet confirmed, skipping database insertion (will be handled after confirmation)"
-          );
+          // console.log(
+          //   "User not yet confirmed, skipping database insertion (will be handled after confirmation)"
+          // );
         }
 
         // Then fetch user details (non-blocking)
-        getUserDetails(session.user.id).catch((err) => {
-          console.log("Error fetching user details (non-critical):", err);
+        getUserDetails(session.user.id).catch(() => {
+          // console.log("Error fetching user details (non-critical)");
         });
       } else if (!session?.user) {
         // Clear user details when user signs out
-        console.log("User signed out, clearing user details...");
+        // console.log("User signed out, clearing user details...");
         setUserDetails(null);
       }
 
@@ -140,9 +135,6 @@ export const AuthProvider = ({ children }) => {
 
     // Reduced timeout to prevent infinite loading
     const timeout = setTimeout(() => {
-      console.log(
-        "AuthContext: Loading timeout reached, forcing loading to false"
-      );
       setLoading(false);
     }, 2000); // Reduced to 2 second timeout
 
@@ -164,7 +156,6 @@ export const AuthProvider = ({ children }) => {
 
     // If signup is successful and we have a user, add them to the database immediately
     if (data?.user && !error) {
-      console.log("Signup successful, adding user to database immediately...");
       addUserToDatabase(data.user, additionalData).then(
         ({ error: dbError }) => {
           if (dbError) {
@@ -173,7 +164,7 @@ export const AuthProvider = ({ children }) => {
               dbError
             );
           } else {
-            console.log("User successfully added to database after signup");
+            // console.log("User successfully added to database after signup");
           }
         }
       );
@@ -209,18 +200,17 @@ export const AuthProvider = ({ children }) => {
   // Sign out
   const signOut = async () => {
     try {
-      console.log("Starting sign out process...");
       const { error } = await supabase.auth.signOut();
-      console.log("Supabase signOut result:", { error });
+      // console.log("Supabase signOut result:", { error });
 
       if (error) {
         console.error("Error signing out:", error);
         return { error };
       }
 
-      console.log(
-        "Sign out successful - auth state change listener will handle state clearing"
-      );
+      // console.log(
+      //   "Sign out successful - auth state change listener will handle state clearing"
+      // );
       // Note: We don't manually clear state here anymore
       // The auth state change listener will handle it automatically
 
@@ -242,7 +232,6 @@ export const AuthProvider = ({ children }) => {
   // Add user to users table after successful signup
   const addUserToDatabase = async (user, additionalData = {}) => {
     try {
-
       // First check if user already exists in database
       const { data: existingUser, error: checkError } = await supabase
         .from("users")
@@ -251,7 +240,6 @@ export const AuthProvider = ({ children }) => {
         .single();
 
       if (existingUser) {
-        console.log("User already exists in database, skipping insertion");
         return { data: existingUser, error: null };
       }
 
@@ -278,7 +266,7 @@ export const AuthProvider = ({ children }) => {
         created_at: new Date().toISOString(),
       };
 
-      console.log("Adding user to database with data:", userData);
+      // console.log("Adding user to database with data:", userData);
 
       const { data, error } = await supabase
         .from("users")
@@ -297,12 +285,11 @@ export const AuthProvider = ({ children }) => {
         return { data: null, error };
       }
 
-      console.log("User successfully added to database:", data);
-
       // Only add email as a social link for OAuth users (not email/password users)
       // OAuth users have app_metadata.provider, email/password users don't
-      const isOAuthUser = user.app_metadata?.provider && user.app_metadata.provider !== 'email';
-      
+      const isOAuthUser =
+        user.app_metadata?.provider && user.app_metadata.provider !== "email";
+
       if (user.email && isOAuthUser) {
         try {
           // Check if email social link already exists to prevent duplicates
@@ -314,7 +301,6 @@ export const AuthProvider = ({ children }) => {
             .single();
 
           if (!existingEmailLink) {
-            console.log("Adding email social link for OAuth user:", user.email);
             const { error: socialLinkError } = await supabase
               .from("social_links")
               .insert([
@@ -322,7 +308,6 @@ export const AuthProvider = ({ children }) => {
                   user_id: user.id,
                   platform: "email",
                   url: `mailto:${user.email}`,
-                  private: false,
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
                 },
@@ -331,21 +316,23 @@ export const AuthProvider = ({ children }) => {
             if (socialLinkError) {
               console.error("Error adding email social link:", socialLinkError);
             } else {
-              console.log(
-                "Email social link added successfully for:",
-                user.email
-              );
+              // console.log(
+              //   "Email social link added successfully for:",
+              //   user.email
+              // );
             }
           } else {
-            console.log("Email social link already exists for user, skipping");
+            // console.log("Email social link already exists for user, skipping");
           }
         } catch (err) {
           console.error("Unexpected error adding email social link:", err);
         }
       } else if (user.email && !isOAuthUser) {
-        console.log("Email/password user - not adding email social link automatically");
+        // console.log(
+        //   "Email/password user - not adding email social link automatically"
+        // );
       } else {
-        console.log("No email found for user, skipping email social link");
+        // console.log("No email found for user, skipping email social link");
       }
 
       return { data, error: null };
@@ -422,7 +409,6 @@ export const AuthProvider = ({ children }) => {
   // Test database connection
   const testDatabaseConnection = async () => {
     try {
-      console.log("Testing database connection...");
       const { data, error } = await supabase
         .from("users")
         .select("id, email, name, profile_url, first_login, created_at")
@@ -432,8 +418,6 @@ export const AuthProvider = ({ children }) => {
         console.error("Database connection test failed:", error);
         return { success: false, error };
       }
-
-      console.log("Database connection test successful:", data);
       return { success: true, data };
     } catch (err) {
       console.error("Database connection test error:", err);

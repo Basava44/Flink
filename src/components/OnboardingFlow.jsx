@@ -3,19 +3,23 @@ import { useAuth } from '../hooks/useAuth';
 import SocialHandlesForm from './SocialHandlesForm';
 import ProfileSetupForm from './ProfileSetupForm';
 
-const OnboardingFlow = ({ onComplete, user, userDetails }) => {
+const OnboardingFlow = ({ onComplete, user, userDetails, userName, userEmail, userId }) => {
   const { supabase } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // Debug logging
+  console.log('OnboardingFlow render - currentStep:', currentStep);
   const [formData, setFormData] = useState({
     socialLinks: {},
     profile: {},
-    userId: user?.id,
-    userName: userDetails?.name || user?.email
+    userId: userId || user?.id,
+    userName: userName || userDetails?.name || user?.email
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSocialHandlesNext = (data) => {
+    console.log('Moving to step 2 - Profile Setup');
     setFormData(prev => ({
       ...prev,
       socialLinks: data.socialLinks
@@ -38,7 +42,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
         .from('flink_profiles')
         .insert([{
           user_id: formData.userId, // This should be passed from parent
-          handle: data.handle,
+          handle: data.handle.toLowerCase(),
           bio: data.bio || null,
           location: data.location || null,
           website: data.website || null,
@@ -51,13 +55,18 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
         throw profileError;
       }
 
-      // Add social links to social_links table
-      if (Object.keys(formData.socialLinks).length > 0) {
-        const socialLinksData = Object.entries(formData.socialLinks).map(([platform, url]) => ({
+      // Add social links to social_links table (only non-empty ones)
+      const nonEmptySocialLinks = Object.entries(formData.socialLinks).filter(([, url]) => 
+        url && url.trim() !== ''
+      );
+      
+      console.log('Social links to save:', nonEmptySocialLinks);
+      
+      if (nonEmptySocialLinks.length > 0) {
+        const socialLinksData = nonEmptySocialLinks.map(([platform, url]) => ({
           user_id: formData.userId,
           platform,
-          url,
-          private: data.private || false, // Use global profile privacy setting for all social links
+          url: url.trim(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
@@ -77,7 +86,6 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
         .update({ 
           first_login: false,
           name: formData.userName,
-          // Use the freshly submitted data to avoid stale state
           profile_url: data.profile_url || null
         })
         .eq('id', formData.userId);
@@ -86,7 +94,17 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
         throw userUpdateError;
       }
 
-      console.log('Onboarding completed successfully');
+      // Update profile_url in flink_profiles table
+      const { error: profileUrlError } = await supabase
+        .from('flink_profiles')
+        .update({
+          profile_url: data.profile_url || null
+        })
+        .eq('user_id', formData.userId);
+
+      if (profileUrlError) {
+        throw profileUrlError;
+      }
       onComplete();
       
     } catch (err) {
@@ -98,6 +116,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
   };
 
   const handleBack = () => {
+    console.log('Going back from step', currentStep);
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
@@ -106,7 +125,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="onboarding-loading min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-300">Setting up your profile...</p>
@@ -118,7 +137,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
   return (
     <>
       {/* Desktop Warning Message - Hidden on mobile */}
-      <div className="hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+      <div className="onboarding-desktop hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
         <div className="text-center p-8 max-w-md">
           <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +182,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails }) => {
           onNext={handleSocialHandlesNext}
           onBack={handleBack}
           initialData={formData.socialLinks}
-          userEmail={user?.email}
+          userEmail={userEmail || user?.email}
         />
       )}
 

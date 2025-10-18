@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
+import { supabase } from "../lib/supabase";
 import {
   ArrowLeft,
   Bell,
@@ -11,6 +12,8 @@ import {
 function NotificationsPage() {
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  const { user } = useAuth();
+  const [userProfileHandle, setUserProfileHandle] = useState(null);
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -40,8 +43,31 @@ function NotificationsPage() {
     },
   ]);
 
+  // Get user's profile handle for navigation
+  useEffect(() => {
+    const getUserProfileHandle = async () => {
+      if (user?.id) {
+        try {
+          const { data: profileData } = await supabase
+            .from('flink_profiles')
+            .select('handle')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (profileData?.handle) {
+            setUserProfileHandle(profileData.handle);
+          }
+        } catch (err) {
+          console.error('Error fetching profile handle:', err);
+        }
+      }
+    };
+
+    getUserProfileHandle();
+  }, [user?.id]);
+
   const handleBackClick = () => {
-    navigate("/dashboard");
+    navigate(userProfileHandle ? `/${userProfileHandle}` : `/${user.id}`);
   };
 
 

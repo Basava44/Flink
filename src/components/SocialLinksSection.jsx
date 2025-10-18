@@ -20,6 +20,7 @@ import {
 const SocialLinksSection = ({ socialLinks, profileDetails }) => {
   const { isDark } = useTheme();
 
+
   // Helper function to get social media icon and color
   const getSocialIcon = (platform) => {
     const icons = {
@@ -246,16 +247,27 @@ const SocialLinksSection = ({ socialLinks, profileDetails }) => {
             {deduplicatedLinks.length} link{deduplicatedLinks.length !== 1 ? 's' : ''}
           </span>
           {/* Global privacy indicator */}
-          {profileDetails?.private && (
-            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-              isDark 
-                ? "bg-orange-900/30 text-orange-400 border border-orange-800" 
-                : "bg-orange-100 text-orange-800 border border-orange-200"
-            }`}>
-              <Lock className="w-3 h-3" />
-              <span>Private</span>
-            </div>
-          )}
+          <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
+            profileDetails?.private 
+              ? (isDark 
+                  ? "bg-orange-900/30 text-orange-400 border border-orange-800" 
+                  : "bg-orange-100 text-orange-800 border border-orange-200")
+              : (isDark 
+                  ? "bg-green-900/30 text-green-400 border border-green-800" 
+                  : "bg-green-100 text-green-800 border border-green-200")
+          }`}>
+            {profileDetails?.private ? (
+              <>
+                <Lock className="w-3 h-3" />
+                <span>Private</span>
+              </>
+            ) : (
+              <>
+                <Globe className="w-3 h-3" />
+                <span>Public</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
       

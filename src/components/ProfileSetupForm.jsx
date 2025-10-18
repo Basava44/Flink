@@ -25,7 +25,7 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'handle' ? value.toLowerCase() : value,
     }));
 
     // Clear error when user starts typing

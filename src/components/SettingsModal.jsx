@@ -101,7 +101,6 @@ const SettingsModal = ({ isOpen, onClose, socialLinks, profileDetails, onUpdate 
             user_id: user.id,
             platform: platform.key,
             url: newValue,
-            private: platform.key === 'email' ? false : true,
             updated_at: new Date().toISOString()
           });
         } else if (!newValue && currentLink) {

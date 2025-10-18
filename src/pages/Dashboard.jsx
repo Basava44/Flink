@@ -8,10 +8,10 @@ import SocialLinksSection from "../components/SocialLinksSection";
 import QuickActionsSection from "../components/QuickActionsSection";
 import QuickStatsSection from "../components/QuickStatsSection";
 import BackgroundPattern from "../components/BackgroundPattern";
+import SearchOverlay from "../components/SearchOverlay";
 import {
   Settings,
   LogOut,
-  ArrowLeft,
   Smartphone,
   Menu,
   X,
@@ -20,6 +20,7 @@ import {
   Sun,
   Moon,
   Bell,
+  Search,
 } from "lucide-react";
 // import ThemeToggle from "../components/ThemeToggle";
 
@@ -39,7 +40,16 @@ function Dashboard() {
   const [profileDetails, setProfileDetails] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const hasLoadedData = useRef(false);
+
+  // Handle navigation when user signs out
+  useEffect(() => {
+    if (user === null) {
+      // User has signed out, redirect to home
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
 
   // Single useEffect to handle all data loading
   useEffect(() => {
@@ -59,21 +69,14 @@ function Dashboard() {
       try {
         // Step 1: Get user details if not already loaded
         if (!userDetails) {
-          console.log("Loading user details...");
           const { data, error } = await getUserDetails(user.id);
           if (error) {
             console.error("Error fetching user details:", error);
             return;
           }
 
-          console.log("User details loaded:", {
-            first_login: data?.first_login,
-            user_id: data?.id,
-          });
-
           // Check for onboarding
           if (data && data.first_login === true) {
-            console.log("New user detected, showing onboarding");
             setShowOnboarding(true);
             hasLoadedData.current = true;
             return; // Don't load other data during onboarding
@@ -82,7 +85,6 @@ function Dashboard() {
 
         // Step 2: Check if already in onboarding
         if (userDetails?.first_login === true) {
-          console.log("User details show first_login=true, showing onboarding");
           setShowOnboarding(true);
           hasLoadedData.current = true;
           return;
@@ -91,7 +93,6 @@ function Dashboard() {
         // Step 3: Load dashboard data (only for non-first-time users)
         if (userDetails?.first_login === false) {
           setLoadingData(true);
-          console.log("Loading dashboard data...");
 
           // Check cache first
           const cachedSocialLinks = localStorage.getItem(
@@ -109,12 +110,9 @@ function Dashboard() {
             Date.now() - parseInt(cacheTimestamp) < 5 * 60 * 1000;
 
           if (isCacheValid && cachedSocialLinks && cachedProfileDetails) {
-            console.log("Using cached dashboard data");
             setSocialLinks(JSON.parse(cachedSocialLinks));
             setProfileDetails(JSON.parse(cachedProfileDetails));
           } else {
-            console.log("Fetching fresh dashboard data");
-
             // Fetch all data in parallel
             const [socialResult, profileResult] = await Promise.all([
               getSocialLinks(user.id),
@@ -155,7 +153,6 @@ function Dashboard() {
     // If settings signaled a force refresh, bypass cache and fetch everything fresh
     const forceKey = localStorage.getItem(`forceRefresh_${user?.id}`);
     if (forceKey && user?.id) {
-      console.log("Force refresh detected from settings, fetching fresh data");
       localStorage.removeItem(`forceRefresh_${user?.id}`);
       // Fetch all three datasets fresh
       (async () => {
@@ -206,11 +203,9 @@ function Dashboard() {
     const handleFocus = () => {
       // Check if we have a user and data is already loaded
       if (user?.id && userDetails?.first_login === false) {
-        console.log("Page focused, checking for data updates...");
         // Check for force refresh from settings
         const forceKey = localStorage.getItem(`forceRefresh_${user.id}`);
         if (forceKey) {
-          console.log("Force refresh flag found, refreshing now");
           localStorage.removeItem(`forceRefresh_${user.id}`);
           refreshDashboardData();
           return;
@@ -224,7 +219,6 @@ function Dashboard() {
           !cacheTimestamp || Date.now() - parseInt(cacheTimestamp) > 60 * 1000;
 
         if (isCacheStale) {
-          console.log("Cache is stale, refreshing data...");
           refreshDashboardData();
         }
       }
@@ -262,7 +256,7 @@ function Dashboard() {
           `cacheTimestamp_${user.id}`,
           Date.now().toString()
         );
-        console.log("Dashboard data refreshed successfully");
+
         hasLoadedData.current = true;
       } catch (error) {
         console.error("Error refreshing dashboard data:", error);
@@ -296,17 +290,12 @@ function Dashboard() {
   // Watch for userDetails changes and trigger onboarding if needed
   useEffect(() => {
     if (userDetails && userDetails.first_login === true && !showOnboarding) {
-      console.log(
-        "UserDetails changed to first_login=true, triggering onboarding"
-      );
       setShowOnboarding(true);
       hasLoadedData.current = true;
     }
   }, [userDetails, showOnboarding]);
 
   const handleOnboardingComplete = async () => {
-    console.log("Onboarding completed, refreshing user details...");
-
     // Reset the ref to allow data loading
     hasLoadedData.current = false;
 
@@ -344,6 +333,15 @@ function Dashboard() {
     setIsMenuOpen(!isMenuOpen);
   };
 
+
+  const openSearchOverlay = () => {
+    setShowSearch(true);
+  };
+
+  const closeSearchOverlay = () => {
+    setShowSearch(false);
+  };
+
   const handleMenuClose = () => {
     setIsMenuOpen(false);
   };
@@ -360,9 +358,7 @@ function Dashboard() {
 
   const handleSignOut = async () => {
     try {
-      console.log("Dashboard: Starting sign out...");
       const { error } = await signOut();
-      console.log("Dashboard: Sign out result:", { error });
 
       if (error) {
         console.error("Error signing out:", error);
@@ -370,7 +366,6 @@ function Dashboard() {
         return;
       }
 
-      console.log("Dashboard: Sign out successful, redirecting to home");
       navigate("/");
     } catch (error) {
       console.error("Unexpected error during sign out:", error);
@@ -391,7 +386,7 @@ function Dashboard() {
   return (
     <>
       {/* Desktop Warning Message - Hidden on mobile */}
-      <div className="hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+      <div className="dashboard-desktop hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
         <div className="text-center p-8 max-w-md">
           <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Smartphone className="w-10 h-10 text-white" />
@@ -414,7 +409,7 @@ function Dashboard() {
 
       {/* Mobile Dashboard - Visible only on mobile */}
       <div
-        className={`md:hidden min-h-screen relative ${
+        className={`dashboard-mobile md:hidden min-h-screen relative ${
           isDark ? "text-white" : "text-gray-900"
         }`}
       >
@@ -425,9 +420,9 @@ function Dashboard() {
             <div className="flex items-center space-x-3 flex-1 min-w-0">
               {/* Profile Picture */}
               <div className="relative flex-shrink-0">
-                {userDetails?.profile_url ? (
+                {profileDetails?.profile_url ? (
                   <img
-                    src={userDetails.profile_url}
+                    src={profileDetails.profile_url}
                     alt="Profile"
                     loading="lazy"
                     decoding="async"
@@ -447,7 +442,7 @@ function Dashboard() {
                 ) : null}
                 <div
                   className={`w-18 h-18 rounded-full flex items-center justify-center text-xl font-bold border-2 border-primary-500 shadow-lg ${
-                    userDetails?.profile_url ? "hidden" : "flex"
+                    profileDetails?.profile_url ? "hidden" : "flex"
                   } ${
                     isDark
                       ? "bg-slate-700 text-white border-slate-600"
@@ -498,19 +493,18 @@ function Dashboard() {
             </div>
 
             <div className="flex items-center flex-shrink-0 ml-2 space-x-2">
-              {/* Notifications Button */}
-              {/* <button
-                onClick={() => navigate("/notifications")}
-                className={`relative p-2 transition-all duration-200 hover:scale-105 ${
+              {/* Search Button */}
+              <button
+                onClick={openSearchOverlay}
+                className={`p-3 rounded-xl transition-all duration-200 hover:scale-105 ${
                   isDark
-                    ? "text-gray-300 hover:text-white"
-                    : "text-gray-600 hover:text-gray-800"
+                    ? "bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-gray-300 hover:text-white"
+                    : "bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 hover:text-gray-800"
                 }`}
-                title="Notifications"
+                title="Search Profiles"
               >
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button> */}
+                <Search className="w-5 h-5" />
+              </button>
 
               {/* Hamburger Menu */}
               <button
@@ -556,7 +550,10 @@ function Dashboard() {
 
           {/* Social Links Section */}
           <div className="mb-8">
-            <SocialLinksSection socialLinks={socialLinks} profileDetails={profileDetails} />
+            <SocialLinksSection
+              socialLinks={socialLinks}
+              profileDetails={profileDetails}
+            />
           </div>
 
           {/* Profile Details Section */}
@@ -673,7 +670,7 @@ function Dashboard() {
                       }`}
                     >
                       <User className="w-5 h-5" />
-                      <span className="font-medium">Profile Preview</span>
+                      <span className="font-medium">Profile Previewe</span>
                     </button>
 
                     {/* Settings */}
@@ -689,10 +686,26 @@ function Dashboard() {
                       <span className="font-medium">Settings</span>
                     </button>
 
+                    {/* Notifications */}
+                    <button
+                      onClick={() => {
+                        navigate("/notifications");
+                        setIsMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-300 ${
+                        isDark
+                          ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                          : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                      }`}
+                    >
+                      <Bell className="w-5 h-5" />
+                      <span className="font-medium">Notifications</span>
+                    </button>
+
                     {/* Help */}
                     <button
                       onClick={handleHelpClick}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-300 ${
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-[400ms] ${
                         isDark
                           ? "hover:bg-slate-700 text-gray-300 hover:text-white"
                           : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
@@ -708,7 +721,7 @@ function Dashboard() {
                         toggleTheme();
                         setIsMenuOpen(false);
                       }}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-[400ms] ${
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-[500ms] ${
                         isDark
                           ? "hover:bg-slate-700 text-gray-300 hover:text-white"
                           : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
@@ -751,6 +764,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Search Overlay */}
+        <SearchOverlay isOpen={showSearch} onClose={closeSearchOverlay} />
       </div>
     </>
   );

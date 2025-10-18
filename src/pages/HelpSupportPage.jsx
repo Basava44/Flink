@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 import BackgroundPattern from '../components/BackgroundPattern';
 import { 
   ArrowLeft, 
@@ -29,12 +30,36 @@ const HelpSupportPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // 'success', 'error', null
+  const [userProfileHandle, setUserProfileHandle] = useState(null);
 
   // Configurable email - you can update this later
   const SUPPORT_EMAIL = 'karibasava.t.g@gmail.com';
 
+  // Get user's profile handle for navigation
+  useEffect(() => {
+    const getUserProfileHandle = async () => {
+      if (user?.id) {
+        try {
+          const { data: profileData } = await supabase
+            .from('flink_profiles')
+            .select('handle')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (profileData?.handle) {
+            setUserProfileHandle(profileData.handle);
+          }
+        } catch (err) {
+          console.error('Error fetching profile handle:', err);
+        }
+      }
+    };
+
+    getUserProfileHandle();
+  }, [user?.id]);
+
   const handleBack = () => {
-    navigate('/dashboard');
+    navigate(userProfileHandle ? `/${userProfileHandle}` : `/${user.id}`);
   };
 
   const handleInputChange = (e) => {

@@ -1,8 +1,8 @@
 import React from 'react';
 import { useTheme } from '../hooks/useTheme';
-import { Link, MousePointer, FileText } from 'lucide-react';
+import { Link, MousePointer, FileText, Users, UserPlus } from 'lucide-react';
 
-const QuickStatsSection = ({ socialLinks, profileDetails }) => {
+const QuickStatsSection = ({ socialLinks, profileDetails, friends = 0, followers = 0 }) => {
   const { isDark } = useTheme();
 
   return (
@@ -21,8 +21,8 @@ const QuickStatsSection = ({ socialLinks, profileDetails }) => {
             : "bg-gray-100 border border-gray-200"
         }`}
       >
-        <div className="flex justify-center items-center space-x-4 text-xs">
-          <div className="flex items-center space-x-1">
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="flex items-center justify-center space-x-1">
             <Link
               className={`w-3 h-3 ${
                 isDark ? "text-gray-400" : "text-gray-500"
@@ -34,7 +34,7 @@ const QuickStatsSection = ({ socialLinks, profileDetails }) => {
               {socialLinks.length} links
             </span>
           </div>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center justify-center space-x-1">
             <MousePointer
               className={`w-3 h-3 ${
                 isDark ? "text-gray-400" : "text-gray-500"
@@ -46,8 +46,8 @@ const QuickStatsSection = ({ socialLinks, profileDetails }) => {
               0 clicks
             </span>
           </div>
-          <div className="flex items-center space-x-1">
-            <FileText
+          <div className="flex items-center justify-center space-x-1">
+            <Users
               className={`w-3 h-3 ${
                 isDark ? "text-gray-400" : "text-gray-500"
               }`}
@@ -55,7 +55,19 @@ const QuickStatsSection = ({ socialLinks, profileDetails }) => {
             <span
               className={`${isDark ? "text-gray-300" : "text-gray-600"}`}
             >
-              {profileDetails ? "1" : "0"} profile
+              {friends} friends
+            </span>
+          </div>
+          <div className="flex items-center justify-center space-x-1">
+            <UserPlus
+              className={`w-3 h-3 ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            />
+            <span
+              className={`${isDark ? "text-gray-300" : "text-gray-600"}`}
+            >
+              {followers} followers
             </span>
           </div>
         </div>

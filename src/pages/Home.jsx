@@ -1,24 +1,52 @@
 // Home page component - move App.jsx content here
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
+import { supabase } from "../lib/supabase";
 import ThemeToggle from "../components/ThemeToggle";
+import SearchOverlay from "../components/SearchOverlay";
+import { Search } from "lucide-react";
 
 function Home() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { isDark } = useTheme();
   const [handleInput, setHandleInput] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Redirect logged-in users to their profile
+  useEffect(() => {
+    const redirectToProfile = async () => {
+      if (user?.id && !loading) {
+        try {
+          const { data: profileData } = await supabase
+            .from("flink_profiles")
+            .select("handle")
+            .eq("user_id", user.id)
+            .single();
+
+          if (profileData?.handle) {
+            navigate(`/${profileData.handle}`, { replace: true });
+          } else {
+            navigate(`/${user.id}`, { replace: true });
+          }
+        } catch (err) {
+          console.error("Error checking user profile:", err);
+          navigate(`/${user.id}`, { replace: true });
+        }
+      }
+    };
+
+    redirectToProfile();
+  }, [user?.id, loading, navigate]);
 
   const handleGetStarted = () => {
-    console.log('Get Started button clicked, user:', user);
     if (user) {
-      console.log('User is logged in, going to dashboard');
-      navigate('/dashboard');
+      // console.log("User is logged in, going to profile");
+      // The useEffect will handle the redirect
     } else {
-      console.log('User is not logged in, going to login');
-      navigate('/login');
+      navigate("/login");
     }
   };
 
@@ -33,11 +61,19 @@ function Home() {
     // }
   };
 
+  const openSearchOverlay = () => {
+    setShowSearch(true);
+  };
+
+  const closeSearchOverlay = () => {
+    setShowSearch(false);
+  };
+
   // Note: Auth state changes are now handled by AppContent component
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
+      className={`home-page min-h-screen transition-colors duration-300 ${
         isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
       }`}
     >
@@ -153,6 +189,35 @@ function Home() {
               </p>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* Search Profiles Section */}
+      <section className="py-16 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+            Discover Amazing Profiles
+          </h2>
+          <p
+            className={`text-lg mb-8 ${
+              isDark ? "text-gray-300" : "text-gray-600"
+            }`}
+          >
+            Find and connect with people from around the world
+          </p>
+
+          {/* Search Button */}
+          <button
+            onClick={openSearchOverlay}
+            className={`inline-flex items-center px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-200 hover:scale-105 ${
+              isDark
+                ? "bg-slate-800/50 border border-slate-600 text-white hover:bg-slate-700"
+                : "bg-white border border-gray-300 text-gray-900 hover:bg-gray-50"
+            }`}
+          >
+            <Search className="w-5 h-5 mr-3" />
+            Search Profiles
+          </button>
         </div>
       </section>
 
@@ -327,6 +392,9 @@ function Home() {
           </p>
         </div>
       </footer>
+
+      {/* Search Overlay */}
+      <SearchOverlay isOpen={showSearch} onClose={closeSearchOverlay} />
     </div>
   );
 }

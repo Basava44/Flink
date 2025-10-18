@@ -6,11 +6,11 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/Dashboard";
-import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
+import SettingsPage from "./pages/SettingsPage";
 import HelpSupportPage from "./pages/HelpSupportPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import FriendsPage from "./pages/FriendsPage";
 
 // Protected Route component
 function ProtectedRoute({ children }) {
@@ -30,24 +30,9 @@ function ProtectedRoute({ children }) {
   return user ? children : <Navigate to="/login" replace />;
 }
 
-// Public Route component (redirect to dashboard if already logged in)
+// Public Route component (no redirect logic - handled by individual pages)
 function PublicRoute({ children }) {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    console.log('PublicRoute: Showing loading screen');
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">This should only take a moment...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  return user ? <Navigate to="/dashboard" replace /> : children;
+  return children;
 }
 
 function AppContent() {
@@ -60,12 +45,14 @@ function AppContent() {
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
         
+        {/* Profile Route - handles both own and public profiles */}
+        <Route path="/:handle" element={<ProfilePage />} />
+        
         {/* Protected Routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute><HelpSupportPage /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+        <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
         
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" replace />} />

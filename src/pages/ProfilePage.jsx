@@ -1,102 +1,212 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { useTheme } from "../hooks/useTheme";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../hooks/useTheme";
+import { supabase } from "../lib/supabase";
+import OnboardingFlow from "../components/OnboardingFlow";
+import ProfileSection from "../components/ProfileSection";
+import SocialLinksSection from "../components/SocialLinksSection";
+import QuickActionsSection from "../components/QuickActionsSection";
+import QuickStatsSection from "../components/QuickStatsSection";
 import BackgroundPattern from "../components/BackgroundPattern";
+import PublicProfileView from "../components/PublicProfileView";
+import SearchOverlay from "../components/SearchOverlay";
 import {
+  Settings,
+  LogOut,
   ArrowLeft,
+  Smartphone,
+  Menu,
+  X,
+  HelpCircle,
   User,
-  Share2,
+  Sun,
+  Moon,
+  Bell,
+  Search,
   Mail,
-  Phone,
   MapPin,
   Globe,
-  Calendar,
   Instagram,
   Twitter,
   Linkedin,
   Github,
-  Youtube,
-  Facebook,
-  MessageCircle,
-  Gamepad2,
-  Copy,
-  Check,
-  ExternalLink,
-  Lock,
-  Smartphone,
+  Users,
 } from "lucide-react";
 
-const ProfilePage = () => {
+function ProfilePage() {
+  const { handle } = useParams();
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const { user, userDetails, getSocialLinks, getProfileDetails } = useAuth();
+  const {
+    user,
+    userDetails,
+    signOut,
+    getUserDetails,
+    getSocialLinks,
+    getProfileDetails,
+  } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
+
+  // State for profile checking
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [profileExists, setProfileExists] = useState(true);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
+
+  // State for own profile (dashboard content)
   const [socialLinks, setSocialLinks] = useState([]);
   const [profileDetails, setProfileDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [friends] = useState(0);
+  const [followers] = useState(0);
+
+  // Ref to prevent multiple data loads
   const hasLoadedData = useRef(false);
 
-  // Helper function to deduplicate email social links
-  const deduplicateSocialLinks = (links) => {
-    return links.reduce((acc, link) => {
-      if (link.platform === "email") {
-        const hasEmail = acc.some(
-          (existingLink) => existingLink.platform === "email"
-        );
-        if (!hasEmail) acc.push(link);
-      } else {
-        acc.push(link);
-      }
-      return acc;
-    }, []);
-  };
-
-  const deduplicatedLinks = deduplicateSocialLinks(socialLinks || []);
-
-  // Check if current user is viewing their own profile
-  const isOwnProfile = user && userDetails && user.id === userDetails.id;
-  
-  // Check if profile is private and user is not the owner
-  const isProfilePrivate = profileDetails?.private && !isOwnProfile;
-
-  // Load user data with local storage caching
+  // Handle navigation when user signs out (but not when accessing public profile directly)
   useEffect(() => {
-    const loadUserData = async () => {
-      // Prevent multiple loads
-      if (hasLoadedData.current || !user?.id) {
+    // Only redirect if user was previously logged in and then signed out
+    // Don't redirect if user is null from the start (direct profile access)
+    if (user === null && !isCheckingProfile) {
+      // Check if this is a public profile access (whether profile exists or not)
+      if (!isOwnProfile) {
+        // This is a public profile access, don't redirect
+        // Let the component handle showing 404 or profile content
+        return;
+      }
+      // User has signed out, redirect to home
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate, isCheckingProfile, isOwnProfile]);
+
+  // Check if this is the user's own profile
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (!handle) {
+        setProfileExists(false);
+        setIsCheckingProfile(false);
         return;
       }
 
-      setLoading(true);
+      // Don't check if user is not loaded yet
+      if (user === undefined) {
+        return;
+      }
+
+      setIsCheckingProfile(true);
 
       try {
-        console.log("Loading profile page data...");
+        // Check if handle is actually a user ID (UUID format)
+        const isUserId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(handle);
+        
+        let profileData = null;
+        let profileError = null;
 
-        // Try to get cached data from local storage
-        const cachedSocialLinks = localStorage.getItem(
-          `socialLinks_${user.id}`
-        );
+        if (isUserId) {
+          // If handle is a user ID, check if it's the current user's ID
+          if (user && user.id === handle) {
+            // This is the current user accessing their own profile by ID
+            // Check if they have a profile handle
+            const { data: userProfile } = await supabase
+              .from("flink_profiles")
+              .select("*")
+              .eq("user_id", user.id)
+              .single();
+
+            if (userProfile) {
+              // User has a profile, redirect to their handle
+              navigate(`/${userProfile.handle}`, { replace: true });
+              return;
+            } else {
+              // User doesn't have a profile yet, show their own profile (dashboard)
+              profileData = { user_id: user.id, handle: user.id };
+              setIsOwnProfile(true);
+              setProfileExists(true);
+              setIsCheckingProfile(false);
+              return;
+            }
+          } else {
+            // This is someone else's user ID, profile doesn't exist
+            setProfileExists(false);
+            setIsCheckingProfile(false);
+            return;
+          }
+        } else {
+          // Handle is a regular profile handle, search for it
+          try {
+            const result = await supabase
+              .from("flink_profiles")
+              .select("*")
+              .eq("handle", handle.toLowerCase())
+              .maybeSingle();
+
+            profileData = result.data;
+            profileError = result.error;
+          } catch (queryError) {
+            console.error("Query failed, trying fallback approach:", queryError);
+            // Fallback: get all profiles and search manually
+            const { data: allProfiles } = await supabase
+              .from("flink_profiles")
+              .select("user_id, handle")
+              .limit(10);
+            
+            const matchingProfile = allProfiles?.find(
+              (p) => p.handle.toLowerCase() === handle.toLowerCase()
+            );
+            if (matchingProfile) {
+              profileData = matchingProfile;
+              profileError = null;
+            } else {
+              profileError = { message: "Profile not found via fallback" };
+            }
+          }
+
+          if (profileError || !profileData) {
+            setProfileExists(false);
+            setIsCheckingProfile(false);
+            return;
+          }
+
+          // Check if it's the user's own profile
+          if (user && user.id === profileData.user_id) {
+            setIsOwnProfile(true);
+          } else if (user && user.id !== profileData.user_id) {
+            setIsOwnProfile(false);
+          }
+        }
+
+        setProfileExists(true);
+      } catch (err) {
+        console.error("Error checking profile:", err);
+        setProfileExists(false);
+      } finally {
+        setIsCheckingProfile(false);
+      }
+    };
+
+    checkProfile();
+  }, [handle, user, navigate]);
+
+  // Load dashboard data for own profile
+  const loadDashboardData = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      // Check cache first
+      const cachedSocialLinks = localStorage.getItem(`socialLinks_${user.id}`);
         const cachedProfileDetails = localStorage.getItem(
           `profileDetails_${user.id}`
         );
-        const cacheTimestamp = localStorage.getItem(
-          `cacheTimestamp_${user.id}`
-        );
+      const cacheTimestamp = localStorage.getItem(`cacheTimestamp_${user.id}`);
 
-        // Check if cache is still valid (less than 5 minutes old)
         const isCacheValid =
-          cacheTimestamp &&
-          Date.now() - parseInt(cacheTimestamp) < 5 * 60 * 1000;
+        cacheTimestamp && Date.now() - parseInt(cacheTimestamp) < 5 * 60 * 1000;
 
         if (isCacheValid && cachedSocialLinks && cachedProfileDetails) {
-          // Use cached data
-          console.log("Using cached profile data");
           setSocialLinks(JSON.parse(cachedSocialLinks));
           setProfileDetails(JSON.parse(cachedProfileDetails));
         } else {
-          // Fetch fresh data from API
-          console.log("Fetching fresh profile data");
-
+        // Fetch all data in parallel
           const [socialResult, profileResult] = await Promise.all([
             getSocialLinks(user.id),
             getProfileDetails(user.id),
@@ -124,112 +234,66 @@ const ProfilePage = () => {
           );
         }
 
-        setLoading(false);
-        hasLoadedData.current = true;
+      // Load user details (this doesn't need caching as it's handled by AuthContext)
+      await getUserDetails(user.id);
       } catch (err) {
-        console.error("Error loading user data:", err);
-        setLoading(false);
-      }
-    };
-
-    loadUserData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // Only depend on user.id to prevent infinite loops
-
-  const handleBack = () => {
-    navigate("/dashboard");
-  };
-
-  // Helper function to get social media icon
-  const getSocialIcon = (platform) => {
-    const icons = {
-      email: <Mail className="w-4 h-4" />,
-      phone: <Phone className="w-4 h-4" />,
-      instagram: <Instagram className="w-4 h-4" />,
-      twitter: <Twitter className="w-4 h-4" />,
-      linkedin: <Linkedin className="w-4 h-4" />,
-      github: <Github className="w-4 h-4" />,
-      youtube: <Youtube className="w-4 h-4" />,
-      facebook: <Facebook className="w-4 h-4" />,
-      snapchat: <MessageCircle className="w-4 h-4" />,
-      discord: <MessageCircle className="w-4 h-4" />,
-      twitch: <Gamepad2 className="w-4 h-4" />,
-    };
-    return icons[platform] || <ExternalLink className="w-4 h-4" />;
-  };
-
-  // Helper function to get social media name
-  const getSocialName = (platform) => {
-    const names = {
-      email: "Email",
-      phone: "Phone",
-      instagram: "Instagram",
-      twitter: "Twitter",
-      linkedin: "LinkedIn",
-      github: "GitHub",
-      youtube: "YouTube",
-      facebook: "Facebook",
-      snapchat: "Snapchat",
-      discord: "Discord",
-      twitch: "Twitch",
-    };
-    return names[platform] || platform;
-  };
-
-  // Helper function to format URL for clicking
-  const formatUrlForClick = (url, platform) => {
-    if (platform === "email") {
-      const cleanEmail = url.replace(/^mailto:/, "");
-      return `mailto:${cleanEmail}`;
-    } else if (platform === "phone") {
-      return url.startsWith("tel:") ? url : `tel:${url}`;
-    } else {
-      if (url.startsWith("http://") || url.startsWith("https://")) {
-        return url;
-      }
-
-      const socialUrls = {
-        instagram: (username) =>
-          `https://instagram.com/${username.replace("@", "")}`,
-        twitter: (username) =>
-          `https://twitter.com/${username.replace("@", "")}`,
-        linkedin: (username) =>
-          username.includes("linkedin.com")
-            ? `https://${username}`
-            : `https://linkedin.com/in/${username}`,
-        github: (username) =>
-          username.includes("github.com")
-            ? `https://${username}`
-            : `https://github.com/${username}`,
-        youtube: (username) =>
-          username.includes("youtube.com")
-            ? `https://${username}`
-            : `https://youtube.com/@${username.replace("@", "")}`,
-        facebook: (username) =>
-          username.includes("facebook.com")
-            ? `https://${username}`
-            : `https://facebook.com/${username}`,
-        snapchat: (username) =>
-          `https://snapchat.com/add/${username.replace("@", "")}`,
-        discord: (username) => `https://discord.com/users/${username}`,
-        twitch: (username) =>
-          username.includes("twitch.tv")
-            ? `https://${username}`
-            : `https://twitch.tv/${username}`,
-      };
-
-      if (socialUrls[platform]) {
-        return socialUrls[platform](url);
-      }
-
-      return `https://${url}`;
+      console.error("Error loading dashboard data:", err);
     }
+  }, [user?.id, getSocialLinks, getProfileDetails, getUserDetails]);
+
+  // Load dashboard data when it's own profile
+  useEffect(() => {
+    if (isOwnProfile && user?.id && !hasLoadedData.current) {
+      loadDashboardData();
+      hasLoadedData.current = true;
+    }
+  }, [isOwnProfile, user?.id, loadDashboardData]);
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = async () => {
+    // Clear cache to force fresh data load
+    if (user?.id) {
+      localStorage.removeItem(`socialLinks_${user.id}`);
+      localStorage.removeItem(`profileDetails_${user.id}`);
+      localStorage.removeItem(`cacheTimestamp_${user.id}`);
+    }
+    await loadDashboardData();
   };
 
-  if (loading) {
+  // Handle social links update
+  const handleSocialLinksUpdate = async () => {
+    // Clear cache to force fresh data load
+    if (user?.id) {
+      localStorage.removeItem(`socialLinks_${user.id}`);
+      localStorage.removeItem(`cacheTimestamp_${user.id}`);
+    }
+    await loadDashboardData();
+  };
+
+  // Handle profile update
+  const handleProfileUpdate = async () => {
+    // Clear cache to force fresh data load
+    if (user?.id) {
+      localStorage.removeItem(`profileDetails_${user.id}`);
+      localStorage.removeItem(`cacheTimestamp_${user.id}`);
+    }
+    await loadDashboardData();
+  };
+
+  // Search functions
+  const openSearchOverlay = () => {
+    setShowSearch(true);
+  };
+
+  const closeSearchOverlay = () => {
+    setShowSearch(false);
+  };
+
+  // Show loading while checking profile
+  if (isCheckingProfile) {
     return (
       <div
-        className={`min-h-screen flex items-center justify-center ${
+        className={`profile-page-loading min-h-screen flex items-center justify-center ${
           isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
         }`}
       >
@@ -243,10 +307,12 @@ const ProfilePage = () => {
     );
   }
 
-  return (
-    <>
-      {/* Desktop Warning Message - Hidden on mobile */}
-      <div className="hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+  // Show 404 if profile doesn't exist
+  if (!profileExists) {
+    return (
+      <>
+        {/* Desktop Warning Message - Hidden on mobile */}
+        <div className="profile-page-not-found-desktop hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
         <div className="text-center p-8 max-w-md">
           <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Smartphone className="w-10 h-10 text-white" />
@@ -256,6 +322,138 @@ const ProfilePage = () => {
           </h1>
           <p className="text-gray-300 text-lg mb-6">
             Profile is designed for mobile devices. Please access it from your
+            phone or resize your browser window.
+          </p>
+          <button
+              onClick={() => navigate("/", { replace: true })}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transform hover:scale-105 transition-all duration-300"
+          >
+            Go to Home
+          </button>
+        </div>
+      </div>
+
+        {/* Mobile Error Content */}
+        <div
+          className={`profile-page-not-found-mobile min-h-screen relative md:hidden ${
+            isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
+          }`}
+        >
+        <BackgroundPattern />
+
+      {/* Header */}
+      <div
+        className={`sticky top-0 z-10 border-b ${
+              isDark
+                ? "bg-slate-800 border-slate-700"
+                : "bg-white border-gray-200"
+        }`}
+      >
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center space-x-3">
+            {/* Only show back button if user is logged in */}
+            {user && (
+              <button
+                onClick={() => navigate("/", { replace: true })}
+                className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+                  isDark
+                    ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                    : "hover:bg-gray-100 text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+
+            <div className="flex items-center space-x-2">
+              <User
+                className={`w-5 h-5 ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}
+              />
+              <h1
+                className={`text-lg font-semibold ${
+                  isDark ? "text-white" : "text-gray-800"
+                }`}
+              >
+                    Profile Not Found
+              </h1>
+            </div>
+          </div>
+        </div>
+      </div>
+
+          {/* Error Content */}
+          <div className="container mx-auto px-4 py-6 max-w-4xl">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+              {/* Error Icon */}
+              <div className="mb-8">
+                <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto shadow-2xl">
+                  <User className="w-10 h-10 text-white" />
+                </div>
+              </div>
+
+              {/* Error Message */}
+              <div className="max-w-md mx-auto">
+                <h1
+                  className={`text-3xl font-bold mb-4 bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  Profile Not Found
+                </h1>
+                <p
+                  className={`text-lg mb-2 ${
+                    isDark ? "text-gray-300" : "text-gray-600"
+                  }`}
+                >
+                  The profile you're looking for doesn't exist.
+                </p>
+                <p
+                  className={`text-sm mb-8 ${
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  The handle "{handle}" might be incorrect or the profile might
+                  have been removed.
+                </p>
+
+                {/* Action Button */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => navigate("/")}
+                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transform hover:scale-105 transition-all duration-300 shadow-lg"
+                  >
+                    Go Back Home
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Show public profile view for other users
+  if (!isOwnProfile) {
+    return <PublicProfileView handle={handle} />;
+  }
+
+  // Show own profile (dashboard) for logged-in user
+  return (
+    <>
+      {/* Desktop Warning Message - Hidden on mobile */}
+      <div className="profile-page-dashboard-desktop hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+        <div className="text-center p-8 max-w-md">
+          <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Smartphone className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+            Mobile Only
+          </h1>
+          <p className="text-gray-300 text-lg mb-6">
+            Dashboard is designed for mobile devices. Please access it from your
             phone or resize your browser window.
           </p>
           <button
@@ -269,75 +467,25 @@ const ProfilePage = () => {
 
       {/* Mobile Content */}
       <div
-        className={`min-h-screen relative md:hidden ${
+        className={`profile-page-dashboard-mobile min-h-screen relative md:hidden ${
           isDark ? "text-white" : "text-gray-900"
         }`}
       >
         <BackgroundPattern />
-      {/* Header */}
-      <div
-        className={`sticky top-0 z-10 border-b ${
-          isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"
-        }`}
-      >
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleBack}
-              className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                isDark
-                  ? "hover:bg-slate-700 text-gray-300 hover:text-white"
-                  : "hover:bg-gray-100 text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
 
-            <div className="flex items-center space-x-2">
-              <User
-                className={`w-5 h-5 ${
-                  isDark ? "text-gray-400" : "text-gray-500"
-                }`}
-              />
-              <h1
-                className={`text-lg font-semibold ${
-                  isDark ? "text-white" : "text-gray-800"
-                }`}
-              >
-                Profile
-              </h1>
-            </div>
-          </div>
-        </div>
-      </div>
-
-        {/* Content */}
-        <div className="container mx-auto px-4 py-6 max-w-4xl md:hidden">
-        {/* Profile Header Card */}
-        <div
-          className={`relative overflow-hidden rounded-3xl mb-8 ${
-            isDark
-              ? "bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700"
-              : "bg-gradient-to-br from-white to-gray-50 border border-gray-200"
-          }`}
-        >
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full transform translate-x-32 -translate-y-32"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-500 to-orange-500 rounded-full transform -translate-x-24 translate-y-24"></div>
-          </div>
-
-          <div className="relative p-4">
-            <div className="flex flex-col md:flex-row items-center md:items-center space-y-6 md:space-y-0 md:space-x-6">
+        {/* Header - Old Dashboard Style for Own Profile */}
+        <div className="container mx-auto px-4 pt-6 pb-2 relative z-10">
+          <header className="flex justify-between items-center mb-2 min-h-[80px]">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
               {/* Profile Picture */}
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 {userDetails?.profile_url ? (
                   <img
                     src={userDetails.profile_url}
                     alt="Profile"
                     loading="lazy"
                     decoding="async"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-white/20 shadow-2xl"
+                    className="w-18 h-18 rounded-full object-cover border-2 border-primary-500 shadow-lg"
                     onLoad={(e) => {
                       e.target.style.opacity = "1";
                     }}
@@ -352,477 +500,343 @@ const ProfilePage = () => {
                   />
                 ) : null}
                 <div
-                  className={`w-32 h-32 rounded-full flex items-center justify-center text-4xl font-bold border-4 border-white/20 shadow-2xl ${
+                  className={`w-18 h-18 rounded-full flex items-center justify-center text-xl font-bold border-2 border-primary-500 shadow-lg ${
                     userDetails?.profile_url ? "hidden" : "flex"
                   } ${
                     isDark
-                      ? "bg-gradient-to-br from-slate-700 to-slate-800 text-white"
-                      : "bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600"
+                      ? "bg-slate-700 text-white border-slate-600"
+                      : "bg-primary-100 text-primary-600"
                   }`}
                 >
                   {userDetails?.name
                     ? userDetails.name.charAt(0).toUpperCase()
                     : user?.email?.charAt(0).toUpperCase() || "U"}
                 </div>
-                {/* Online Status Indicator */}
-                <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-lg"></div>
               </div>
 
-              {/* Profile Info */}
-              <div className="flex-1 text-center md:text-center">
-                <h1
-                  className={`text-2xl font-bold mb-3 ${
-                    isDark ? "text-white" : "text-gray-900"
+              <div className="flex-1 min-w-0">
+                <p
+                  className={`text-base font-medium truncate ${
+                    isDark ? "text-gray-300" : "text-gray-600"
                   }`}
+                  title={userDetails?.name || user?.email}
                 >
-                  {userDetails?.name || "User Profile"}
-                </h1>
-
-                {/* Bio */}
-                {profileDetails?.bio && !isProfilePrivate && (
+                  {userDetails?.name || user?.email}
+                </p>
+                {userDetails?.name && (
                   <p
-                    className={`text-sm mb-4 max-w-2xl ${
-                      isDark ? "text-gray-300" : "text-gray-600"
+                    className={`text-xs truncate ${
+                      isDark ? "text-gray-400" : "text-gray-500"
                     }`}
+                    title={user?.email}
                   >
-                    {profileDetails.bio}
+                    {user?.email}
                   </p>
                 )}
-
-                {/* Profile Stats */}
-                {!isProfilePrivate && (
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {profileDetails?.location && (
-                      <div
-                        className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
-                          isDark
-                            ? "bg-slate-700/50 text-gray-300"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        <MapPin className="w-3 h-3" />
-                        <span className="text-xs">{profileDetails.location}</span>
-                      </div>
-                    )}
-
-                    {profileDetails?.website && (
-                      <div
-                        className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
-                          isDark
-                            ? "bg-slate-700/50 text-gray-300"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        <Globe className="w-3 h-3" />
-                        <a
-                          href={
-                            profileDetails.website.startsWith("http")
-                              ? profileDetails.website
-                              : `https://${profileDetails.website}`
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs hover:underline"
-                        >
-                          Website
-                        </a>
-                      </div>
-                    )}
-
-                    <div
-                      className={`flex items-center space-x-1.5 px-2 py-1 my-2 rounded-full ${
-                        isDark
-                          ? "bg-slate-700/50 text-gray-300"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      <Calendar className="w-3 h-3" />
-                      <span className="text-xs">
-                        Joined{" "}
-                        {userDetails?.created_at
-                          ? new Date(userDetails.created_at).toLocaleDateString(
-                              "en-US",
-                              { month: "long", year: "numeric" }
-                            )
-                          : "Recently"}
+                {/* Flink Branding */}
+                <div className="flex items-center mt-1">
+                  <span
+                    className={`text-xs ${
+                      isDark ? "text-gray-500" : "text-gray-400"
+                    }`}
+                  >
+                    Powered by
+                  </span>
+                  <span
+                    className={`ml-1 text-xs font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent`}
+                  >
+                    Flink
                       </span>
                     </div>
-                  </div>
-                )}
+          </div>
+        </div>
 
+            {/* Only show search and menu buttons if not in onboarding */}
+            {userDetails && !userDetails.first_login && (
+              <div className="flex items-center space-x-2">
+                {/* Search Button */}
+                <button
+                  onClick={openSearchOverlay}
+                  className={`p-3 rounded-xl transition-all duration-200 hover:scale-105 ${
+                isDark 
+                      ? "bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-gray-300 hover:text-white"
+                      : "bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 hover:text-gray-800"
+                  }`}
+                  title="Search Profiles"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+
+                {/* Menu Button */}
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className={`p-3 rounded-xl transition-all duration-200 hover:scale-105 ${
+                    isDark 
+                      ? "bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-gray-300 hover:text-white"
+                      : "bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 hover:text-gray-800"
+                  }`}
+                  title="Menu"
+                >
+                  {isMenuOpen ? (
+                    <X className="w-5 h-5" />
+                  ) : (
+                    <Menu className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            )}
+          </header>
+          </div>
+
+        {/* Mobile Menu - Dashboard Style */}
+        <div
+          className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${
+            isMenuOpen
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+          }`}
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsMenuOpen(false)}
+          />
+
+          {/* Menu Panel */}
+          <div
+            className={`absolute right-0 top-0 h-full w-80 max-w-sm transform transition-all duration-300 ease-out ${
+              isMenuOpen ? "translate-x-0" : "translate-x-full"
+            } ${isDark ? "bg-slate-800" : "bg-white"}`}
+          >
+            <div className="flex flex-col h-full">
+              {/* Menu Header */}
+              <div
+                className={`flex items-center justify-between p-6 border-b ${
+                  isDark ? "border-slate-700" : "border-gray-200"
+                }`}
+              >
+                <h2
+                  className={`text-lg font-semibold ${
+                    isDark ? "text-white" : "text-gray-800"
+                  }`}
+                >
+                  Menu
+              </h2>
+                <button
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`p-2 rounded-lg transition-colors ${
+                  isDark
+                      ? "hover:bg-slate-700 text-gray-400 hover:text-white"
+                      : "hover:bg-gray-100 text-gray-500 hover:text-gray-800"
+                  }`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+            </div>
+
+              {/* Menu Items */}
+              <div className="flex-1 p-6">
+                <div className="space-y-2">
+                  {/* Profile Preview */}
+                  {/* <button
+                    onClick={() => {
+                      navigate(`/${profileDetails?.handle || user?.id}`);
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-200 ${
+                      isDark
+                        ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                        : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                    }`}
+                  >
+                    <User className="w-5 h-5" />
+                    <span className="font-medium">Profile Preview</span>
+                  </button> */}
+
+                  {/* Settings */}
+                  <button
+                    onClick={() => {
+                      navigate("/settings");
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-100 ${
+                      isDark
+                        ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                        : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                    }`}
+                  >
+                    <Settings className="w-5 h-5" />
+                    <span className="font-medium">Settings</span>
+                  </button>
+
+                  {/* Notifications */}
+                  <button
+                    onClick={() => {
+                      navigate("/notifications");
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-300 ${
+                      isDark
+                        ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                        : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                    }`}
+                  >
+                    <Bell className="w-5 h-5" />
+                    <span className="font-medium">Notifications</span>
+                  </button>
+
+                  {/* Friends */}
+                  <button
+                    onClick={() => {
+                      navigate("/friends");
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-[350ms] ${
+                      isDark
+                        ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                        : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                    }`}
+                  >
+                    <Users className="w-5 h-5" />
+                    <span className="font-medium">Friends</span>
+                  </button>
+
+                  {/* Help */}
+                  <button
+                    onClick={() => {
+                      navigate("/help");
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-[450ms] ${
+                      isDark
+                        ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                        : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                    }`}
+                  >
+                    <HelpCircle className="w-5 h-5" />
+                    <span className="font-medium">Help & Support</span>
+                  </button>
+
+                    {/* Theme Toggle */}
+                    <button
+                      onClick={() => {
+                        toggleTheme();
+                        setIsMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 animate-in slide-in-from-right-4 delay-[550ms] ${
+                        isDark
+                          ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                          : "hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                      }`}
+                    >
+                    {isDark ? (
+                      <>
+                        <Sun className="w-5 h-5" />
+                        <span className="font-medium">Light Mode</span>
+                      </>
+                    ) : (
+                      <>
+                        <Moon className="w-5 h-5" />
+                        <span className="font-medium">Dark Mode</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {/* Flink Branding */}
-              {/* <div className="flex items-center justify-center mt-4">
-                <span className={`text-xs ${
-                  isDark ? "text-gray-500" : "text-gray-400"
-                }`}>
-                  Powered by
-                </span>
-                <span className={`ml-1 text-xs font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent`}>
-                  Flink
-                </span>
-              </div> */}
+              {/* Logout Section */}
+              <div
+                className={`p-6 border-t animate-in slide-in-from-right-4 delay-400 ${
+                  isDark ? "border-slate-700" : "border-gray-200"
+                }`}
+              >
+                <button
+                  onClick={() => {
+                    signOut();
+                    setIsMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 ${
+                    isDark
+                      ? "text-red-400 hover:text-red-300 hover:bg-red-900/20 border border-red-800/30"
+                      : "text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200"
+                  }`}
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* User Status Section - Only show for new users */}
-        {userDetails && userDetails.first_login && (
-          <div
-            className={`mb-6 p-4 rounded-2xl ${
-              isDark 
-                ? "bg-slate-800 border border-slate-700" 
-                : "bg-white border border-gray-200"
-            }`}
-          >
-            <div className="text-center">
-              <span
-                className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                  isDark 
-                    ? "bg-green-900/30 text-green-400 border border-green-800"
-                    : "bg-green-100 text-green-800 border border-green-200"
-                }`}
-              >
-                ✨ New User
-              </span>
-            </div>
-          </div>
-        )}
+        {/* Content */}
+        <div className="container mx-auto px-4 py-0 max-w-4xl md:hidden">
+          {/* Show onboarding if first login */}
+          {userDetails?.first_login && (
+            <OnboardingFlow
+              key={`onboarding-${user?.id}`}
+              onComplete={handleOnboardingComplete}
+              userName={userDetails?.name || user?.email || ""}
+              userEmail={userDetails?.email || user?.email || ""}
+              userId={user?.id || ""}
+            />
+          )}
 
-        {/* Private Profile Message */}
-        {isProfilePrivate && (
-          <div
-            className={`mb-6 p-6 rounded-2xl text-center ${
-              isDark 
-                ? "bg-slate-800 border border-slate-700" 
-                : "bg-white border border-gray-200"
-            }`}
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-8 h-8 text-white" />
-            </div>
-            <h2
-              className={`text-xl font-bold mb-2 ${
-                isDark ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Private Profile
-            </h2>
-            <p
-              className={`text-sm ${
-                isDark ? "text-gray-300" : "text-gray-600"
-              }`}
-            >
-              This profile is private. Only the owner can view the details and social links.
-            </p>
-          </div>
-        )}
+          {/* Dashboard Content */}
+          {userDetails && !userDetails.first_login && (
+            <>
+              {/* Social Links Section */}
+              <SocialLinksSection
+                socialLinks={socialLinks}
+                profileDetails={profileDetails}
+                onUpdate={handleSocialLinksUpdate}
+              />
 
-        {/* Social Links Grid */}
-        {socialLinks.length > 0 && !isProfilePrivate && (
-          <div
-            className={`p-6 rounded-2xl mb-8 ${
-              isDark
-                ? "bg-slate-800 border border-slate-700"
-                : "bg-white border border-gray-200"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2
-                className={`text-xl font-semibold ${
-                  isDark ? "text-white" : "text-gray-800"
-                }`}
-              >
-                Connect With Me
-              </h2>
-              <div
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  isDark
-                    ? "bg-slate-700 text-gray-300"
-                    : "bg-gray-100 text-gray-600"
-                }`}
-              >
-                {isOwnProfile
-                  ? deduplicatedLinks.length
-                  : deduplicatedLinks.filter((link) => link.private === false)
-                      .length === 1
-                  ? "Link"
-                  : "Links"}
-                {isOwnProfile &&
-                  deduplicatedLinks.some((link) => link.private === true) && (
-                    <span className="ml-2 text-orange-500">• Private</span>
-                  )}
-              </div>
-            </div>
+              {/* Spacing between sections */}
+              <div className="mb-6"></div>
 
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-              {(isOwnProfile
-                ? deduplicatedLinks
-                : deduplicatedLinks.filter((link) => link.private === false)
-              ).map((link, index) => {
-                const clickUrl = formatUrlForClick(link.url, link.platform);
+              {/* Profile Section */}
+              <ProfileSection
+                userDetails={userDetails}
+                profileDetails={profileDetails}
+                onUpdate={handleProfileUpdate}
+              />
 
-                // Platform-specific colors
-                const getPlatformColor = (platform) => {
-                  const colors = {
-                    email: isDark
-                      ? "text-blue-400 bg-blue-500/20"
-                      : "text-blue-600 bg-blue-100",
-                    phone: isDark
-                      ? "text-green-400 bg-green-500/20"
-                      : "text-green-600 bg-green-100",
-                    instagram: isDark
-                      ? "text-pink-400 bg-pink-500/20"
-                      : "text-pink-600 bg-pink-100",
-                    twitter: isDark
-                      ? "text-sky-400 bg-sky-500/20"
-                      : "text-sky-600 bg-sky-100",
-                    linkedin: isDark
-                      ? "text-blue-400 bg-blue-500/20"
-                      : "text-blue-600 bg-blue-100",
-                    github: isDark
-                      ? "text-gray-400 bg-gray-500/20"
-                      : "text-gray-600 bg-gray-100",
-                    youtube: isDark
-                      ? "text-red-400 bg-red-500/20"
-                      : "text-red-600 bg-red-100",
-                    facebook: isDark
-                      ? "text-blue-400 bg-blue-500/20"
-                      : "text-blue-600 bg-blue-100",
-                    snapchat: isDark
-                      ? "text-yellow-400 bg-yellow-500/20"
-                      : "text-yellow-600 bg-yellow-100",
-                    discord: isDark
-                      ? "text-indigo-400 bg-indigo-500/20"
-                      : "text-indigo-600 bg-indigo-100",
-                    twitch: isDark
-                      ? "text-purple-400 bg-purple-500/20"
-                      : "text-purple-600 bg-purple-100",
-                  };
-                  return colors[platform] || colors.email;
-                };
+              {/* Spacing between Flink Profile and Quick Actions */}
+              <div className="mb-6"></div>
 
-                const platformColor = getPlatformColor(link.platform);
+              {/* Quick Actions Section */}
+              <QuickActionsSection />
 
-                return (
-                  <a
-                    key={index}
-                    href={clickUrl}
-                    target={
-                      link.platform === "email" || link.platform === "phone"
-                        ? "_self"
-                        : "_blank"
-                    }
-                    rel={
-                      link.platform === "email" || link.platform === "phone"
-                        ? ""
-                        : "noopener noreferrer"
-                    }
-                    className={`group p-3 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg relative ${
-                      isOwnProfile && link.private === true
-                        ? isDark
-                          ? "bg-orange-900/20 hover:bg-orange-900/30 border border-orange-800/50 hover:border-orange-700/50"
-                          : "bg-orange-50 hover:bg-orange-100 border border-orange-200 hover:border-orange-300"
-                        : isDark
-                        ? "bg-slate-700/50 hover:bg-slate-700 border border-slate-600 hover:border-slate-500"
-                        : "bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex flex-col items-center text-center space-y-2">
-                      {/* Private indicator for own profile */}
-                      {isOwnProfile && link.private === true && (
-                        <div className="absolute top-2 right-2">
-                          <div
-                            className={`p-1 rounded-full ${
-                              isDark ? "bg-orange-800/50" : "bg-orange-200"
-                            }`}
-                            title="Private - Only visible to you"
-                          >
-                            <Lock className="w-3 h-3 text-orange-500" />
-                          </div>
-                        </div>
-                      )}
+              {/* Quick Stats Section */}
+              <QuickStatsSection 
+                socialLinks={socialLinks} 
+                profileDetails={profileDetails}
+                friends={friends}
+                followers={followers}
+              />
 
-                      {/* Platform Icon */}
-                      <div
-                        className={`p-2 rounded-lg ${
-                          platformColor.split(" ")[1]
-                        } group-hover:scale-110 transition-transform duration-200 ${
-                          isOwnProfile && link.private === true
-                            ? "opacity-80"
-                            : ""
-                        }`}
-                      >
-                        <div className={platformColor.split(" ")[0]}>
-                          {getSocialIcon(link.platform)}
-                        </div>
-                      </div>
-
-                      {/* Platform Name */}
-                      <div className="min-w-0 w-full">
-                        <p
-                          className={`font-medium text-xs ${
-                            isDark ? "text-white" : "text-gray-800"
-                          }`}
-                        >
-                          {getSocialName(link.platform)}
-                        </p>
-                        <p
-                          className={`text-xs truncate mt-0.5 ${
-                            isDark ? "text-gray-400" : "text-gray-500"
-                          }`}
-                        >
-                          {link.url.replace(/^(mailto:|tel:)/, "")}
-                        </p>
-                      </div>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Additional Info Card */}
-        {/* <div className={`p-6 rounded-2xl ${
-          isDark 
-            ? "bg-slate-800 border border-slate-700" 
-            : "bg-white border border-gray-200"
-        }`}>
-          <h2 className={`text-xl font-semibold mb-6 ${
-            isDark ? "text-white" : "text-gray-800"
-          }`}>
-            About
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <User className={`w-5 h-5 ${
-                isDark ? "text-blue-400" : "text-blue-600"
-              }`} />
-              <div>
-                <p className={`font-medium ${
-                  isDark ? "text-white" : "text-gray-800"
-                }`}>
-                  Full Name
-                </p>
-                <p className={`text-sm ${
-                  isDark ? "text-gray-300" : "text-gray-600"
-                }`}>
-                  {userDetails?.name || "Not provided"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <Mail className={`w-5 h-5 ${
-                isDark ? "text-green-400" : "text-green-600"
-              }`} />
-              <div>
-                <p className={`font-medium ${
-                  isDark ? "text-white" : "text-gray-800"
-                }`}>
-                  Email Address
-                </p>
-                <p className={`text-sm ${
-                  isDark ? "text-gray-300" : "text-gray-600"
-                }`}>
-                  {userDetails?.email || user?.email || "Not provided"}
-                </p>
-              </div>
-            </div>
-
-            {profileDetails?.location && (
-              <div className="flex items-center space-x-3">
-                <MapPin className={`w-5 h-5 ${
-                  isDark ? "text-red-400" : "text-red-600"
-                }`} />
-                <div>
-                  <p className={`font-medium ${
-                    isDark ? "text-white" : "text-gray-800"
-                  }`}>
-                    Location
-                  </p>
-                  <p className={`text-sm ${
-                    isDark ? "text-gray-300" : "text-gray-600"
-                  }`}>
-                    {profileDetails.location}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {profileDetails?.website && (
-              <div className="flex items-center space-x-3">
-                <Globe className={`w-5 h-5 ${
-                  isDark ? "text-purple-400" : "text-purple-600"
-                }`} />
-                <div>
-                  <p className={`font-medium ${
-                    isDark ? "text-white" : "text-gray-800"
-                  }`}>
-                    Website
-                  </p>
-                  <a 
-                    href={profileDetails.website.startsWith('http') ? profileDetails.website : `https://${profileDetails.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`text-sm hover:underline ${
-                      isDark ? "text-blue-400" : "text-blue-600"
-                    }`}
-                  >
-                    {profileDetails.website}
-                  </a>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center space-x-3">
-              <Calendar className={`w-5 h-5 ${
-                isDark ? "text-orange-400" : "text-orange-600"
-              }`} />
-              <div>
-                <p className={`font-medium ${
-                  isDark ? "text-white" : "text-gray-800"
-                }`}>
-                  Member Since
-                </p>
-                <p className={`text-sm ${
-                  isDark ? "text-gray-300" : "text-gray-600"
-                }`}>
-                  {userDetails?.created_at ? new Date(userDetails.created_at).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  }) : 'Recently'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div> */}
-
-        {/* Footer with Flink Branding */}
-        <div className="mt-6 mb-2">
-          <div
-            className={`text-center ${
-              isDark ? "text-gray-500" : "text-gray-400"
-            }`}
-          >
-            <div className="text-xs opacity-60">
+              {/* Footer */}
+              <div className="text-center mt-8 mb-4">
+                <p className="text-sm mb-2 text-gray-500">
               Made with ❤️ by{" "}
               <span className="font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
                 Flink
               </span>
-            </div>
-            <div className="text-xs opacity-50 mt-1">
+                </p>
+                <p className="text-xs text-gray-500">
               © 2025 Flink. All rights reserved.
+                </p>
             </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
-      </div>
+
+      {/* Search Overlay */}
+      <SearchOverlay isOpen={showSearch} onClose={closeSearchOverlay} />
     </>
   );
-};
+}
 
 export default ProfilePage;
