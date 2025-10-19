@@ -4,6 +4,14 @@ import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import BackgroundPattern from "../components/BackgroundPattern";
 import {
+  getUserConnections,
+  getPendingRequests,
+  getSentRequests,
+  acceptFriendRequest,
+  rejectFriendRequest,
+  CONNECTION_STATUS,
+} from "../lib/connections";
+import {
   ArrowLeft,
   Users,
   UserPlus,
@@ -23,10 +31,6 @@ import {
   Linkedin,
   Github,
   Youtube,
-  Facebook,
-  MessageCircle,
-  Gamepad2,
-  ExternalLink,
   Smartphone,
 } from "lucide-react";
 
@@ -34,72 +38,100 @@ const FriendsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isDark } = useTheme();
-  const [activeTab, setActiveTab] = useState("friends"); // "friends" or "followers"
+  const [activeTab, setActiveTab] = useState("friends"); // "friends" or "requests"
   const [searchQuery, setSearchQuery] = useState("");
-  const [showFilter, setShowFilter] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  // Mock data - replace with actual API calls
-  const [friends, setFriends] = useState([
-    {
-      id: "1",
-      name: "John Doe",
-      handle: "johndoe",
-      profile_url: null,
-      bio: "Software Developer",
-      location: "San Francisco, CA",
-      isOnline: true,
-      mutualFriends: 5,
-      status: "accepted", // "accepted", "pending", "requested"
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      handle: "janesmith",
-      profile_url: null,
-      bio: "UI/UX Designer",
-      location: "New York, NY",
-      isOnline: false,
-      mutualFriends: 12,
-      status: "accepted",
-    },
-    {
-      id: "3",
-      name: "Mike Johnson",
-      handle: "mikej",
-      profile_url: null,
-      bio: "Product Manager",
-      location: "Austin, TX",
-      isOnline: true,
-      mutualFriends: 3,
-      status: "pending",
-    },
-  ]);
+  // Real data from database
+  const [friends, setFriends] = useState([]);
+  const [allRequests, setAllRequests] = useState([]);
 
-  const [followers, setFollowers] = useState([
-    {
-      id: "4",
-      name: "Sarah Wilson",
-      handle: "sarahw",
-      profile_url: null,
-      bio: "Marketing Specialist",
-      location: "Los Angeles, CA",
-      isOnline: true,
-      mutualFriends: 8,
-      status: "accepted",
-    },
-    {
-      id: "5",
-      name: "David Brown",
-      handle: "davidb",
-      profile_url: null,
-      bio: "Data Scientist",
-      location: "Seattle, WA",
-      isOnline: false,
-      mutualFriends: 2,
-      status: "accepted",
-    },
-  ]);
+  // Load connection data on component mount
+  useEffect(() => {
+    const loadConnectionData = async () => {
+      if (!user) return;
+
+      try {
+        const [friendsResult, pendingResult, sentResult] = await Promise.all([
+          getUserConnections(user.id),
+          getPendingRequests(user.id),
+          getSentRequests(user.id),
+        ]);
+
+        if (friendsResult.data) {
+          // Transform friends data to include user info
+          const friendsData = friendsResult.data.map((connection) => {
+            const otherUser =
+              connection.sender_id === user.id
+                ? connection.receiver
+                : connection.sender;
+            const profile = otherUser.flink_profiles?.[0] || {};
+            return {
+              id: otherUser.id,
+              name: otherUser.name,
+              handle: profile.handle || otherUser.id, // Use handle from flink_profiles
+              profile_url: otherUser.profile_url,
+              bio: profile.bio || "",
+              location: profile.location || "",
+              isOnline: false, // You can implement online status later
+              mutualFriends: 0, // You can implement mutual friends calculation later
+              status: connection.status,
+              connectionId: connection.id,
+            };
+          });
+          setFriends(friendsData);
+        }
+
+        // Combine pending and sent requests
+        const allRequestsData = [];
+        
+        if (pendingResult.data) {
+          const pendingData = pendingResult.data.map((connection) => {
+            const profile = connection.sender.flink_profiles?.[0] || {};
+            return {
+              id: connection.sender.id,
+              name: connection.sender.name,
+              handle: profile.handle || connection.sender.id,
+              profile_url: connection.sender.profile_url,
+              bio: profile.bio || "",
+              location: profile.location || "",
+              isOnline: false,
+              mutualFriends: 0,
+              status: connection.status,
+              connectionId: connection.id,
+              requestType: 'received' // Incoming request
+            };
+          });
+          allRequestsData.push(...pendingData);
+        }
+
+        if (sentResult.data) {
+          const sentData = sentResult.data.map((connection) => {
+            const profile = connection.receiver.flink_profiles?.[0] || {};
+            return {
+              id: connection.receiver.id,
+              name: connection.receiver.name,
+              handle: profile.handle || connection.receiver.id,
+              profile_url: connection.receiver.profile_url,
+              bio: profile.bio || "",
+              location: profile.location || "",
+              isOnline: false,
+              mutualFriends: 0,
+              status: connection.status,
+              connectionId: connection.id,
+              requestType: 'sent' // Outgoing request
+            };
+          });
+          allRequestsData.push(...sentData);
+        }
+
+        setAllRequests(allRequestsData);
+      } catch (error) {
+        console.error("Error loading connection data:", error);
+      }
+    };
+
+    loadConnectionData();
+  }, [user]);
 
   // Filter data based on search query
   const filteredFriends = friends.filter(
@@ -108,10 +140,10 @@ const FriendsPage = () => {
       friend.handle.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredFollowers = followers.filter(
-    (follower) =>
-      follower.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      follower.handle.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRequests = allRequests.filter(
+    (request) =>
+      request.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      request.handle.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleBack = () => {
@@ -122,30 +154,85 @@ const FriendsPage = () => {
     navigate(`/${handle}`);
   };
 
-  const handleAcceptRequest = (userId) => {
-    // TODO: Implement accept request functionality
-    console.log("Accept request for user:", userId);
+  const handleAcceptRequest = async (connectionId) => {
+    try {
+      const { error } = await acceptFriendRequest(connectionId);
+      if (error) {
+        console.error("Error accepting request:", error);
+      } else {
+        // Refresh the data
+        const loadConnectionData = async () => {
+          const [friendsResult, pendingResult] = await Promise.all([
+            getUserConnections(user.id),
+            getPendingRequests(user.id),
+          ]);
+
+          if (friendsResult.data) {
+            const friendsData = friendsResult.data.map((connection) => {
+              const otherUser =
+                connection.sender_id === user.id
+                  ? connection.receiver
+                  : connection.sender;
+              const profile = otherUser.flink_profiles?.[0] || {};
+              return {
+                id: otherUser.id,
+                name: otherUser.name,
+                handle: profile.handle || otherUser.id,
+                profile_url: otherUser.profile_url,
+                bio: profile.bio || "",
+                location: profile.location || "",
+                isOnline: false,
+                mutualFriends: 0,
+                status: connection.status,
+                connectionId: connection.id,
+              };
+            });
+            setFriends(friendsData);
+          }
+
+          if (pendingResult.data) {
+            const pendingData = pendingResult.data.map((connection) => {
+              const profile = connection.sender.flink_profiles?.[0] || {};
+              return {
+                id: connection.sender.id,
+                name: connection.sender.name,
+                handle: profile.handle || connection.sender.id,
+                profile_url: connection.sender.profile_url,
+                bio: profile.bio || "",
+                location: profile.location || "",
+                isOnline: false,
+                mutualFriends: 0,
+                status: connection.status,
+                connectionId: connection.id,
+              };
+            });
+            setAllRequests(pendingData);
+          }
+        };
+        loadConnectionData();
+      }
+    } catch (err) {
+      console.error("Error accepting request:", err);
+    }
   };
 
-  const handleRejectRequest = (userId) => {
-    // TODO: Implement reject request functionality
-    console.log("Reject request for user:", userId);
+  const handleRejectRequest = async (connectionId) => {
+    try {
+      const { error } = await rejectFriendRequest(connectionId);
+      if (error) {
+        console.error("Error rejecting request:", error);
+      } else {
+        // Remove from all requests
+        setAllRequests((prev) =>
+          prev.filter((req) => req.connectionId !== connectionId)
+        );
+      }
+    } catch (err) {
+      console.error("Error rejecting request:", err);
+    }
   };
 
-  const handleUnfriend = (userId) => {
-    // TODO: Implement unfriend functionality
-    console.log("Unfriend user:", userId);
-  };
 
-  const handleFollow = (userId) => {
-    // TODO: Implement follow functionality
-    console.log("Follow user:", userId);
-  };
-
-  const handleUnfollow = (userId) => {
-    // TODO: Implement unfollow functionality
-    console.log("Unfollow user:", userId);
-  };
 
   return (
     <>
@@ -264,9 +351,9 @@ const FriendsPage = () => {
               Friends ({friends.length})
             </button>
             <button
-              onClick={() => setActiveTab("followers")}
+              onClick={() => setActiveTab("requests")}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeTab === "followers"
+                activeTab === "requests"
                   ? isDark
                     ? "bg-primary-600 text-white shadow-lg"
                     : "bg-primary-600 text-white shadow-lg"
@@ -275,7 +362,7 @@ const FriendsPage = () => {
                   : "text-gray-600 hover:text-gray-800"
               }`}
             >
-              Followers ({followers.length})
+              Requests ({allRequests.length})
             </button>
           </div>
         </div>
@@ -348,80 +435,13 @@ const FriendsPage = () => {
                             {friend.name}
                           </h3>
                           <p
-                            className={`text-sm truncate ${
+                            className={`text-sm truncate -mt-1 ${
                               isDark ? "text-gray-400" : "text-gray-500"
                             }`}
                           >
                             @{friend.handle}
                           </p>
-                          {friend.bio && (
-                            <p
-                              className={`text-xs truncate mt-1 ${
-                                isDark ? "text-gray-500" : "text-gray-600"
-                              }`}
-                            >
-                              {friend.bio}
-                            </p>
-                          )}
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span
-                              className={`text-xs ${
-                                isDark ? "text-gray-500" : "text-gray-600"
-                              }`}
-                            >
-                              {friend.mutualFriends} mutual friends
-                            </span>
-                            {friend.location && (
-                              <>
-                                <span
-                                  className={`text-xs ${
-                                    isDark ? "text-gray-600" : "text-gray-400"
-                                  }`}
-                                >
-                                  •
-                                </span>
-                                <span
-                                  className={`text-xs ${
-                                    isDark ? "text-gray-500" : "text-gray-600"
-                                  }`}
-                                >
-                                  {friend.location}
-                                </span>
-                              </>
-                            )}
-                          </div>
                         </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex items-center space-x-2">
-                        {friend.status === "pending" ? (
-                          <>
-                            <button
-                              onClick={() => handleAcceptRequest(friend.id)}
-                              className="p-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-all duration-200 hover:scale-105"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRejectRequest(friend.id)}
-                              className="p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all duration-200 hover:scale-105"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => handleUnfriend(friend.id)}
-                            className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                              isDark
-                                ? "hover:bg-slate-700 text-gray-400 hover:text-white"
-                                : "hover:bg-gray-100 text-gray-500 hover:text-gray-800"
-                            }`}
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -430,24 +450,24 @@ const FriendsPage = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredFollowers.length === 0 ? (
+              {filteredRequests.length === 0 ? (
                 <div
                   className={`text-center py-12 ${
                     isDark ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
                   <UserPlus className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">No followers yet</p>
+                  <p className="text-lg font-medium mb-2">No requests yet</p>
                   <p className="text-sm">
                     {searchQuery
-                      ? "No followers match your search"
-                      : "Share your profile to get followers!"}
+                      ? "No requests match your search"
+                      : "Your friend requests will appear here!"}
                   </p>
                 </div>
               ) : (
-                filteredFollowers.map((follower) => (
+                filteredRequests.map((request) => (
                   <div
-                    key={follower.id}
+                    key={request.id}
                     className={`p-4 rounded-xl transition-all duration-200 hover:scale-[1.02] ${
                       isDark
                         ? "bg-slate-800 border border-slate-700 hover:border-slate-600"
@@ -457,13 +477,13 @@ const FriendsPage = () => {
                     <div className="flex items-center justify-between">
                       <div
                         className="flex items-center space-x-3 flex-1 min-w-0"
-                        onClick={() => handleUserClick(follower.handle)}
+                        onClick={() => handleUserClick(request.handle)}
                       >
                         {/* Profile Picture */}
                         <div className="relative flex-shrink-0">
-                          {follower.profile_url ? (
+                          {request.profile_url ? (
                             <img
-                              src={follower.profile_url}
+                              src={request.profile_url}
                               alt="Profile"
                               className="w-12 h-12 rounded-full object-cover border-2 border-primary-500"
                             />
@@ -475,11 +495,11 @@ const FriendsPage = () => {
                                   : "bg-primary-100 text-primary-600"
                               }`}
                             >
-                              {follower.name.charAt(0).toUpperCase()}
+                              {request.name.charAt(0).toUpperCase()}
                             </div>
                           )}
                           {/* Online Status */}
-                          {follower.isOnline && (
+                          {request.isOnline && (
                             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
                           )}
                         </div>
@@ -491,22 +511,32 @@ const FriendsPage = () => {
                               isDark ? "text-white" : "text-gray-900"
                             }`}
                           >
-                            {follower.name}
+                            {request.name}
                           </h3>
                           <p
-                            className={`text-sm truncate ${
+                            className={`text-sm truncate -mt-1 ${
                               isDark ? "text-gray-400" : "text-gray-500"
                             }`}
                           >
-                            @{follower.handle}
+                            @{request.handle}
                           </p>
-                          {follower.bio && (
+                          {/* Request Type Indicator */}
+                          <p
+                            className={`text-xs ${
+                              request.requestType === 'received'
+                                ? isDark ? "text-green-400" : "text-green-600"
+                                : isDark ? "text-blue-400" : "text-blue-600"
+                            }`}
+                          >
+                            {request.requestType === 'received' ? 'Incoming Request' : 'Sent Request'}
+                          </p>
+                          {request.bio && (
                             <p
                               className={`text-xs truncate mt-1 ${
                                 isDark ? "text-gray-500" : "text-gray-600"
                               }`}
                             >
-                              {follower.bio}
+                              {request.bio}
                             </p>
                           )}
                           <div className="flex items-center space-x-2 mt-1">
@@ -515,9 +545,9 @@ const FriendsPage = () => {
                                 isDark ? "text-gray-500" : "text-gray-600"
                               }`}
                             >
-                              {follower.mutualFriends} mutual friends
+                              {request.mutualFriends} mutual friends
                             </span>
-                            {follower.location && (
+                            {request.location && (
                               <>
                                 <span
                                   className={`text-xs ${
@@ -531,7 +561,7 @@ const FriendsPage = () => {
                                     isDark ? "text-gray-500" : "text-gray-600"
                                   }`}
                                 >
-                                  {follower.location}
+                                  {request.location}
                                 </span>
                               </>
                             )}
@@ -541,26 +571,29 @@ const FriendsPage = () => {
 
                       {/* Action Buttons */}
                       <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleFollow(follower.id)}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 ${
-                            isDark
-                              ? "bg-primary-600 hover:bg-primary-700 text-white"
-                              : "bg-primary-600 hover:bg-primary-700 text-white"
-                          }`}
-                        >
-                          Follow Back
-                        </button>
-                        <button
-                          onClick={() => handleUnfollow(follower.id)}
-                          className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                            isDark
-                              ? "hover:bg-slate-700 text-gray-400 hover:text-white"
-                              : "hover:bg-gray-100 text-gray-500 hover:text-gray-800"
-                          }`}
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        {request.requestType === 'received' ? (
+                          <>
+                            <button
+                              onClick={() => handleAcceptRequest(request.connectionId)}
+                              className="px-3 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-sm font-medium transition-all duration-200 hover:scale-105"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => handleRejectRequest(request.connectionId)}
+                              className="px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-all duration-200 hover:scale-105"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            disabled
+                            className="px-3 py-1.5 rounded-lg bg-gray-400 text-white text-sm font-medium transition-all duration-200"
+                          >
+                            Pending
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

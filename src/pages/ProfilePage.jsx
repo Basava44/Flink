@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { supabase } from "../lib/supabase";
+import { getUserConnections, getPendingRequests } from "../lib/connections";
 import OnboardingFlow from "../components/OnboardingFlow";
 import ProfileSection from "../components/ProfileSection";
 import SocialLinksSection from "../components/SocialLinksSection";
@@ -57,11 +58,48 @@ function ProfilePage() {
   const [profileDetails, setProfileDetails] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [friends] = useState(0);
-  const [followers] = useState(0);
+  const [friends, setFriends] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
 
   // Ref to prevent multiple data loads
   const hasLoadedData = useRef(false);
+  
+  // Ref to prevent double sign out calls
+  const isSigningOut = useRef(false);
+
+  // Handle sign out
+  const handleSignOut = useCallback(async () => {
+    if (isSigningOut.current) {
+      console.log("Sign out already in progress, ignoring duplicate call");
+      return;
+    }
+    
+    isSigningOut.current = true;
+    
+    try {
+      console.log("handleSignOut called");
+      const { error } = await signOut();
+      if (error) {
+        console.error("Error signing out:", error);
+        alert("Error signing out: " + error.message);
+        return;
+      }
+      console.log("Sign out successful, navigating to home");
+      
+      // Try multiple navigation methods for mobile compatibility
+      try {
+        navigate("/");
+      } catch (navError) {
+        console.log("Navigate failed, trying window.location:", navError);
+        window.location.href = "/";
+      }
+    } catch (error) {
+      console.error("Unexpected error during sign out:", error);
+      alert("Unexpected error: " + error.message);
+    } finally {
+      isSigningOut.current = false;
+    }
+  }, [signOut, navigate]);
 
   // Handle navigation when user signs out (but not when accessing public profile directly)
   useEffect(() => {
@@ -170,7 +208,7 @@ function ProfilePage() {
           // Check if it's the user's own profile
           if (user && user.id === profileData.user_id) {
             setIsOwnProfile(true);
-          } else if (user && user.id !== profileData.user_id) {
+          } else {
             setIsOwnProfile(false);
           }
         }
@@ -186,6 +224,30 @@ function ProfilePage() {
 
     checkProfile();
   }, [handle, user, navigate]);
+
+  // Load connection stats for dashboard
+  const loadConnectionStats = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+        const [friendsResult, pendingResult] = await Promise.all([
+        getUserConnections(user.id),
+        getPendingRequests(user.id)
+      ]);
+
+      // Set friends count
+      if (friendsResult.data) {
+        setFriends(friendsResult.data.length);
+      }
+
+      // Set pending requests count (incoming)
+      if (pendingResult.data) {
+        setPendingRequests(pendingResult.data.length);
+      }
+    } catch (error) {
+      console.error("Error loading connection stats:", error);
+    }
+  }, [user?.id]);
 
   // Load dashboard data for own profile
   const loadDashboardData = useCallback(async () => {
@@ -245,9 +307,10 @@ function ProfilePage() {
   useEffect(() => {
     if (isOwnProfile && user?.id && !hasLoadedData.current) {
       loadDashboardData();
+      loadConnectionStats(); // Load connection stats for quick stats
       hasLoadedData.current = true;
     }
-  }, [isOwnProfile, user?.id, loadDashboardData]);
+  }, [isOwnProfile, user?.id, loadDashboardData, loadConnectionStats]);
 
   // Handle onboarding completion
   const handleOnboardingComplete = async () => {
@@ -258,6 +321,7 @@ function ProfilePage() {
       localStorage.removeItem(`cacheTimestamp_${user.id}`);
     }
     await loadDashboardData();
+    await loadConnectionStats();
   };
 
   // Handle social links update
@@ -268,6 +332,7 @@ function ProfilePage() {
       localStorage.removeItem(`cacheTimestamp_${user.id}`);
     }
     await loadDashboardData();
+    await loadConnectionStats();
   };
 
   // Handle profile update
@@ -278,6 +343,7 @@ function ProfilePage() {
       localStorage.removeItem(`cacheTimestamp_${user.id}`);
     }
     await loadDashboardData();
+    await loadConnectionStats();
   };
 
   // Search functions
@@ -607,6 +673,7 @@ function ProfilePage() {
             className={`absolute right-0 top-0 h-full w-80 max-w-sm transform transition-all duration-300 ease-out ${
               isMenuOpen ? "translate-x-0" : "translate-x-full"
             } ${isDark ? "bg-slate-800" : "bg-white"}`}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col h-full">
               {/* Menu Header */}
@@ -751,9 +818,19 @@ function ProfilePage() {
                 }`}
               >
                 <button
-                  onClick={() => {
-                    signOut();
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("Mobile sign out touch end - calling handleSignOut");
                     setIsMenuOpen(false);
+                    handleSignOut();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("Mobile sign out button clicked (fallback)");
+                    setIsMenuOpen(false);
+                    handleSignOut();
                   }}
                   className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 ${
                     isDark
@@ -813,7 +890,7 @@ function ProfilePage() {
                 socialLinks={socialLinks} 
                 profileDetails={profileDetails}
                 friends={friends}
-                followers={followers}
+                pendingRequests={pendingRequests}
               />
 
               {/* Footer */}

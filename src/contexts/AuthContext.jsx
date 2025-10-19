@@ -200,23 +200,35 @@ export const AuthProvider = ({ children }) => {
   // Sign out
   const signOut = async () => {
     try {
+      console.log("=== SIGN OUT STARTED ===");
+      console.log("Starting sign out process...");
+      console.log("Current user before sign out:", user?.id);
+      
+      // Clear cached session first
+      localStorage.removeItem("sb-session");
+      console.log("Cleared cached session");
+      
+      console.log("Calling supabase.auth.signOut()...");
       const { error } = await supabase.auth.signOut();
-      // console.log("Supabase signOut result:", { error });
+      console.log("Supabase signOut result:", { error });
 
       if (error) {
         console.error("Error signing out:", error);
+        console.log("=== SIGN OUT FAILED ===");
         return { error };
       }
 
-      // console.log(
-      //   "Sign out successful - auth state change listener will handle state clearing"
-      // );
-      // Note: We don't manually clear state here anymore
-      // The auth state change listener will handle it automatically
-
+      // Manually clear state as backup
+      console.log("Manually clearing user state...");
+      setUser(null);
+      setUserDetails(null);
+      console.log("Manually cleared user state");
+      
+      console.log("=== SIGN OUT SUCCESSFUL ===");
       return { error: null };
     } catch (err) {
       console.error("Unexpected error during sign out:", err);
+      console.log("=== SIGN OUT ERROR ===");
       return { error: err };
     }
   };

@@ -4,6 +4,15 @@ import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import BackgroundPattern from "./BackgroundPattern";
 import { supabase } from "../lib/supabase";
+import { 
+  sendFriendRequest, 
+  getConnectionStatus, 
+  acceptFriendRequest, 
+  rejectFriendRequest,
+  removeConnection,
+  canViewProfile,
+  CONNECTION_STATUS 
+} from "../lib/connections";
 import {
   ArrowLeft,
   User,
@@ -33,6 +42,8 @@ const PublicProfileView = ({ handle }) => {
   const [socialLinks, setSocialLinks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState(null);
+  const [connectionLoading, setConnectionLoading] = useState(false);
 
   // Helper function to get social media icon
   const getSocialIcon = (platform) => {
@@ -123,7 +134,9 @@ const PublicProfileView = ({ handle }) => {
   // Load profile data
   useEffect(() => {
     const loadProfileData = async () => {
+      console.log('PublicProfileView: Loading profile for handle:', handle);
       if (!handle) {
+        console.log('PublicProfileView: No handle provided');
         setError("No profile handle provided");
         setLoading(false);
         return;
@@ -143,8 +156,10 @@ const PublicProfileView = ({ handle }) => {
         if (profileError) {
           console.error("Error fetching profile:", profileError);
           if (profileError.code === "PGRST116") {
+            console.log('Profile not found for handle:', handle);
             setError("Profile not found");
           } else {
+            console.log('Failed to load profile for handle:', handle, 'Error:', profileError);
             setError("Failed to load profile data");
           }
           setLoading(false);
@@ -152,10 +167,13 @@ const PublicProfileView = ({ handle }) => {
         }
 
         if (!profileData) {
+          console.log('No profile data found for handle:', handle);
           setError("Profile not found");
           setLoading(false);
           return;
         }
+
+        console.log('Profile data found:', profileData);
 
         // Get user details from users table (only name and created_at)
         const { data: userData, error: userError } = await supabase
@@ -191,8 +209,37 @@ const PublicProfileView = ({ handle }) => {
           // profile_url is now directly from flink_profiles table
         };
 
+        // Check if user can view this profile (privacy check)
+        try {
+          console.log('Checking profile access - viewerId:', user?.id, 'profileUserId:', profileData.user_id, 'isPrivate:', profileData.private);
+          const { canView, connection } = await canViewProfile(
+            user?.id, 
+            profileData.user_id, 
+            profileData.private
+          );
+          console.log('Profile access result - canView:', canView, 'connection:', connection);
+
+          if (!canView) {
+            setError("This profile is private. You need to be friends to view it.");
+            setLoading(false);
+            return;
+          }
+
+          // Set connection status if there's a connection
+          if (connection) {
+            setConnectionStatus(connection);
+          }
+        } catch (connectionError) {
+          console.error('Error checking profile access:', connectionError);
+          // If connection check fails, still show the profile but without connection status
+          // This prevents the entire profile from failing to load due to connection errors
+        }
+
+        console.log('Setting profile data:', combinedProfileData);
         setProfileData(combinedProfileData);
         setSocialLinks(socialLinksData || []);
+
+        console.log('Profile loading completed successfully');
         setLoading(false);
       } catch (err) {
         console.error("Error loading profile data:", err);
@@ -202,14 +249,220 @@ const PublicProfileView = ({ handle }) => {
     };
 
     loadProfileData();
-  }, [handle]);
+  }, [handle, user]);
 
   const handleBack = () => {
-    navigate("/");
+    // Go back to the previous page in browser history
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      // Fallback to home if no history
+      navigate("/");
+    }
   };
 
   const handleLogin = () => {
     navigate("/login");
+  };
+
+  // Connection action handlers
+  const handleSendRequest = async () => {
+    if (!user || !profileData) return;
+    
+    setConnectionLoading(true);
+    try {
+      const { data, error } = await sendFriendRequest(user.id, profileData.user_id, profileData.private);
+      if (error) {
+        console.error("Error sending friend request:", error);
+        // You could show a toast notification here
+      } else {
+        setConnectionStatus(data);
+      }
+    } catch (err) {
+      console.error("Error sending friend request:", err);
+    } finally {
+      setConnectionLoading(false);
+    }
+  };
+
+  const handleAcceptRequest = async () => {
+    if (!connectionStatus) return;
+    
+    setConnectionLoading(true);
+    try {
+      const { data, error } = await acceptFriendRequest(connectionStatus.id);
+      if (error) {
+        console.error("Error accepting friend request:", error);
+      } else {
+        setConnectionStatus(data);
+      }
+    } catch (err) {
+      console.error("Error accepting friend request:", err);
+    } finally {
+      setConnectionLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (!connectionStatus) return;
+    
+    setConnectionLoading(true);
+    try {
+      const { data, error } = await rejectFriendRequest(connectionStatus.id);
+      if (error) {
+        console.error("Error rejecting friend request:", error);
+      } else {
+        setConnectionStatus(data);
+      }
+    } catch (err) {
+      console.error("Error rejecting friend request:", err);
+    } finally {
+      setConnectionLoading(false);
+    }
+  };
+
+  const handleUnfriend = async () => {
+    if (!connectionStatus) return;
+    
+    setConnectionLoading(true);
+    try {
+      const { error } = await removeConnection(connectionStatus.id);
+      if (error) {
+        console.error("Error removing connection:", error);
+      } else {
+        setConnectionStatus(null);
+      }
+    } catch (err) {
+      console.error("Error removing connection:", err);
+    } finally {
+      setConnectionLoading(false);
+    }
+  };
+
+  // Helper function to get button text and action based on connection status
+  const getConnectionButton = () => {
+    if (!user || !profileData || user.id === profileData.user_id) {
+      return null; // Don't show button for own profile
+    }
+
+
+    if (!connectionStatus) {
+      // No connection exists
+      return isProfilePrivate ? (
+        <button
+          onClick={handleSendRequest}
+          disabled={connectionLoading}
+          className={`w-full px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 ${
+            isDark
+              ? "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg"
+              : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg"
+          }`}
+        >
+          {connectionLoading ? "Sending..." : "Send Request"}
+        </button>
+      ) : (
+        <button
+          onClick={handleSendRequest}
+          disabled={connectionLoading}
+          className={`w-full px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 ${
+            isDark
+              ? "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg"
+              : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg"
+          }`}
+        >
+          {connectionLoading ? "Following..." : "Follow"}
+        </button>
+      );
+    }
+
+    // Connection exists, show appropriate button based on status
+    switch (connectionStatus.status) {
+      case CONNECTION_STATUS.PENDING:
+        if (connectionStatus.sender_id === user.id) {
+          // User sent the request
+          return (
+            <button
+              disabled
+              className={`w-full px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                isDark
+                  ? "bg-gray-600 text-gray-300"
+                  : "bg-gray-300 text-gray-600"
+              }`}
+            >
+              Request Sent
+            </button>
+          );
+        } else {
+          // User received the request
+          return (
+            <div className="flex space-x-2">
+              <button
+                onClick={handleAcceptRequest}
+                disabled={connectionLoading}
+                className={`flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 ${
+                  isDark
+                    ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg"
+                    : "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg"
+                }`}
+              >
+                {connectionLoading ? "Accepting..." : "Accept"}
+              </button>
+              <button
+                onClick={handleRejectRequest}
+                disabled={connectionLoading}
+                className={`flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 ${
+                  isDark
+                    ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg"
+                    : "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg"
+                }`}
+              >
+                {connectionLoading ? "Rejecting..." : "Reject"}
+              </button>
+            </div>
+          );
+        }
+      case CONNECTION_STATUS.ACCEPTED:
+        return (
+          <div className="flex space-x-1.5">
+            <button
+              disabled
+              className={`flex-1 px-3 py-1.5 rounded-lg font-medium text-xs transition-all duration-200 ${
+                isDark
+                  ? "bg-gradient-to-r from-green-600/20 to-emerald-600/20 text-green-300 border border-green-500/30"
+                  : "bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200"
+              }`}
+            >
+              ✓ Friends
+            </button>
+            <button
+              onClick={handleUnfriend}
+              disabled={connectionLoading}
+              className={`px-3 py-1.5 rounded-lg font-medium text-xs transition-all duration-200 hover:scale-105 disabled:opacity-50 ${
+                isDark
+                  ? "bg-gradient-to-r from-red-500/20 to-pink-500/20 hover:from-red-500/30 hover:to-pink-500/30 text-red-300 hover:text-red-200 border border-red-500/30"
+                  : "bg-gradient-to-r from-red-50 to-pink-50 hover:from-red-100 hover:to-pink-100 text-red-600 hover:text-red-700 border border-red-200"
+              }`}
+            >
+              {connectionLoading ? "..." : "Unfollow"}
+            </button>
+          </div>
+        );
+      case CONNECTION_STATUS.REJECTED:
+        return (
+          <button
+            disabled
+            className={`w-full px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+              isDark
+                ? "bg-gray-600 text-gray-300"
+                : "bg-gray-300 text-gray-600"
+            }`}
+          >
+            Request Rejected
+          </button>
+        );
+      default:
+        return null;
+    }
   };
 
   if (loading) {
@@ -361,7 +614,7 @@ const PublicProfileView = ({ handle }) => {
                     onClick={handleBack}
                     className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transform hover:scale-105 transition-all duration-300 shadow-lg"
                   >
-                    Go Back Home
+                    Go Back
                   </button>
                 </div>
               </div>
@@ -372,8 +625,8 @@ const PublicProfileView = ({ handle }) => {
     );
   }
 
-  // Check if profile is private
-  const isProfilePrivate = profileData.private;
+  // Check if profile is private - if users are friends, treat as public
+  const isProfilePrivate = profileData.private && (!connectionStatus || connectionStatus.status !== 'accepted');
 
   return (
     <div className="public-profile-main">
@@ -461,7 +714,7 @@ const PublicProfileView = ({ handle }) => {
           </div>
 
           {/* Content */}
-          <div className="container mx-auto px-4 py-6 max-w-4xl md:hidden">
+          <div className="container mx-auto px-4 py-2 max-w-4xl md:hidden">
             {/* Profile Header Card */}
             <div
               className={`relative overflow-hidden rounded-3xl mb-8 ${
@@ -621,7 +874,7 @@ const PublicProfileView = ({ handle }) => {
 
                     {/* Flink Profile Link */}
                     <div
-                      className={`mt-4 p-3 rounded-xl ${
+                      className={`mt-3 p-0 rounded-lg ${
                         isDark
                           ? "bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-700/30"
                           : "bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200"
@@ -631,51 +884,21 @@ const PublicProfileView = ({ handle }) => {
                         href={`https://flink.to/${profileData.handle}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-flex items-center space-x-2 text-sm font-semibold hover:scale-105 transition-transform duration-200 ${
+                        className={`inline-flex items-center space-x-1.5 text-xs font-medium hover:scale-105 transition-transform duration-200 ${
                           isDark
                             ? "text-blue-300 hover:text-blue-200"
                             : "text-blue-600 hover:text-blue-700"
                         }`}
                       >
-                        <Globe className="w-4 h-4" />
+                        <Globe className="w-3 h-3" />
                         <span>flink.to/{profileData.handle}</span>
                       </a>
                     </div>
 
-                    {/* Follow/Request Button */}
-                    {user && (
-                      <div className="mt-4">
-                        {isProfilePrivate ? (
-                          <button
-                            onClick={() => {
-                              // TODO: Implement send request functionality
-                              console.log("Send request to", profileData.handle);
-                            }}
-                            className={`w-full px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 ${
-                              isDark
-                                ? "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg"
-                                : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg"
-                            }`}
-                          >
-                            Send Request
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              // TODO: Implement follow functionality
-                              console.log("Follow", profileData.handle);
-                            }}
-                            className={`w-full px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 ${
-                              isDark
-                                ? "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg"
-                                : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg"
-                            }`}
-                          >
-                            Follow
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    {/* Connection Button */}
+                    <div className="mt-4">
+                      {getConnectionButton()}
+                    </div>
 
                     {/* Login Prompt for Non-logged-in Users */}
                     {!user && (

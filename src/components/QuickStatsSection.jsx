@@ -2,7 +2,7 @@ import React from 'react';
 import { useTheme } from '../hooks/useTheme';
 import { Link, MousePointer, FileText, Users, UserPlus } from 'lucide-react';
 
-const QuickStatsSection = ({ socialLinks, profileDetails, friends = 0, followers = 0 }) => {
+const QuickStatsSection = ({ socialLinks, profileDetails, friends = 0, pendingRequests = 0 }) => {
   const { isDark } = useTheme();
 
   return (
@@ -67,7 +67,7 @@ const QuickStatsSection = ({ socialLinks, profileDetails, friends = 0, followers
             <span
               className={`${isDark ? "text-gray-300" : "text-gray-600"}`}
             >
-              {followers} followers
+              {pendingRequests} requests
             </span>
           </div>
         </div>
