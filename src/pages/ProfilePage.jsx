@@ -70,27 +70,27 @@ function ProfilePage() {
   // Handle sign out
   const handleSignOut = useCallback(async () => {
     if (isSigningOut.current) {
-      console.log("Sign out already in progress, ignoring duplicate call");
+      // console.log("Sign out already in progress, ignoring duplicate call");
       return;
     }
     
     isSigningOut.current = true;
     
     try {
-      console.log("handleSignOut called");
+      // console.log("handleSignOut called");
       const { error } = await signOut();
       if (error) {
         console.error("Error signing out:", error);
         alert("Error signing out: " + error.message);
         return;
       }
-      console.log("Sign out successful, navigating to home");
+      // console.log("Sign out successful, navigating to home");
       
       // Try multiple navigation methods for mobile compatibility
       try {
         navigate("/");
       } catch (navError) {
-        console.log("Navigate failed, trying window.location:", navError);
+        // console.log("Navigate failed, trying window.location:", navError);
         window.location.href = "/";
       }
     } catch (error) {
@@ -821,14 +821,14 @@ function ProfilePage() {
                   onTouchEnd={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log("Mobile sign out touch end - calling handleSignOut");
+                    // console.log("Mobile sign out touch end - calling handleSignOut");
                     setIsMenuOpen(false);
                     handleSignOut();
                   }}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log("Mobile sign out button clicked (fallback)");
+                    // console.log("Mobile sign out button clicked (fallback)");
                     setIsMenuOpen(false);
                     handleSignOut();
                   }}
@@ -883,7 +883,7 @@ function ProfilePage() {
               <div className="mb-6"></div>
 
               {/* Quick Actions Section */}
-              <QuickActionsSection />
+              <QuickActionsSection profileDetails={profileDetails} />
 
               {/* Quick Stats Section */}
               <QuickStatsSection 

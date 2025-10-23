@@ -43,7 +43,7 @@ function Home() {
 
   const handleGetStarted = () => {
     if (user) {
-      // console.log("User is logged in, going to profile");
+      // // console.log("User is logged in, going to profile");
       // The useEffect will handle the redirect
     } else {
       navigate("/login");

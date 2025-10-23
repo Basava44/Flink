@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, ArrowLeft, User } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
@@ -13,16 +13,15 @@ const SearchOverlay = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   // Search functions
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      setSearchLoading(true);
-      setSearchResults(null);
-      
-      try {
-        const searchTerm = searchQuery.trim().toLowerCase();
+  const performSearch = useCallback(async (query) => {
+    setSearchLoading(true);
+    setSearchResults(null);
+    
+    try {
+      const searchTerm = query.trim().toLowerCase();
         
         // Search in flink_profiles table
         const { data: profiles, error } = await supabase
@@ -71,7 +70,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
 
         setSearchResults({
           users: searchUsers,
-          query: searchQuery.trim()
+          query: query.trim()
         });
       } catch (error) {
         console.error("Error searching users:", error);
@@ -79,6 +78,30 @@ const SearchOverlay = ({ isOpen, onClose }) => {
       } finally {
         setSearchLoading(false);
       }
+  }, [user]);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Auto-search when debounced query changes
+  useEffect(() => {
+    if (debouncedQuery.trim() && debouncedQuery.trim().length > 2) {
+      performSearch(debouncedQuery);
+    } else {
+      setSearchResults(null);
+    }
+  }, [debouncedQuery, performSearch]);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (searchQuery.trim() && searchQuery.trim().length > 2) {
+      performSearch(searchQuery);
     }
   };
 
@@ -89,7 +112,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
   };
 
   const handleUserClick = (handle) => {
-    console.log('SearchOverlay: Navigating to handle:', handle);
+    // console.log('SearchOverlay: Navigating to handle:', handle);
     navigate(`/${handle}`);
     closeSearchOverlay();
   };
@@ -127,7 +150,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
+                onKeyPress={(e) => e.key === 'Enter' && searchQuery.trim().length > 2 && handleSearch(e)}
                 placeholder="Search"
                 className={`w-full pl-10 pr-20 py-3 rounded-lg text-sm transition-all duration-200 focus:outline-none ${
                   isDark
@@ -149,25 +172,11 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                     <X className="w-4 h-4" />
                   </button>
                 )}
-                <button
-                  onClick={handleSearch}
-                  disabled={!searchQuery.trim() || searchLoading}
-                  className={`p-2 rounded-lg transition-all duration-200 ${
-                    searchQuery.trim() && !searchLoading
-                      ? isDark
-                        ? "bg-blue-600 hover:bg-blue-700 text-white"
-                        : "bg-blue-600 hover:bg-blue-700 text-white"
-                      : isDark
-                      ? "bg-slate-700 text-gray-500 cursor-not-allowed"
-                      : "bg-gray-300 text-gray-400 cursor-not-allowed"
-                  }`}
-                >
-                  {searchLoading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <Search className="w-4 h-4" />
-                  )}
-                </button>
+                {searchLoading && (
+                  <div className="p-2">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -322,12 +331,18 @@ const SearchOverlay = ({ isOpen, onClose }) => {
               <h3 className={`text-lg font-semibold mb-2 ${
                 isDark ? "text-white" : "text-gray-900"
               }`}>
-                Search for users
+                {searchQuery.trim().length > 0 && searchQuery.trim().length <= 2 
+                  ? "Enter at least 3 characters" 
+                  : "Search for users"
+                }
               </h3>
               <p className={`text-sm ${
                 isDark ? "text-gray-400" : "text-gray-500"
               }`}>
-                Enter a name, handle, or bio to find users
+                {searchQuery.trim().length > 0 && searchQuery.trim().length <= 2
+                  ? "Type more characters to start searching"
+                  : "Enter a name, handle, or bio to find users"
+                }
               </p>
             </div>
           )}

@@ -911,47 +911,147 @@ const PublicProfilePage = () => {
                 {socialLinks.map((link, index) => {
                   const clickUrl = formatUrlForClick(link.url, link.platform);
 
-                  // Platform-specific colors
-                  const getPlatformColor = (platform) => {
+                  // Platform-specific colors (matching SocialLinksSection styling)
+                  const getPlatformColors = (platform) => {
                     const colors = {
-                      email: isDark
-                        ? "text-blue-400 bg-blue-500/20"
-                        : "text-blue-600 bg-blue-100",
-                      phone: isDark
-                        ? "text-green-400 bg-green-500/20"
-                        : "text-green-600 bg-green-100",
-                      instagram: isDark
-                        ? "text-pink-400 bg-pink-500/20"
-                        : "text-pink-600 bg-pink-100",
-                      twitter: isDark
-                        ? "text-sky-400 bg-sky-500/20"
-                        : "text-sky-600 bg-sky-100",
-                      linkedin: isDark
-                        ? "text-blue-400 bg-blue-500/20"
-                        : "text-blue-600 bg-blue-100",
-                      github: isDark
-                        ? "text-gray-400 bg-gray-500/20"
-                        : "text-gray-600 bg-gray-100",
-                      youtube: isDark
-                        ? "text-red-400 bg-red-500/20"
-                        : "text-red-600 bg-red-100",
-                      facebook: isDark
-                        ? "text-blue-400 bg-blue-500/20"
-                        : "text-blue-600 bg-blue-100",
-                      snapchat: isDark
-                        ? "text-yellow-400 bg-yellow-500/20"
-                        : "text-yellow-600 bg-yellow-100",
-                      discord: isDark
-                        ? "text-indigo-400 bg-indigo-500/20"
-                        : "text-indigo-600 bg-indigo-100",
-                      twitch: isDark
-                        ? "text-purple-400 bg-purple-500/20"
-                        : "text-purple-600 bg-purple-100",
+                      email: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-blue-500/10 to-blue-600/5"
+                          : "bg-gradient-to-br from-blue-50/80 to-blue-100/60",
+                        border: isDark ? "border-blue-400/20" : "border-blue-200",
+                        icon: isDark ? "text-blue-300" : "text-blue-600",
+                        hover: isDark
+                          ? "hover:from-blue-500/15 hover:to-blue-600/10"
+                          : "hover:from-blue-100/90 hover:to-blue-200/80",
+                        shadow: isDark ? "shadow-blue-500/10" : "shadow-blue-200/30",
+                      },
+                      phone: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-green-500/10 to-green-600/5"
+                          : "bg-gradient-to-br from-green-50/80 to-green-100/60",
+                        border: isDark ? "border-green-400/20" : "border-green-200",
+                        icon: isDark ? "text-green-300" : "text-green-600",
+                        hover: isDark
+                          ? "hover:from-green-500/15 hover:to-green-600/10"
+                          : "hover:from-green-100/90 hover:to-green-200/80",
+                        shadow: isDark ? "shadow-green-500/10" : "shadow-green-200/30",
+                      },
+                      instagram: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-pink-500/10 to-rose-500/5"
+                          : "bg-gradient-to-br from-pink-50/80 to-rose-100/60",
+                        border: isDark ? "border-pink-400/20" : "border-pink-200",
+                        icon: isDark ? "text-pink-300" : "text-pink-600",
+                        hover: isDark
+                          ? "hover:from-pink-500/15 hover:to-rose-500/10"
+                          : "hover:from-pink-100/90 hover:to-rose-200/80",
+                        shadow: isDark ? "shadow-pink-500/10" : "shadow-pink-200/30",
+                      },
+                      twitter: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-sky-500/10 to-cyan-500/5"
+                          : "bg-gradient-to-br from-sky-50/80 to-cyan-100/60",
+                        border: isDark ? "border-sky-400/20" : "border-sky-200",
+                        icon: isDark ? "text-sky-300" : "text-sky-600",
+                        hover: isDark
+                          ? "hover:from-sky-500/15 hover:to-cyan-500/10"
+                          : "hover:from-sky-100/90 hover:to-cyan-200/80",
+                        shadow: isDark ? "shadow-sky-500/10" : "shadow-sky-200/30",
+                      },
+                      linkedin: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-blue-600/10 to-blue-700/5"
+                          : "bg-gradient-to-br from-blue-50/80 to-blue-100/60",
+                        border: isDark ? "border-blue-400/20" : "border-blue-200",
+                        icon: isDark ? "text-blue-300" : "text-blue-700",
+                        hover: isDark
+                          ? "hover:from-blue-600/15 hover:to-blue-700/10"
+                          : "hover:from-blue-100/90 hover:to-blue-200/80",
+                        shadow: isDark ? "shadow-blue-600/10" : "shadow-blue-200/30",
+                      },
+                      github: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-gray-600/10 to-gray-700/5"
+                          : "bg-gradient-to-br from-gray-50/80 to-gray-100/60",
+                        border: isDark ? "border-gray-400/20" : "border-gray-200",
+                        icon: isDark ? "text-gray-300" : "text-gray-700",
+                        hover: isDark
+                          ? "hover:from-gray-600/15 hover:to-gray-700/10"
+                          : "hover:from-gray-100/90 hover:to-gray-200/80",
+                        shadow: isDark ? "shadow-gray-600/10" : "shadow-gray-200/30",
+                      },
+                      youtube: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-red-500/10 to-red-600/5"
+                          : "bg-gradient-to-br from-red-50/80 to-red-100/60",
+                        border: isDark ? "border-red-400/20" : "border-red-200",
+                        icon: isDark ? "text-red-300" : "text-red-600",
+                        hover: isDark
+                          ? "hover:from-red-500/15 hover:to-red-600/10"
+                          : "hover:from-red-100/90 hover:to-red-200/80",
+                        shadow: isDark ? "shadow-red-500/10" : "shadow-red-200/30",
+                      },
+                      facebook: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-blue-700/10 to-blue-800/5"
+                          : "bg-gradient-to-br from-blue-50/80 to-blue-100/60",
+                        border: isDark ? "border-blue-500/20" : "border-blue-200",
+                        icon: isDark ? "text-blue-300" : "text-blue-700",
+                        hover: isDark
+                          ? "hover:from-blue-700/15 hover:to-blue-800/10"
+                          : "hover:from-blue-100/90 hover:to-blue-200/80",
+                        shadow: isDark ? "shadow-blue-700/10" : "shadow-blue-200/30",
+                      },
+                      snapchat: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-yellow-500/10 to-yellow-600/5"
+                          : "bg-gradient-to-br from-yellow-50/80 to-yellow-100/60",
+                        border: isDark ? "border-yellow-400/20" : "border-yellow-200",
+                        icon: isDark ? "text-yellow-300" : "text-yellow-600",
+                        hover: isDark
+                          ? "hover:from-yellow-500/15 hover:to-yellow-600/10"
+                          : "hover:from-yellow-100/90 hover:to-yellow-200/80",
+                        shadow: isDark ? "shadow-yellow-500/10" : "shadow-yellow-200/30",
+                      },
+                      discord: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-indigo-500/10 to-indigo-600/5"
+                          : "bg-gradient-to-br from-indigo-50/80 to-indigo-100/60",
+                        border: isDark ? "border-indigo-400/20" : "border-indigo-200",
+                        icon: isDark ? "text-indigo-300" : "text-indigo-600",
+                        hover: isDark
+                          ? "hover:from-indigo-500/15 hover:to-indigo-600/10"
+                          : "hover:from-indigo-100/90 hover:to-indigo-200/80",
+                        shadow: isDark ? "shadow-indigo-500/10" : "shadow-indigo-200/30",
+                      },
+                      twitch: {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-purple-500/10 to-purple-600/5"
+                          : "bg-gradient-to-br from-purple-50/80 to-purple-100/60",
+                        border: isDark ? "border-purple-400/20" : "border-purple-200",
+                        icon: isDark ? "text-purple-300" : "text-purple-600",
+                        hover: isDark
+                          ? "hover:from-purple-500/15 hover:to-purple-600/10"
+                          : "hover:from-purple-100/90 hover:to-purple-200/80",
+                        shadow: isDark ? "shadow-purple-500/10" : "shadow-purple-200/30",
+                      },
                     };
-                    return colors[platform] || colors.email;
+                    return (
+                      colors[platform] || {
+                        bg: isDark
+                          ? "bg-gradient-to-br from-gray-500/10 to-gray-600/5"
+                          : "bg-gradient-to-br from-gray-50/80 to-gray-100/60",
+                        border: isDark ? "border-gray-400/20" : "border-gray-200",
+                        icon: isDark ? "text-gray-300" : "text-gray-600",
+                        hover: isDark
+                          ? "hover:from-gray-500/15 hover:to-gray-600/10"
+                          : "hover:from-gray-100/90 hover:to-gray-200/80",
+                        shadow: isDark ? "shadow-gray-500/10" : "shadow-gray-200/30",
+                      }
+                    );
                   };
 
-                  const platformColor = getPlatformColor(link.platform);
+                  const platformColors = getPlatformColors(link.platform);
 
                   return (
                     <a
@@ -967,22 +1067,12 @@ const PublicProfilePage = () => {
                           ? ""
                           : "noopener noreferrer"
                       }
-                      className={`group p-3 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg ${
-                        isDark
-                          ? "bg-slate-700/50 hover:bg-slate-700 border border-slate-600 hover:border-slate-500"
-                          : "bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300"
-                      }`}
+                      className={`group p-3 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-xl ${platformColors.bg} ${platformColors.border} ${platformColors.hover} ${platformColors.shadow} shadow-lg`}
                     >
-                      <div className="flex flex-col items-center text-center space-y-2">
+                      <div className="flex flex-col items-center text-center">
                         {/* Platform Icon */}
-                        <div
-                          className={`p-2 rounded-lg ${
-                            platformColor.split(" ")[1]
-                          } group-hover:scale-110 transition-transform duration-200`}
-                        >
-                          <div className={platformColor.split(" ")[0]}>
-                            {getSocialIcon(link.platform)}
-                          </div>
+                        <div className={`${platformColors.icon} mb-2 flex justify-center group-hover:scale-110 transition-transform duration-200`}>
+                          {getSocialIcon(link.platform)}
                         </div>
 
                         {/* Platform Name */}
@@ -993,13 +1083,6 @@ const PublicProfilePage = () => {
                             }`}
                           >
                             {getSocialName(link.platform)}
-                          </p>
-                          <p
-                            className={`text-xs truncate mt-0.5 ${
-                              isDark ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            {link.url.replace(/^(mailto:|tel:)/, "")}
                           </p>
                         </div>
                       </div>

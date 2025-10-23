@@ -44,7 +44,7 @@ class Cache {
     const item = this.cache.get(key);
     
     if (!item) {
-      console.log(`Cache miss - key not found: ${key}`);
+      // console.log(`Cache miss - key not found: ${key}`);
       return null;
     }
 
@@ -52,12 +52,12 @@ class Cache {
     const now = Date.now();
     const age = now - item.timestamp;
     if (age > item.ttl) {
-      console.log(`Cache miss - expired: ${key} (age: ${age}ms, ttl: ${item.ttl}ms)`);
+      // console.log(`Cache miss - expired: ${key} (age: ${age}ms, ttl: ${item.ttl}ms)`);
       this.delete(key);
       return null;
     }
 
-    console.log(`Cache hit: ${key} (age: ${age}ms, ttl: ${item.ttl}ms)`);
+    // console.log(`Cache hit: ${key} (age: ${age}ms, ttl: ${item.ttl}ms)`);
     return item.value;
   }
 

@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
           }
         }
       } catch {
-        // console.log("Error reading cached session");
+        // // console.log("Error reading cached session");
       }
       return false;
     };
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
               }
             })
             .catch(() => {
-              // console.log("Background session fetch failed");
+              // // console.log("Background session fetch failed");
             });
           return;
         }
@@ -111,22 +111,22 @@ export const AuthProvider = ({ children }) => {
             if (error) {
               console.error("Failed to add user to database:", error);
             } else {
-              // console.log("User successfully added to database");
+              // // console.log("User successfully added to database");
             }
           });
         } else {
-          // console.log(
+          // // console.log(
           //   "User not yet confirmed, skipping database insertion (will be handled after confirmation)"
           // );
         }
 
         // Then fetch user details (non-blocking)
         getUserDetails(session.user.id).catch(() => {
-          // console.log("Error fetching user details (non-critical)");
+          // // console.log("Error fetching user details (non-critical)");
         });
       } else if (!session?.user) {
         // Clear user details when user signs out
-        // console.log("User signed out, clearing user details...");
+        // // console.log("User signed out, clearing user details...");
         setUserDetails(null);
       }
 
@@ -164,7 +164,7 @@ export const AuthProvider = ({ children }) => {
               dbError
             );
           } else {
-            // console.log("User successfully added to database after signup");
+            // // console.log("User successfully added to database after signup");
           }
         }
       );
@@ -200,35 +200,35 @@ export const AuthProvider = ({ children }) => {
   // Sign out
   const signOut = async () => {
     try {
-      console.log("=== SIGN OUT STARTED ===");
-      console.log("Starting sign out process...");
-      console.log("Current user before sign out:", user?.id);
+      // console.log("=== SIGN OUT STARTED ===");
+      // console.log("Starting sign out process...");
+      // console.log("Current user before sign out:", user?.id);
       
       // Clear cached session first
       localStorage.removeItem("sb-session");
-      console.log("Cleared cached session");
+      // console.log("Cleared cached session");
       
-      console.log("Calling supabase.auth.signOut()...");
+      // console.log("Calling supabase.auth.signOut()...");
       const { error } = await supabase.auth.signOut();
-      console.log("Supabase signOut result:", { error });
+      // console.log("Supabase signOut result:", { error });
 
       if (error) {
         console.error("Error signing out:", error);
-        console.log("=== SIGN OUT FAILED ===");
+        // console.log("=== SIGN OUT FAILED ===");
         return { error };
       }
 
       // Manually clear state as backup
-      console.log("Manually clearing user state...");
+      // console.log("Manually clearing user state...");
       setUser(null);
       setUserDetails(null);
-      console.log("Manually cleared user state");
+      // console.log("Manually cleared user state");
       
-      console.log("=== SIGN OUT SUCCESSFUL ===");
+      // console.log("=== SIGN OUT SUCCESSFUL ===");
       return { error: null };
     } catch (err) {
       console.error("Unexpected error during sign out:", err);
-      console.log("=== SIGN OUT ERROR ===");
+      // console.log("=== SIGN OUT ERROR ===");
       return { error: err };
     }
   };
@@ -278,7 +278,7 @@ export const AuthProvider = ({ children }) => {
         created_at: new Date().toISOString(),
       };
 
-      // console.log("Adding user to database with data:", userData);
+      // // console.log("Adding user to database with data:", userData);
 
       const { data, error } = await supabase
         .from("users")
@@ -328,23 +328,23 @@ export const AuthProvider = ({ children }) => {
             if (socialLinkError) {
               console.error("Error adding email social link:", socialLinkError);
             } else {
-              // console.log(
+              // // console.log(
               //   "Email social link added successfully for:",
               //   user.email
               // );
             }
           } else {
-            // console.log("Email social link already exists for user, skipping");
+            // // console.log("Email social link already exists for user, skipping");
           }
         } catch (err) {
           console.error("Unexpected error adding email social link:", err);
         }
       } else if (user.email && !isOAuthUser) {
-        // console.log(
+        // // console.log(
         //   "Email/password user - not adding email social link automatically"
         // );
       } else {
-        // console.log("No email found for user, skipping email social link");
+        // // console.log("No email found for user, skipping email social link");
       }
 
       return { data, error: null };

@@ -497,7 +497,7 @@ const SettingsPage = () => {
       if (socialLinksChanged) {
         // First, clean up any duplicate social links
         if (Object.keys(duplicatePlatforms).length > 0) {
-          console.log("Cleaning up duplicate social links...");
+          // console.log("Cleaning up duplicate social links...");
           for (const platform of Object.keys(duplicatePlatforms)) {
             const { error: deleteError } = await supabase
               .from("social_links")

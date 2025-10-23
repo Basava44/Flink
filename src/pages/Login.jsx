@@ -93,7 +93,7 @@ function Login() {
           setSignupSuccess(true); // Mark signup as successful
           
           // Log signup data for debugging
-          // console.log('Signup successful:', data);
+          // // console.log('Signup successful:', data);
         }
       } else {
         const { error } = await signIn(formData.email, formData.password);

@@ -8,7 +8,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails, userName, userEmail, us
   const [currentStep, setCurrentStep] = useState(1);
   
   // Debug logging
-  console.log('OnboardingFlow render - currentStep:', currentStep);
+  // console.log('OnboardingFlow render - currentStep:', currentStep);
   const [formData, setFormData] = useState({
     socialLinks: {},
     profile: {},
@@ -19,7 +19,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails, userName, userEmail, us
   const [error, setError] = useState('');
 
   const handleSocialHandlesNext = (data) => {
-    console.log('Moving to step 2 - Profile Setup');
+    // console.log('Moving to step 2 - Profile Setup');
     setFormData(prev => ({
       ...prev,
       socialLinks: data.socialLinks
@@ -60,7 +60,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails, userName, userEmail, us
         url && url.trim() !== ''
       );
       
-      console.log('Social links to save:', nonEmptySocialLinks);
+      // console.log('Social links to save:', nonEmptySocialLinks);
       
       if (nonEmptySocialLinks.length > 0) {
         const socialLinksData = nonEmptySocialLinks.map(([platform, url]) => ({
@@ -116,7 +116,7 @@ const OnboardingFlow = ({ onComplete, user, userDetails, userName, userEmail, us
   };
 
   const handleBack = () => {
-    console.log('Going back from step', currentStep);
+    // console.log('Going back from step', currentStep);
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }

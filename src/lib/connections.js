@@ -17,7 +17,7 @@ const invalidateUserCache = (userId) => {
   cache.delete(`connections:${userId}`);
   cache.delete(`pending:${userId}`);
   cache.delete(`sent:${userId}`);
-  console.log('Cache invalidated for user:', userId);
+  // console.log('Cache invalidated for user:', userId);
 };
 
 /**
@@ -233,11 +233,11 @@ export const getUserConnections = async (userId) => {
     // Check cache first
     const cachedData = cache.get(cacheKey);
     if (cachedData) {
-      console.log('Cache hit for user connections:', userId);
+      // console.log('Cache hit for user connections:', userId);
       return { data: cachedData, error: null };
     }
 
-    console.log('Cache miss for user connections:', userId);
+    // console.log('Cache miss for user connections:', userId);
     
     const { data, error } = await supabase
       .from('connections')
@@ -286,11 +286,11 @@ export const getPendingRequests = async (userId) => {
     // Check cache first
     const cachedData = cache.get(cacheKey);
     if (cachedData) {
-      console.log('Cache hit for pending requests:', userId);
+      // console.log('Cache hit for pending requests:', userId);
       return { data: cachedData, error: null };
     }
 
-    console.log('Cache miss for pending requests:', userId);
+    // console.log('Cache miss for pending requests:', userId);
     
     const { data, error } = await supabase
       .from('connections')
@@ -332,11 +332,11 @@ export const getSentRequests = async (userId) => {
     // Check cache first
     const cachedData = cache.get(cacheKey);
     if (cachedData) {
-      console.log('Cache hit for sent requests:', userId);
+      // console.log('Cache hit for sent requests:', userId);
       return { data: cachedData, error: null };
     }
 
-    console.log('Cache miss for sent requests:', userId);
+    // console.log('Cache miss for sent requests:', userId);
     
     const { data, error } = await supabase
       .from('connections')
