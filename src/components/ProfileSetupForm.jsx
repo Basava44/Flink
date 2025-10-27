@@ -492,7 +492,7 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
                   onChange={handleImageSelect}
                   className="hidden"
                 />

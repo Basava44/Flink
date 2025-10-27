@@ -49,6 +49,7 @@ const PublicProfileView = ({ handle }) => {
     const icons = {
       email: <Mail className="w-4 h-4" />,
       phone: <Phone className="w-4 h-4" />,
+      whatsapp: <MessageCircle className="w-4 h-4" />,
       instagram: <Instagram className="w-4 h-4" />,
       twitter: <Twitter className="w-4 h-4" />,
       linkedin: <Linkedin className="w-4 h-4" />,
@@ -67,6 +68,7 @@ const PublicProfileView = ({ handle }) => {
     const names = {
       email: "Email",
       phone: "Phone",
+      whatsapp: "WhatsApp",
       instagram: "Instagram",
       twitter: "Twitter",
       linkedin: "LinkedIn",
@@ -87,12 +89,27 @@ const PublicProfileView = ({ handle }) => {
       return `mailto:${cleanEmail}`;
     } else if (platform === "phone") {
       return url.startsWith("tel:") ? url : `tel:${url}`;
+    } else if (platform === "whatsapp") {
+      // Handle whatsapp links
+      if (url.includes("wa.me/") || url.includes("whatsapp.com")) {
+        return url.startsWith("http") ? url : `https://${url}`;
+      }
+      // Just phone number
+      return `https://wa.me/${url.replace(/[^0-9]/g, "")}`;
     } else {
       if (url.startsWith("http://") || url.startsWith("https://")) {
         return url;
       }
 
       const socialUrls = {
+        whatsapp: (username) => {
+          // Handle whatsapp links
+          if (username.includes("wa.me/") || username.includes("whatsapp.com")) {
+            return username.startsWith("http") ? username : `https://${username}`;
+          }
+          // Just phone number
+          return `https://wa.me/${username.replace(/[^0-9]/g, "")}`;
+        },
         instagram: (username) =>
           `https://instagram.com/${username.replace("@", "")}`,
         twitter: (username) =>
@@ -1006,6 +1023,17 @@ const PublicProfileView = ({ handle }) => {
                             : "hover:from-green-100/90 hover:to-green-200/80",
                           shadow: isDark ? "shadow-green-500/10" : "shadow-green-200/30",
                         },
+                        whatsapp: {
+                          bg: isDark
+                            ? "bg-gradient-to-br from-emerald-500/10 to-emerald-600/5"
+                            : "bg-gradient-to-br from-emerald-50/80 to-emerald-100/60",
+                          border: isDark ? "border-emerald-400/20" : "border-emerald-200",
+                          icon: isDark ? "text-emerald-300" : "text-emerald-600",
+                          hover: isDark
+                            ? "hover:from-emerald-500/15 hover:to-emerald-600/10"
+                            : "hover:from-emerald-100/90 hover:to-emerald-200/80",
+                          shadow: isDark ? "shadow-emerald-500/10" : "shadow-emerald-200/30",
+                        },
                         instagram: {
                           bg: isDark
                             ? "bg-gradient-to-br from-pink-500/10 to-rose-500/5"
@@ -1128,12 +1156,12 @@ const PublicProfileView = ({ handle }) => {
                         key={index}
                         href={clickUrl}
                         target={
-                          link.platform === "email" || link.platform === "phone"
+                          link.platform === "email" || link.platform === "phone" || link.platform === "whatsapp"
                             ? "_self"
                             : "_blank"
                         }
                         rel={
-                          link.platform === "email" || link.platform === "phone"
+                          link.platform === "email" || link.platform === "phone" || link.platform === "whatsapp"
                             ? ""
                             : "noopener noreferrer"
                         }

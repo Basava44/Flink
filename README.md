@@ -83,12 +83,14 @@ npm install
 
 ### 2. Environment Configuration
 
-Your `.env` file is already configured with:
+Create a `.env` file in the root directory:
 
 ```env
-VITE_SUPABASE_URL="https://qrdihaipyzvelwhvyjwc.supabase.co"
-VITE_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+VITE_SUPABASE_URL="your_supabase_url"
+VITE_SUPABASE_ANON_KEY="your_supabase_anon_key"
 ```
+
+**⚠️ Security Note:** These keys are PUBLIC and safe to expose in client-side code. However, make sure you've set up Row Level Security (RLS) policies as described in the Security Guide.
 
 ### 3. Supabase Setup
 

@@ -4,6 +4,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import BackgroundPattern from '../components/BackgroundPattern';
+import emailjs from '@emailjs/browser';
 import { 
   ArrowLeft, 
   HelpCircle, 
@@ -32,7 +33,10 @@ const HelpSupportPage = () => {
   const [submitStatus, setSubmitStatus] = useState(null); // 'success', 'error', null
   const [userProfileHandle, setUserProfileHandle] = useState(null);
 
-  // Configurable email - you can update this later
+  // EmailJS Configuration
+  const EMAILJS_SERVICE_ID = 'service_0x90k2w';
+  const EMAILJS_TEMPLATE_ID = 'template_ta7xsho';
+  const EMAILJS_PUBLIC_KEY = 'p7oUEROenZNCa6crO';
   const SUPPORT_EMAIL = 'karibasava.t.g@gmail.com';
 
   // Get user's profile handle for navigation
@@ -76,29 +80,33 @@ const HelpSupportPage = () => {
     setSubmitStatus(null);
 
     try {
-      // Create mailto link with form data
-      const subject = encodeURIComponent(`[Support Request] ${formData.subject}`);
-      const body = encodeURIComponent(`
-Name: ${formData.name}
-Email: ${formData.email}
-Priority: ${formData.priority}
+      // Prepare email parameters for EmailJS
+      const templateParams = {
+        from_name: formData.name,
+        from_email: formData.email,
+        to_email: SUPPORT_EMAIL,
+        subject: formData.subject,
+        priority: formData.priority,
+        message: formData.message,
+        user_email: formData.email,
+        // Combine subject and message for better visibility
+        reply_to: formData.email,
+      };
 
-Message:
-${formData.message}
+      // Send email using EmailJS
+      const response = await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
 
----
-Sent from Flink App
-      `);
-
-      const mailtoLink = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
-      
-      // Open email client
-      window.location.href = mailtoLink;
+      console.log('Email sent successfully:', response);
       
       // Show success message
       setSubmitStatus('success');
       
-      // Reset form after 2 seconds
+      // Reset form after 3 seconds
       setTimeout(() => {
         setFormData({
           name: user?.user_metadata?.full_name || user?.email || '',
@@ -113,6 +121,7 @@ Sent from Flink App
     } catch (error) {
       console.error('Error submitting support request:', error);
       setSubmitStatus('error');
+      alert('Failed to send email. Please try again later or contact us directly at ' + SUPPORT_EMAIL);
     } finally {
       setIsSubmitting(false);
     }
@@ -278,7 +287,7 @@ Sent from Flink App
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Send Request</span>
+                    <span>Submit</span>
                   </>
                 )}
               </button>

@@ -200,36 +200,34 @@ export const AuthProvider = ({ children }) => {
   // Sign out
   const signOut = async () => {
     try {
-      // console.log("=== SIGN OUT STARTED ===");
-      // console.log("Starting sign out process...");
-      // console.log("Current user before sign out:", user?.id);
-      
-      // Clear cached session first
+      // Manually clear all auth-related data first
       localStorage.removeItem("sb-session");
-      // console.log("Cleared cached session");
+      localStorage.clear(); // Clear all cached data
       
-      // console.log("Calling supabase.auth.signOut()...");
-      const { error } = await supabase.auth.signOut();
-      // console.log("Supabase signOut result:", { error });
-
-      if (error) {
-        console.error("Error signing out:", error);
-        // console.log("=== SIGN OUT FAILED ===");
-        return { error };
-      }
-
-      // Manually clear state as backup
-      // console.log("Manually clearing user state...");
+      // Manually clear state immediately
       setUser(null);
       setUserDetails(null);
-      // console.log("Manually cleared user state");
       
-      // console.log("=== SIGN OUT SUCCESSFUL ===");
+      // Try to sign out from Supabase (ignore errors)
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error && error.message !== "Auth session missing!") {
+          // Only log non-session missing errors
+          console.error("Error signing out:", error);
+        }
+      } catch (signOutError) {
+        // Ignore sign out errors - we've already cleared everything locally
+        console.log("Sign out completed locally");
+      }
+      
       return { error: null };
     } catch (err) {
       console.error("Unexpected error during sign out:", err);
-      // console.log("=== SIGN OUT ERROR ===");
-      return { error: err };
+      // Even on error, clear local state
+      setUser(null);
+      setUserDetails(null);
+      localStorage.clear();
+      return { error: null }; // Don't return error to avoid blocking UI
     }
   };
 

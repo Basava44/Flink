@@ -78,6 +78,12 @@ const SettingsPage = () => {
       type: "tel",
     },
     {
+      key: "whatsapp",
+      name: "WhatsApp",
+      icon: <MessageCircle className="w-5 h-5" />,
+      placeholder: "phone number or wa.me/username",
+    },
+    {
       key: "instagram",
       name: "Instagram",
       icon: <Instagram className="w-5 h-5" />,
@@ -924,7 +930,7 @@ const SettingsPage = () => {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
                   onChange={handleImageSelect}
                   className="hidden"
                 />

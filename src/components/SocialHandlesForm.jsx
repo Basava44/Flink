@@ -18,6 +18,7 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
   const [socialLinks, setSocialLinks] = useState({
     email: initialData.email || userEmail || '',
     phone: initialData.phone || '',
+    whatsapp: initialData.whatsapp || '',
     instagram: initialData.instagram || '',
     twitter: initialData.twitter || '',
     linkedin: initialData.linkedin || '',
@@ -35,6 +36,7 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
       ...prev,
       email: initialData.email || userEmail || '',
       phone: initialData.phone || '',
+      whatsapp: initialData.whatsapp || '',
       instagram: initialData.instagram || '',
       twitter: initialData.twitter || '',
       linkedin: initialData.linkedin || '',
@@ -51,6 +53,7 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
   const socialPlatforms = [
     { key: 'email', name: 'Email', icon: <Mail className="w-5 h-5" />, placeholder: 'your.email@example.com', type: 'email' },
     { key: 'phone', name: 'Phone', icon: <Phone className="w-5 h-5" />, placeholder: 'phone number', type: 'tel' },
+    { key: 'whatsapp', name: 'WhatsApp', icon: <MessageCircle className="w-5 h-5" />, placeholder: 'phone number or wa.me/username' },
     { key: 'instagram', name: 'Instagram', icon: <Instagram className="w-5 h-5" />, placeholder: '@username' },
     { key: 'twitter', name: 'Twitter/X', icon: <Twitter className="w-5 h-5" />, placeholder: '@username' },
     { key: 'linkedin', name: 'LinkedIn', icon: <Linkedin className="w-5 h-5" />, placeholder: 'linkedin.com/in/username' },

@@ -737,7 +737,7 @@ function ProfilePage() {
                   </button>
 
                   {/* Notifications */}
-                  <button
+                  {/* <button
                     onClick={() => {
                       navigate("/notifications");
                       setIsMenuOpen(false);
@@ -750,7 +750,7 @@ function ProfilePage() {
                   >
                     <Bell className="w-5 h-5" />
                     <span className="font-medium">Notifications</span>
-                  </button>
+                  </button> */}
 
                   {/* Friends */}
                   <button

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '../hooks/useTheme';
-import { Link, MousePointer, FileText, Users, UserPlus } from 'lucide-react';
+import { Link, Users, UserPlus } from 'lucide-react';
 
 const QuickStatsSection = ({ socialLinks, profileDetails, friends = 0, pendingRequests = 0 }) => {
   const { isDark } = useTheme();
@@ -21,7 +21,7 @@ const QuickStatsSection = ({ socialLinks, profileDetails, friends = 0, pendingRe
             : "bg-gray-100 border border-gray-200"
         }`}
       >
-        <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="grid grid-cols-3 gap-3 text-xs">
           <div className="flex items-center justify-center space-x-1">
             <Link
               className={`w-3 h-3 ${
@@ -32,18 +32,6 @@ const QuickStatsSection = ({ socialLinks, profileDetails, friends = 0, pendingRe
               className={`${isDark ? "text-gray-300" : "text-gray-600"}`}
             >
               {socialLinks.length} links
-            </span>
-          </div>
-          <div className="flex items-center justify-center space-x-1">
-            <MousePointer
-              className={`w-3 h-3 ${
-                isDark ? "text-gray-400" : "text-gray-500"
-              }`}
-            />
-            <span
-              className={`${isDark ? "text-gray-300" : "text-gray-600"}`}
-            >
-              0 clicks
             </span>
           </div>
           <div className="flex items-center justify-center space-x-1">
