@@ -31,6 +31,9 @@ import {
   ExternalLink,
   Lock,
   Smartphone,
+  Send,
+  BookOpen,
+  Music,
 } from "lucide-react";
 
 const PublicProfileView = ({ handle }) => {
@@ -59,6 +62,11 @@ const PublicProfileView = ({ handle }) => {
       snapchat: <MessageCircle className="w-4 h-4" />,
       discord: <MessageCircle className="w-4 h-4" />,
       twitch: <Gamepad2 className="w-4 h-4" />,
+      telegram: <Send className="w-4 h-4" />,
+      reddit: <MessageCircle className="w-4 h-4" />,
+      spotify: <Music className="w-4 h-4" />,
+      medium: <BookOpen className="w-4 h-4" />,
+      threads: <Twitter className="w-4 h-4" />,
     };
     return icons[platform] || <ExternalLink className="w-4 h-4" />;
   };
@@ -78,6 +86,11 @@ const PublicProfileView = ({ handle }) => {
       snapchat: "Snapchat",
       discord: "Discord",
       twitch: "Twitch",
+      telegram: "Telegram",
+      reddit: "Reddit",
+      spotify: "Spotify",
+      medium: "Medium",
+      threads: "Threads",
     };
     return names[platform] || platform;
   };
@@ -739,12 +752,6 @@ const PublicProfileView = ({ handle }) => {
                   : "bg-gradient-to-br from-white to-gray-50 border border-gray-200"
               }`}
             >
-              {/* Background Pattern */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full transform translate-x-32 -translate-y-32"></div>
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-500 to-orange-500 rounded-full transform -translate-x-24 translate-y-24"></div>
-              </div>
-
               <div className="relative p-4">
                 <div className="flex flex-col md:flex-row items-center md:items-center space-y-6 md:space-y-0 md:space-x-6">
                   {/* Profile Picture */}
@@ -755,7 +762,7 @@ const PublicProfileView = ({ handle }) => {
                         alt="Profile"
                         loading="lazy"
                         decoding="async"
-                        className="w-32 h-32 rounded-full object-cover border-4 border-white/20 shadow-2xl"
+                        className={`w-32 h-32 rounded-full object-cover ${profileData.handle === "basava44" ? "ring-4 ring-yellow-400" : "border-4 border-white/20"} shadow-2xl`}
                         onLoad={(e) => {
                           e.target.style.opacity = "1";
                         }}
@@ -770,9 +777,9 @@ const PublicProfileView = ({ handle }) => {
                       />
                     ) : null}
                     <div
-                      className={`w-32 h-32 rounded-full flex items-center justify-center text-4xl font-bold border-4 border-white/20 shadow-2xl ${
+                      className={`w-32 h-32 rounded-full flex items-center justify-center text-4xl font-bold shadow-2xl ${
                         profileData.profile_url ? "hidden" : "flex"
-                      } ${
+                      } ${profileData.handle === "basava44" ? "ring-4 ring-yellow-400" : "border-4 border-white/20"} ${
                         isDark
                           ? "bg-gradient-to-br from-slate-700 to-slate-800 text-white"
                           : "bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600"
@@ -1132,6 +1139,61 @@ const PublicProfileView = ({ handle }) => {
                             ? "hover:from-purple-500/15 hover:to-purple-600/10"
                             : "hover:from-purple-100/90 hover:to-purple-200/80",
                           shadow: isDark ? "shadow-purple-500/10" : "shadow-purple-200/30",
+                        },
+                        telegram: {
+                          bg: isDark
+                            ? "bg-gradient-to-br from-cyan-500/10 to-cyan-600/5"
+                            : "bg-gradient-to-br from-cyan-50/80 to-cyan-100/60",
+                          border: isDark ? "border-cyan-400/20" : "border-cyan-200",
+                          icon: isDark ? "text-cyan-300" : "text-cyan-600",
+                          hover: isDark
+                            ? "hover:from-cyan-500/15 hover:to-cyan-600/10"
+                            : "hover:from-cyan-100/90 hover:to-cyan-200/80",
+                          shadow: isDark ? "shadow-cyan-500/10" : "shadow-cyan-200/30",
+                        },
+                        reddit: {
+                          bg: isDark
+                            ? "bg-gradient-to-br from-orange-500/10 to-orange-600/5"
+                            : "bg-gradient-to-br from-orange-50/80 to-orange-100/60",
+                          border: isDark ? "border-orange-400/20" : "border-orange-200",
+                          icon: isDark ? "text-orange-300" : "text-orange-600",
+                          hover: isDark
+                            ? "hover:from-orange-500/15 hover:to-orange-600/10"
+                            : "hover:from-orange-100/90 hover:to-orange-200/80",
+                          shadow: isDark ? "shadow-orange-500/10" : "shadow-orange-200/30",
+                        },
+                        spotify: {
+                          bg: isDark
+                            ? "bg-gradient-to-br from-green-600/10 to-green-700/5"
+                            : "bg-gradient-to-br from-green-50/80 to-green-100/60",
+                          border: isDark ? "border-green-500/20" : "border-green-300",
+                          icon: isDark ? "text-green-300" : "text-green-600",
+                          hover: isDark
+                            ? "hover:from-green-600/15 hover:to-green-700/10"
+                            : "hover:from-green-100/90 hover:to-green-200/80",
+                          shadow: isDark ? "shadow-green-600/10" : "shadow-green-300/30",
+                        },
+                        medium: {
+                          bg: isDark
+                            ? "bg-gradient-to-br from-gray-700/10 to-gray-800/5"
+                            : "bg-gradient-to-br from-gray-50/80 to-gray-100/60",
+                          border: isDark ? "border-gray-500/20" : "border-gray-300",
+                          icon: isDark ? "text-gray-300" : "text-gray-700",
+                          hover: isDark
+                            ? "hover:from-gray-700/15 hover:to-gray-800/10"
+                            : "hover:from-gray-100/90 hover:to-gray-200/80",
+                          shadow: isDark ? "shadow-gray-700/10" : "shadow-gray-300/30",
+                        },
+                        threads: {
+                          bg: isDark
+                            ? "bg-gradient-to-br from-slate-500/10 to-slate-600/5"
+                            : "bg-gradient-to-br from-slate-50/80 to-slate-100/60",
+                          border: isDark ? "border-slate-400/20" : "border-slate-200",
+                          icon: isDark ? "text-slate-300" : "text-slate-600",
+                          hover: isDark
+                            ? "hover:from-slate-500/15 hover:to-slate-600/10"
+                            : "hover:from-slate-100/90 hover:to-slate-200/80",
+                          shadow: isDark ? "shadow-slate-500/10" : "shadow-slate-200/30",
                         },
                       };
                       return (

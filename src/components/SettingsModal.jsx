@@ -30,6 +30,11 @@ const SettingsModal = ({ isOpen, onClose, socialLinks, profileDetails, onUpdate 
     { key: 'snapchat', name: 'Snapchat', icon: '👻', placeholder: '@username' },
     { key: 'discord', name: 'Discord', icon: '🎮', placeholder: 'username#1234' },
     { key: 'twitch', name: 'Twitch', icon: '🎮', placeholder: 'twitch.tv/username' },
+    { key: 'telegram', name: 'Telegram', icon: '✈️', placeholder: '@username' },
+    { key: 'reddit', name: 'Reddit', icon: '🔴', placeholder: 'u/username' },
+    { key: 'spotify', name: 'Spotify', icon: '🎵', placeholder: 'open.spotify.com/user/username' },
+    { key: 'medium', name: 'Medium', icon: '📝', placeholder: 'medium.com/@username' },
+    { key: 'threads', name: 'Threads', icon: '🧵', placeholder: '@username' },
   ];
 
   // Initialize form data when modal opens or data changes

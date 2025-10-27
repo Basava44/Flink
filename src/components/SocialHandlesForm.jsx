@@ -10,7 +10,10 @@ import {
   Youtube,
   Facebook,
   MessageCircle,
-  Gamepad2
+  Gamepad2,
+  Send,
+  BookOpen,
+  Music,
 } from 'lucide-react';
 
 const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' }) => {
@@ -28,6 +31,11 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
     snapchat: initialData.snapchat || '',
     discord: initialData.discord || '',
     twitch: initialData.twitch || '',
+    telegram: initialData.telegram || '',
+    reddit: initialData.reddit || '',
+    spotify: initialData.spotify || '',
+    medium: initialData.medium || '',
+    threads: initialData.threads || '',
   });
 
   // Keep local state in sync when navigating back to this step
@@ -46,6 +54,11 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
       snapchat: initialData.snapchat || '',
       discord: initialData.discord || '',
       twitch: initialData.twitch || '',
+      telegram: initialData.telegram || '',
+      reddit: initialData.reddit || '',
+      spotify: initialData.spotify || '',
+      medium: initialData.medium || '',
+      threads: initialData.threads || '',
     }));
     // We depend on both initialData and userEmail to rehydrate
   }, [initialData, userEmail]);
@@ -63,6 +76,11 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
     { key: 'snapchat', name: 'Snapchat', icon: <MessageCircle className="w-5 h-5" />, placeholder: '@username' },
     { key: 'discord', name: 'Discord', icon: <MessageCircle className="w-5 h-5" />, placeholder: 'username#1234' },
     { key: 'twitch', name: 'Twitch', icon: <Gamepad2 className="w-5 h-5" />, placeholder: 'twitch.tv/username' },
+    { key: 'telegram', name: 'Telegram', icon: <Send className="w-5 h-5" />, placeholder: '@username' },
+    { key: 'reddit', name: 'Reddit', icon: <MessageCircle className="w-5 h-5" />, placeholder: 'u/username' },
+    { key: 'spotify', name: 'Spotify', icon: <Music className="w-5 h-5" />, placeholder: 'open.spotify.com/user/username' },
+    { key: 'medium', name: 'Medium', icon: <BookOpen className="w-5 h-5" />, placeholder: 'medium.com/@username' },
+    { key: 'threads', name: 'Threads', icon: <Twitter className="w-5 h-5" />, placeholder: '@username' },
   ];
 
   const handleInputChange = (platform, value) => {

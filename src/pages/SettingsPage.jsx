@@ -27,6 +27,9 @@ import {
   Upload,
   User,
   Lock,
+  Send,
+  BookOpen,
+  Music,
 } from "lucide-react";
 
 const SettingsPage = () => {
@@ -136,6 +139,36 @@ const SettingsPage = () => {
       name: "Twitch",
       icon: <Gamepad2 className="w-5 h-5" />,
       placeholder: "twitch.tv/username",
+    },
+    {
+      key: "telegram",
+      name: "Telegram",
+      icon: <Send className="w-5 h-5" />,
+      placeholder: "@username",
+    },
+    {
+      key: "reddit",
+      name: "Reddit",
+      icon: <MessageCircle className="w-5 h-5" />,
+      placeholder: "u/username",
+    },
+    {
+      key: "spotify",
+      name: "Spotify",
+      icon: <Music className="w-5 h-5" />,
+      placeholder: "open.spotify.com/user/username",
+    },
+    {
+      key: "medium",
+      name: "Medium",
+      icon: <BookOpen className="w-5 h-5" />,
+      placeholder: "medium.com/@username",
+    },
+    {
+      key: "threads",
+      name: "Threads",
+      icon: <Twitter className="w-5 h-5" />,
+      placeholder: "@username",
     },
   ];
 
