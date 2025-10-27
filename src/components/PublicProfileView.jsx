@@ -123,6 +123,10 @@ const PublicProfileView = ({ handle }) => {
           // Just phone number
           return `https://wa.me/${username.replace(/[^0-9]/g, "")}`;
         },
+        telegram: (username) =>
+          username.includes("t.me/") || username.includes("telegram.me/")
+            ? `https://${username}`
+            : `https://t.me/${username.replace("@", "")}`,
         instagram: (username) =>
           `https://instagram.com/${username.replace("@", "")}`,
         twitter: (username) =>
@@ -1218,12 +1222,12 @@ const PublicProfileView = ({ handle }) => {
                         key={index}
                         href={clickUrl}
                         target={
-                          link.platform === "email" || link.platform === "phone" || link.platform === "whatsapp"
+                          link.platform === "email" || link.platform === "phone" || link.platform === "whatsapp" || link.platform === "telegram"
                             ? "_self"
                             : "_blank"
                         }
                         rel={
-                          link.platform === "email" || link.platform === "phone" || link.platform === "whatsapp"
+                          link.platform === "email" || link.platform === "phone" || link.platform === "whatsapp" || link.platform === "telegram"
                             ? ""
                             : "noopener noreferrer"
                         }

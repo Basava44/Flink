@@ -544,23 +544,23 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
               </div>
             </div>
 
-            <div className="flex justify-between pt-6">
+            <div className="grid grid-cols-2 gap-3 pt-4">
               <button
                 type="button"
                 onClick={onBack}
-                className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+                className={`py-2 px-4 rounded-xl font-medium transition-all duration-200 text-sm border-2 ${
                   isDark
-                    ? "bg-slate-700 hover:bg-slate-600 text-white"
-                    : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                    ? "bg-slate-800/50 border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-gray-300 hover:text-white"
+                    : "bg-gray-50 border-gray-300 hover:bg-gray-100 hover:border-gray-400 text-gray-700 hover:text-gray-900"
                 }`}
               >
-                Back
+                ← Back
               </button>
               <button
                 type="submit"
-                className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-soft hover:shadow-soft-lg transform hover:scale-105"
+                className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] text-sm"
               >
-                Complete Setup
+                Complete →
               </button>
             </div>
           </form>

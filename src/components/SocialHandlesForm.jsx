@@ -14,6 +14,8 @@ import {
   Send,
   BookOpen,
   Music,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' }) => {
@@ -37,6 +39,8 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
     medium: initialData.medium || '',
     threads: initialData.threads || '',
   });
+  
+  const [copiedPlatform, setCopiedPlatform] = useState(null);
 
   // Keep local state in sync when navigating back to this step
   useEffect(() => {
@@ -96,6 +100,24 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
     onNext({ socialLinks });
   };
 
+  const copyToClipboard = (text, platform) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedPlatform(platform);
+      setTimeout(() => setCopiedPlatform(null), 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  };
+
+  const usePhoneNumber = () => {
+    if (socialLinks.phone && socialLinks.phone.trim() !== '') {
+      setSocialLinks(prev => ({
+        ...prev,
+        whatsapp: prev.phone
+      }));
+    }
+  };
+
   const hasAnyLinks = Object.values(socialLinks).some(value => value.trim() !== '');
 
   return (
@@ -148,44 +170,84 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {socialPlatforms.map((platform) => (
-                <div key={platform.key}>
-                  <label htmlFor={platform.key} className={`flex items-center text-sm font-medium mb-2 ${
-                    isDark ? "text-gray-200" : "text-gray-700"
-                  }`}>
-                    <span className="mr-2">{platform.icon}</span>
-                    {platform.name}
-                  </label>
-                  <input
-                    type={platform.type || "text"}
-                    id={platform.key}
-                    value={socialLinks[platform.key]}
-                    onChange={(e) => handleInputChange(platform.key, e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
-                      platform.key === 'email' && userEmail
-                        ? isDark
-                          ? "bg-slate-600/50 border border-green-500 text-green-300 cursor-not-allowed"
-                          : "bg-green-50 border border-green-300 text-green-700 cursor-not-allowed"
-                        : isDark
-                        ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                        : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                    }`}
-                    placeholder={platform.placeholder}
-                    disabled={platform.key === 'email' && userEmail} // Disable email if pre-filled
-                    autoCapitalize="off"
-                    autoCorrect="off"
-                    autoComplete="off"
-                    spellCheck="false"
-                  />
-                  {platform.key === 'email' && userEmail && (
-                    <p className={`mt-1 text-xs ${
-                      isDark ? "text-green-400" : "text-green-600"
+              {socialPlatforms.map((platform) => {
+                const isPhone = platform.key === 'phone';
+                const isWhatsapp = platform.key === 'whatsapp';
+                const hasPhoneValue = socialLinks.phone && socialLinks.phone.trim() !== '';
+                const showCopyButton = isPhone && hasPhoneValue;
+                const showUsePhoneButton = isWhatsapp && hasPhoneValue && (!socialLinks.whatsapp || socialLinks.whatsapp.trim() === '');
+                
+                return (
+                  <div key={platform.key}>
+                    <label htmlFor={platform.key} className={`flex items-center text-sm font-medium mb-2 ${
+                      isDark ? "text-gray-200" : "text-gray-700"
                     }`}>
-                      ✓ Pre-filled from your account
-                    </p>
-                  )}
-                </div>
-              ))}
+                      <span className="mr-2">{platform.icon}</span>
+                      {platform.name}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={platform.type || "text"}
+                        id={platform.key}
+                        value={socialLinks[platform.key]}
+                        onChange={(e) => handleInputChange(platform.key, e.target.value)}
+                        className={`w-full ${showCopyButton || showUsePhoneButton ? 'pr-10' : 'pr-4'} pl-4 py-2 rounded-xl focus:outline-none transition-all duration-200 ${
+                          platform.key === 'email' && userEmail
+                            ? isDark
+                              ? "bg-slate-600/50 border border-green-500 text-green-300 cursor-not-allowed"
+                              : "bg-green-50 border border-green-300 text-green-700 cursor-not-allowed"
+                            : isDark
+                            ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                            : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                        }`}
+                        placeholder={platform.placeholder}
+                        disabled={platform.key === 'email' && userEmail} // Disable email if pre-filled
+                        autoCapitalize="off"
+                        autoCorrect="off"
+                        autoComplete="off"
+                        spellCheck="false"
+                      />
+                      {showCopyButton && (
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(socialLinks[platform.key], platform.key)}
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all duration-200 hover:scale-110 ${
+                            isDark
+                              ? "hover:bg-slate-600 text-gray-300 hover:text-white"
+                              : "hover:bg-gray-200 text-gray-500 hover:text-gray-700"
+                          }`}
+                        >
+                          {copiedPlatform === platform.key ? (
+                            <Check className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
+                      {showUsePhoneButton && (
+                        <button
+                          type="button"
+                          onClick={usePhoneNumber}
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg transition-all duration-200 hover:scale-105 text-xs font-medium ${
+                            isDark
+                              ? "bg-primary-600 hover:bg-primary-700 text-white"
+                              : "bg-primary-500 hover:bg-primary-600 text-white"
+                          }`}
+                        >
+                          Use
+                        </button>
+                      )}
+                    </div>
+                    {platform.key === 'email' && userEmail && (
+                      <p className={`mt-1 text-xs ${
+                        isDark ? "text-green-400" : "text-green-600"
+                      }`}>
+                        ✓ Pre-filled from your account
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-4 sm:pt-6">
