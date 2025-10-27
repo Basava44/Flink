@@ -712,7 +712,7 @@ function Dashboard() {
                       }`}
                     >
                       <HelpCircle className="w-5 h-5" />
-                      <span className="font-medium">Help & Support</span>
+                      <span className="font-medium">Feedback Form</span>
                     </button>
 
                     {/* Theme Toggle */}

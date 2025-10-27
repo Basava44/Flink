@@ -119,9 +119,9 @@ const HelpSupportPage = () => {
       }, 3000);
 
     } catch (error) {
-      console.error('Error submitting support request:', error);
+      console.error('Error submitting feedback:', error);
       setSubmitStatus('error');
-      alert('Failed to send email. Please try again later or contact us directly at ' + SUPPORT_EMAIL);
+      alert('Failed to send feedback. Please try again later or contact us directly at ' + SUPPORT_EMAIL);
     } finally {
       setIsSubmitting(false);
     }
@@ -158,7 +158,7 @@ const HelpSupportPage = () => {
               <h1 className={`text-lg font-semibold ${
                 isDark ? "text-white" : "text-gray-800"
               }`}>
-                Help & Support
+                Feedback Form
               </h1>
             </div>
           </div>
@@ -168,7 +168,7 @@ const HelpSupportPage = () => {
       {/* Content */}
       <div className="container mx-auto px-4 py-6 max-w-2xl">
 
-        {/* Support Form */}
+          {/* Feedback Form */}
         <div className={`p-6 rounded-2xl ${
           isDark 
             ? "bg-slate-800 border border-slate-700" 
@@ -185,12 +185,12 @@ const HelpSupportPage = () => {
             <h2 className={`text-2xl font-bold mb-2 ${
               isDark ? "text-white" : "text-gray-800"
             }`}>
-              Need Help?
+              Share Your Feedback
             </h2>
             <p className={`text-sm ${
               isDark ? "text-gray-400" : "text-gray-600"
             }`}>
-              Send us a message and we'll get back to you within 24 hours
+              Help us improve by sharing your thoughts and suggestions
             </p>
           </div>
 
@@ -203,7 +203,7 @@ const HelpSupportPage = () => {
             }`}>
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
               <p className="text-sm">
-                Your support request has been prepared! Your email client should open with the message ready to send.
+                Your feedback has been sent successfully! Thank you for helping us improve.
               </p>
             </div>
           )}
@@ -216,7 +216,7 @@ const HelpSupportPage = () => {
             }`}>
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <p className="text-sm">
-                There was an error preparing your support request. Please try again.
+                There was an error sending your feedback. Please try again.
               </p>
             </div>
           )}
@@ -241,7 +241,7 @@ const HelpSupportPage = () => {
                     ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-blue-500"
                     : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500"
                 }`}
-                placeholder="What do you need help with?"
+                placeholder="Briefly describe your feedback or suggestion..."
               />
             </div>
 
@@ -264,7 +264,7 @@ const HelpSupportPage = () => {
                     ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-blue-500"
                     : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500"
                 }`}
-                placeholder="Please provide detailed information about your issue, including steps to reproduce if applicable..."
+                placeholder="Share your thoughts, suggestions, or feedback in detail..."
               />
             </div>
 
@@ -282,12 +282,12 @@ const HelpSupportPage = () => {
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Preparing...</span>
+                    <span>Sending...</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Submit</span>
+                    <span>Send Feedback</span>
                   </>
                 )}
               </button>
