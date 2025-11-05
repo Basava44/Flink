@@ -205,9 +205,9 @@ const SettingsPage = () => {
           // Initialize form data
           if (socialData) {
             const linksObject = {};
-            socialData.forEach((link) => {
-              linksObject[link.platform] = link.url;
-            });
+              socialData.forEach((link) => {
+                linksObject[link.platform] = link.url;
+              });
             setSocialLinksData(linksObject);
           }
 
@@ -272,26 +272,26 @@ const SettingsPage = () => {
       const currentSocialLinks = {};
       const duplicatePlatforms = {};
 
-      socialLinks.forEach((link) => {
-        if (currentSocialLinks[link.platform]) {
-          // Track duplicates
-          if (!duplicatePlatforms[link.platform]) {
-            duplicatePlatforms[link.platform] = [
-              currentSocialLinks[link.platform],
-            ];
+        socialLinks.forEach((link) => {
+          if (currentSocialLinks[link.platform]) {
+            // Track duplicates
+            if (!duplicatePlatforms[link.platform]) {
+              duplicatePlatforms[link.platform] = [
+                currentSocialLinks[link.platform],
+              ];
+            }
+            duplicatePlatforms[link.platform].push(link.url);
+          } else {
+            currentSocialLinks[link.platform] = link.url;
           }
-          duplicatePlatforms[link.platform].push(link.url);
-        } else {
-          currentSocialLinks[link.platform] = link.url;
-        }
-      });
+        });
 
-      // Store duplicates in state for UI display
-      setDuplicatePlatforms(duplicatePlatforms);
+        // Store duplicates in state for UI display
+        setDuplicatePlatforms(duplicatePlatforms);
 
-      // Log duplicates for debugging
-      if (Object.keys(duplicatePlatforms).length > 0) {
-        console.warn("Duplicate social links found:", duplicatePlatforms);
+        // Log duplicates for debugging
+        if (Object.keys(duplicatePlatforms).length > 0) {
+          console.warn("Duplicate social links found:", duplicatePlatforms);
       }
 
       const socialLinksChanged =
@@ -335,8 +335,8 @@ const SettingsPage = () => {
 
   const handleInputChange = (platform, value) => {
     setSocialLinksData((prev) => ({
-      ...prev,
-      [platform]: value,
+          ...prev,
+          [platform]: value,
     }));
   };
 
@@ -512,9 +512,9 @@ const SettingsPage = () => {
 
       // Check if social links changed (URLs only)
       const currentSocialLinks = {};
-      socialLinks.forEach((link) => {
-        currentSocialLinks[link.platform] = link.url;
-      });
+        socialLinks.forEach((link) => {
+          currentSocialLinks[link.platform] = link.url;
+        });
       socialLinksChanged =
         JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData);
 
@@ -557,17 +557,17 @@ const SettingsPage = () => {
         const linksToInsert = [];
 
         socialPlatforms.forEach((platform) => {
-          const newValue = socialLinksData[platform.key]?.trim() || "";
+            const newValue = socialLinksData[platform.key]?.trim() || "";
 
-          if (newValue) {
-            // Use global profile privacy setting for all social links
-            linksToInsert.push({
-              user_id: user.id,
-              platform: platform.key,
-              url: newValue,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            });
+            if (newValue) {
+              // Use global profile privacy setting for all social links
+              linksToInsert.push({
+                user_id: user.id,
+                platform: platform.key,
+                url: newValue,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              });
           }
         });
 
@@ -1082,13 +1082,13 @@ const SettingsPage = () => {
                 : "bg-white border border-gray-200"
             }`}
           >
-            <h2
+              <h2
               className={`text-lg font-semibold mb-4 ${
-                isDark ? "text-white" : "text-gray-800"
-              }`}
-            >
-              Social Media Links
-            </h2>
+                  isDark ? "text-white" : "text-gray-800"
+                }`}
+              >
+                Social Media Links
+              </h2>
 
             {/* Duplicate warning */}
             {Object.keys(duplicatePlatforms).length > 0 && (
@@ -1114,66 +1114,66 @@ const SettingsPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {socialPlatforms.map((platform) => (
-                <div key={platform.key} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label
+                  <div key={platform.key} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label
                       htmlFor={platform.key}
-                      className={`flex items-center text-sm font-medium ${
-                        isDark ? "text-gray-200" : "text-gray-700"
-                      }`}
-                    >
-                      <span className="mr-2">{platform.icon}</span>
-                      {platform.name}
-                    </label>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type={platform.type || "text"}
-                      id={platform.key}
+                        className={`flex items-center text-sm font-medium ${
+                          isDark ? "text-gray-200" : "text-gray-700"
+                        }`}
+                      >
+                        <span className="mr-2">{platform.icon}</span>
+                        {platform.name}
+                      </label>
+                    </div>
+                      <div className="relative">
+                        <input
+                          type={platform.type || "text"}
+                          id={platform.key}
                       value={socialLinksData[platform.key] || ""}
-                      onChange={(e) =>
-                        handleInputChange(platform.key, e.target.value)
-                      }
-                      onFocus={() => setFocusedField(platform.key)}
-                      onBlur={() => setFocusedField(null)}
-                      disabled={platform.key === "email"}
-                      className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
-                        platform.key === "email"
-                          ? isDark
-                            ? "bg-slate-600/30 border border-slate-500 text-gray-400 cursor-not-allowed"
-                            : "bg-gray-100 border border-gray-200 text-gray-500 cursor-not-allowed"
-                          : isDark
-                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                          : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                      }`}
-                      placeholder={platform.placeholder}
-                    />
-                    {platform.key === "email" && (
-                      <p className={`mt-1 text-xs pl-2 text-green-600`}>
-                        Email cannot be edited.
-                      </p>
-                    )}
-                    {socialLinksData[platform.key] &&
-                      focusedField === platform.key &&
-                      platform.key !== "email" && (
-                        <button
-                          type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleInputChange(platform.key, "");
-                          }}
-                          className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 ${
-                            isDark
-                              ? "hover:bg-slate-600 text-gray-400 hover:text-white"
-                              : "hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                          onChange={(e) =>
+                            handleInputChange(platform.key, e.target.value)
+                          }
+                          onFocus={() => setFocusedField(platform.key)}
+                          onBlur={() => setFocusedField(null)}
+                          disabled={platform.key === "email"}
+                          className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
+                            platform.key === "email"
+                              ? isDark
+                                ? "bg-slate-600/30 border border-slate-500 text-gray-400 cursor-not-allowed"
+                                : "bg-gray-100 border border-gray-200 text-gray-500 cursor-not-allowed"
+                              : isDark
+                              ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                              : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
                           }`}
-                          title="Clear field"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
+                          placeholder={platform.placeholder}
+                        />
+                        {platform.key === "email" && (
+                          <p className={`mt-1 text-xs pl-2 text-green-600`}>
+                            Email cannot be edited.
+                          </p>
+                        )}
+                        {socialLinksData[platform.key] &&
+                          focusedField === platform.key &&
+                          platform.key !== "email" && (
+                            <button
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleInputChange(platform.key, "");
+                              }}
+                              className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 ${
+                                isDark
+                                  ? "hover:bg-slate-600 text-gray-400 hover:text-white"
+                                  : "hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                              }`}
+                              title="Clear field"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                      </div>
                   </div>
-                </div>
               ))}
             </div>
           </div>

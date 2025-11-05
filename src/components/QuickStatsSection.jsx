@@ -1,9 +1,16 @@
-import React from 'react';
-import { useTheme } from '../hooks/useTheme';
-import { Link, Users, UserPlus } from 'lucide-react';
+import React from "react";
+import { useTheme } from "../hooks/useTheme";
+import { Link, Users, UserPlus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const QuickStatsSection = ({ socialLinks, profileDetails, friends = 0, pendingRequests = 0 }) => {
+const QuickStatsSection = ({
+  socialLinks,
+  profileDetails,
+  friends = 0,
+  pendingRequests = 0,
+}) => {
   const { isDark } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <div className="mt-6">
@@ -28,21 +35,20 @@ const QuickStatsSection = ({ socialLinks, profileDetails, friends = 0, pendingRe
                 isDark ? "text-gray-400" : "text-gray-500"
               }`}
             />
-            <span
-              className={`${isDark ? "text-gray-300" : "text-gray-600"}`}
-            >
+            <span className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
               {socialLinks.length} links
             </span>
           </div>
-          <div className="flex items-center justify-center space-x-1">
+          <div
+            className="flex items-center justify-center space-x-1"
+            onClick={() => navigate("/friends")}
+          >
             <Users
               className={`w-3 h-3 ${
                 isDark ? "text-gray-400" : "text-gray-500"
               }`}
             />
-            <span
-              className={`${isDark ? "text-gray-300" : "text-gray-600"}`}
-            >
+            <span className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
               {friends} friends
             </span>
           </div>
@@ -52,9 +58,7 @@ const QuickStatsSection = ({ socialLinks, profileDetails, friends = 0, pendingRe
                 isDark ? "text-gray-400" : "text-gray-500"
               }`}
             />
-            <span
-              className={`${isDark ? "text-gray-300" : "text-gray-600"}`}
-            >
+            <span className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
               {pendingRequests} requests
             </span>
           </div>
