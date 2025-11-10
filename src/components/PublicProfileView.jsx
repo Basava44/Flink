@@ -270,7 +270,23 @@ const PublicProfileView = ({ handle }) => {
 
         // console.log('Setting profile data:', combinedProfileData);
         setProfileData(combinedProfileData);
-        setSocialLinks(socialLinksData || []);
+        
+        // Always ensure only one email entry is shown (keep the first)
+        // This prevents duplicate emails from appearing in the public profile
+        let finalSocialLinks = socialLinksData || [];
+        const seenEmails = new Set();
+        finalSocialLinks = finalSocialLinks.filter((link) => {
+          if (link.platform !== "email") return true;
+          const normalized = (link.url || "")
+            .toLowerCase()
+            .trim()
+            .replace(/^mailto:/, "");
+          if (seenEmails.has(normalized)) return false;
+          seenEmails.add(normalized);
+          return true;
+        });
+
+        setSocialLinks(finalSocialLinks);
 
         // console.log('Profile loading completed successfully');
         setLoading(false);
@@ -839,7 +855,7 @@ const PublicProfileView = ({ handle }) => {
                       <div className="flex flex-wrap gap-2 justify-center">
                         {profileData.location && (
                           <div
-                            className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
+                            className={`flex items-center space-x-1.5 px-2 py-1 my-2 rounded-full ${
                               isDark
                                 ? "bg-slate-700/50 text-gray-300"
                                 : "bg-gray-100 text-gray-600"
@@ -854,7 +870,7 @@ const PublicProfileView = ({ handle }) => {
 
                         {profileData.website && (
                           <div
-                            className={`flex items-center space-x-1.5 px-2 py-1 rounded-full ${
+                            className={`flex items-center space-x-1.5 px-2 py-1 my-2 rounded-full ${
                               isDark
                                 ? "bg-slate-700/50 text-gray-300"
                                 : "bg-gray-100 text-gray-600"
