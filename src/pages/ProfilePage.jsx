@@ -902,7 +902,7 @@ function ProfilePage() {
               </span>
                 </p>
                 <p className="text-xs text-gray-500">
-              © 2025 Flink. All rights reserved.
+              © 2026 Flink. All rights reserved.
                 </p>
             </div>
             </>

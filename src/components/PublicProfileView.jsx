@@ -1287,7 +1287,7 @@ const PublicProfileView = ({ handle }) => {
                   </span>
                 </div>
                 <div className="text-xs opacity-50 mt-1">
-                  © 2025 Flink. All rights reserved.
+                  © 2026 Flink. All rights reserved.
                 </div>
               </div>
             </div>

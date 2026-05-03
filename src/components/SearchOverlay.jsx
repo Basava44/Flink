@@ -255,6 +255,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                       <img
                         src={user.profile_url}
                         alt="Profile"
+                        loading="lazy"
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     ) : (

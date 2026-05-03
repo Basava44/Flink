@@ -6,6 +6,7 @@
   "homepage": "https://basava44.github.io/Flink",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "VITE_USE_MOCK=true vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",

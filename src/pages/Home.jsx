@@ -388,7 +388,7 @@ function Home() {
           <p
             className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}
           >
-            © 2025 Flink. All rights reserved.
+            © 2026 Flink. All rights reserved.
           </p>
         </div>
       </footer>

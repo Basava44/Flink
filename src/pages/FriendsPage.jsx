@@ -406,6 +406,7 @@ const FriendsPage = () => {
                             <img
                               src={friend.profile_url}
                               alt="Profile"
+                              loading="lazy"
                               className="w-12 h-12 rounded-full object-cover border-2 border-primary-500"
                             />
                           ) : (
@@ -485,6 +486,7 @@ const FriendsPage = () => {
                             <img
                               src={request.profile_url}
                               alt="Profile"
+                              loading="lazy"
                               className="w-12 h-12 rounded-full object-cover border-2 border-primary-500"
                             />
                           ) : (

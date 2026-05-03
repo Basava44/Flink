@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import { AuthContext } from "./AuthContextType";
 
@@ -144,103 +144,8 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Sign up with email and password
-  const signUp = async (email, password, additionalData = {}) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: additionalData,
-      },
-    });
-
-    // If signup is successful and we have a user, add them to the database immediately
-    if (data?.user && !error) {
-      addUserToDatabase(data.user, additionalData).then(
-        ({ error: dbError }) => {
-          if (dbError) {
-            console.error(
-              "Failed to add user to database after signup:",
-              dbError
-            );
-          } else {
-            // // console.log("User successfully added to database after signup");
-          }
-        }
-      );
-    }
-
-    return { data, error };
-  };
-
-  // Sign in with email and password
-  const signIn = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
-  };
-
-  // Sign in with Google
-  const signInWithGoogle = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        // redirectTo: `${window.location.origin}`,
-        redirectTo: `http://localhost:5173`,
-      },
-    });
-
-    // Note: For OAuth, the user will be added via the auth state change listener
-    // when they return from the OAuth redirect
-    return { data, error };
-  };
-
-  // Sign out
-  const signOut = async () => {
-    try {
-      // Manually clear all auth-related data first
-      localStorage.removeItem("sb-session");
-      localStorage.clear(); // Clear all cached data
-      
-      // Manually clear state immediately
-      setUser(null);
-      setUserDetails(null);
-      
-      // Try to sign out from Supabase (ignore errors)
-      try {
-        const { error } = await supabase.auth.signOut();
-        if (error && error.message !== "Auth session missing!") {
-          // Only log non-session missing errors
-          console.error("Error signing out:", error);
-        }
-      } catch (signOutError) {
-        // Ignore sign out errors - we've already cleared everything locally
-        console.log("Sign out completed locally");
-      }
-      
-      return { error: null };
-    } catch (err) {
-      console.error("Unexpected error during sign out:", err);
-      // Even on error, clear local state
-      setUser(null);
-      setUserDetails(null);
-      localStorage.clear();
-      return { error: null }; // Don't return error to avoid blocking UI
-    }
-  };
-
-  // Reset password
-  const resetPassword = async (email) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    return { data, error };
-  };
-
   // Add user to users table after successful signup
-  const addUserToDatabase = async (user, additionalData = {}) => {
+  const addUserToDatabase = useCallback(async (user, additionalData = {}) => {
     try {
       // First check if user already exists in database
       const { data: existingUser, error: checkError } = await supabase
@@ -276,8 +181,6 @@ export const AuthProvider = ({ children }) => {
         created_at: new Date().toISOString(),
       };
 
-      // // console.log("Adding user to database with data:", userData);
-
       const { data, error } = await supabase
         .from("users")
         .insert([userData])
@@ -296,13 +199,11 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Only add email as a social link for OAuth users (not email/password users)
-      // OAuth users have app_metadata.provider, email/password users don't
       const isOAuthUser =
         user.app_metadata?.provider && user.app_metadata.provider !== "email";
 
       if (user.email && isOAuthUser) {
         try {
-          // Check if email social link already exists to prevent duplicates
           const { data: existingEmailLink } = await supabase
             .from("social_links")
             .select("id")
@@ -325,24 +226,11 @@ export const AuthProvider = ({ children }) => {
 
             if (socialLinkError) {
               console.error("Error adding email social link:", socialLinkError);
-            } else {
-              // // console.log(
-              //   "Email social link added successfully for:",
-              //   user.email
-              // );
             }
-          } else {
-            // // console.log("Email social link already exists for user, skipping");
           }
         } catch (err) {
           console.error("Unexpected error adding email social link:", err);
         }
-      } else if (user.email && !isOAuthUser) {
-        // // console.log(
-        //   "Email/password user - not adding email social link automatically"
-        // );
-      } else {
-        // // console.log("No email found for user, skipping email social link");
       }
 
       return { data, error: null };
@@ -350,10 +238,105 @@ export const AuthProvider = ({ children }) => {
       console.error("Unexpected error adding user to database:", err);
       return { data: null, error: err };
     }
-  };
+  }, []);
+
+  // Sign up with email and password
+  const signUp = useCallback(async (email, password, additionalData = {}) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: additionalData,
+      },
+    });
+
+    // If signup is successful and we have a user, add them to the database immediately
+    if (data?.user && !error) {
+      addUserToDatabase(data.user, additionalData).then(
+        ({ error: dbError }) => {
+          if (dbError) {
+            console.error(
+              "Failed to add user to database after signup:",
+              dbError
+            );
+          } else {
+            // // console.log("User successfully added to database after signup");
+          }
+        }
+      );
+    }
+
+    return { data, error };
+  }, [addUserToDatabase]);
+
+  // Sign in with email and password
+  const signIn = useCallback(async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { data, error };
+  }, []);
+
+  // Sign in with Google
+  const signInWithGoogle = useCallback(async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        // redirectTo: `${window.location.origin}`,
+        redirectTo: `http://localhost:5173`,
+      },
+    });
+
+    // Note: For OAuth, the user will be added via the auth state change listener
+    // when they return from the OAuth redirect
+    return { data, error };
+  }, []);
+
+  // Sign out
+  const signOut = useCallback(async () => {
+    try {
+      // Manually clear all auth-related data first
+      localStorage.removeItem("sb-session");
+      localStorage.clear(); // Clear all cached data
+
+      // Manually clear state immediately
+      setUser(null);
+      setUserDetails(null);
+
+      // Try to sign out from Supabase (ignore errors)
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error && error.message !== "Auth session missing!") {
+          // Only log non-session missing errors
+          console.error("Error signing out:", error);
+        }
+      } catch (signOutError) {
+        // Ignore sign out errors - we've already cleared everything locally
+        console.log("Sign out completed locally");
+      }
+
+      return { error: null };
+    } catch (err) {
+      console.error("Unexpected error during sign out:", err);
+      // Even on error, clear local state
+      setUser(null);
+      setUserDetails(null);
+      localStorage.clear();
+      return { error: null }; // Don't return error to avoid blocking UI
+    }
+  }, []);
+
+  // Reset password
+  const resetPassword = useCallback(async (email) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { data, error };
+  }, []);
 
   // Get user details from users table
-  const getUserDetails = async (userId) => {
+  const getUserDetails = useCallback(async (userId) => {
     try {
       const { data, error } = await supabase
         .from("users")
@@ -372,10 +355,10 @@ export const AuthProvider = ({ children }) => {
       console.error("Unexpected error fetching user details:", err);
       return { data: null, error: err };
     }
-  };
+  }, []);
 
   // Get user's social links
-  const getSocialLinks = async (userId) => {
+  const getSocialLinks = useCallback(async (userId) => {
     try {
       const { data, error } = await supabase
         .from("social_links")
@@ -393,10 +376,10 @@ export const AuthProvider = ({ children }) => {
       console.error("Unexpected error fetching social links:", err);
       return { data: null, error: err };
     }
-  };
+  }, []);
 
   // Get user's profile details
-  const getProfileDetails = async (userId) => {
+  const getProfileDetails = useCallback(async (userId) => {
     try {
       const { data, error } = await supabase
         .from("flink_profiles")
@@ -414,10 +397,10 @@ export const AuthProvider = ({ children }) => {
       console.error("Unexpected error fetching profile details:", err);
       return { data: null, error: err };
     }
-  };
+  }, []);
 
   // Test database connection
-  const testDatabaseConnection = async () => {
+  const testDatabaseConnection = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("users")
@@ -433,9 +416,9 @@ export const AuthProvider = ({ children }) => {
       console.error("Database connection test error:", err);
       return { success: false, error: err };
     }
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     userDetails,
     loading,
@@ -449,8 +432,10 @@ export const AuthProvider = ({ children }) => {
     getSocialLinks,
     getProfileDetails,
     testDatabaseConnection,
-    supabase, // Expose supabase client for password reset
-  };
+    supabase,
+  }), [user, userDetails, loading, signUp, signIn, signInWithGoogle, signOut,
+       resetPassword, getUserDetails, addUserToDatabase, getSocialLinks,
+       getProfileDetails, testDatabaseConnection]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
