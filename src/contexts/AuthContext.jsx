@@ -283,8 +283,7 @@ export const AuthProvider = ({ children }) => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        // redirectTo: `${window.location.origin}`,
-        redirectTo: `http://localhost:5173`,
+        redirectTo: window.location.origin,
       },
     });
 
@@ -335,9 +334,39 @@ export const AuthProvider = ({ children }) => {
     return { data, error };
   }, []);
 
+  // Cache helpers
+  const cacheGet = useCallback((key) => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const { data, ts } = JSON.parse(raw);
+      // Cache valid for 10 minutes
+      if (Date.now() - ts > 10 * 60 * 1000) return null;
+      return data;
+    } catch { return null; }
+  }, []);
+
+  const cacheSet = useCallback((key, data) => {
+    try {
+      localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+    } catch {}
+  }, []);
+
+  const cacheClear = useCallback((userId) => {
+    try {
+      localStorage.removeItem(`flink_user_${userId}`);
+      localStorage.removeItem(`flink_social_${userId}`);
+      localStorage.removeItem(`flink_profile_${userId}`);
+    } catch {}
+  }, []);
+
   // Get user details from users table
   const getUserDetails = useCallback(async (userId) => {
     try {
+      // Load from cache instantly
+      const cached = cacheGet(`flink_user_${userId}`);
+      if (cached) setUserDetails(cached);
+
       const { data, error } = await supabase
         .from("users")
         .select("*")
@@ -346,41 +375,48 @@ export const AuthProvider = ({ children }) => {
 
       if (error) {
         console.error("Error fetching user details:", error);
-        return { data: null, error };
+        return { data: cached || null, error };
       }
 
       setUserDetails(data);
+      cacheSet(`flink_user_${userId}`, data);
       return { data, error: null };
     } catch (err) {
       console.error("Unexpected error fetching user details:", err);
       return { data: null, error: err };
     }
-  }, []);
+  }, [cacheGet, cacheSet]);
 
   // Get user's social links
   const getSocialLinks = useCallback(async (userId) => {
     try {
+      const cached = cacheGet(`flink_social_${userId}`);
+
       const { data, error } = await supabase
         .from("social_links")
         .select("*")
         .eq("user_id", userId)
+        .order("display_order", { ascending: true })
         .order("created_at", { ascending: true });
 
       if (error) {
         console.error("Error fetching social links:", error);
-        return { data: null, error };
+        return { data: cached || null, error };
       }
 
+      cacheSet(`flink_social_${userId}`, data);
       return { data, error: null };
     } catch (err) {
       console.error("Unexpected error fetching social links:", err);
       return { data: null, error: err };
     }
-  }, []);
+  }, [cacheGet, cacheSet]);
 
   // Get user's profile details
   const getProfileDetails = useCallback(async (userId) => {
     try {
+      const cached = cacheGet(`flink_profile_${userId}`);
+
       const { data, error } = await supabase
         .from("flink_profiles")
         .select("*")
@@ -389,15 +425,16 @@ export const AuthProvider = ({ children }) => {
 
       if (error) {
         console.error("Error fetching profile details:", error);
-        return { data: null, error };
+        return { data: cached || null, error };
       }
 
+      cacheSet(`flink_profile_${userId}`, data);
       return { data, error: null };
     } catch (err) {
       console.error("Unexpected error fetching profile details:", err);
       return { data: null, error: err };
     }
-  }, []);
+  }, [cacheGet, cacheSet]);
 
   // Test database connection
   const testDatabaseConnection = useCallback(async () => {
@@ -432,10 +469,11 @@ export const AuthProvider = ({ children }) => {
     getSocialLinks,
     getProfileDetails,
     testDatabaseConnection,
+    cacheClear,
     supabase,
   }), [user, userDetails, loading, signUp, signIn, signInWithGoogle, signOut,
        resetPassword, getUserDetails, addUserToDatabase, getSocialLinks,
-       getProfileDetails, testDatabaseConnection]);
+       getProfileDetails, testDatabaseConnection, cacheClear]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

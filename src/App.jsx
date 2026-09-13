@@ -11,34 +11,19 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const HelpSupportPage = lazy(() => import("./pages/HelpSupportPage"));
-const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
-const FriendsPage = lazy(() => import("./pages/FriendsPage"));
 
 function LoadingSpinner() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-300">Loading...</p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+      <div className="w-8 h-8 border-2 rounded-full animate-spin border-zinc-200 border-t-zinc-900 dark:border-zinc-700 dark:border-t-white" />
     </div>
   );
 }
 
-// Protected Route component
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
+  if (loading) return <LoadingSpinner />;
   return user ? children : <Navigate to="/login" replace />;
-}
-
-// Public Route component (no redirect logic - handled by individual pages)
-function PublicRoute({ children }) {
-  return children;
 }
 
 function AppContent() {
@@ -46,22 +31,13 @@ function AppContent() {
     <Router>
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<PublicRoute><Home /></PublicRoute>} />
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-
-          {/* Profile Route - handles both own and public profiles */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/:handle" element={<ProfilePage />} />
-
-          {/* Protected Routes */}
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/help" element={<ProtectedRoute><HelpSupportPage /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-          <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
-
-          {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

@@ -30,6 +30,8 @@ import {
   Send,
   BookOpen,
   Music,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 const SettingsPage = () => {
@@ -56,7 +58,6 @@ const SettingsPage = () => {
 
   // Convert social links array to object format for editing
   const [socialLinksData, setSocialLinksData] = useState({});
-  const [duplicatePlatforms, setDuplicatePlatforms] = useState({});
   // Profile details for editing
   const [profileData, setProfileData] = useState({
     bio: "",
@@ -202,12 +203,15 @@ const SettingsPage = () => {
             console.error("Error fetching user data:", userError);
           }
 
-          // Initialize form data
+          // Initialize form data - group by platform as arrays
           if (socialData) {
             const linksObject = {};
-              socialData.forEach((link) => {
-                linksObject[link.platform] = link.url;
-              });
+            socialData.forEach((link) => {
+              if (!linksObject[link.platform]) {
+                linksObject[link.platform] = [];
+              }
+              linksObject[link.platform].push(link.url);
+            });
             setSocialLinksData(linksObject);
           }
 
@@ -216,7 +220,7 @@ const SettingsPage = () => {
               bio: profileData.bio || "",
               location: profileData.location || "",
               website: profileData.website || "",
-              private: profileData.private || false,
+              private: profileData.is_private || false,
             });
           }
 
@@ -268,31 +272,14 @@ const SettingsPage = () => {
   // Check for changes
   useEffect(() => {
     const checkForChanges = () => {
-      // Check if social links have changed
+      // Check if social links have changed - compare as grouped arrays
       const currentSocialLinks = {};
-      const duplicatePlatforms = {};
-
-        socialLinks.forEach((link) => {
-          if (currentSocialLinks[link.platform]) {
-            // Track duplicates
-            if (!duplicatePlatforms[link.platform]) {
-              duplicatePlatforms[link.platform] = [
-                currentSocialLinks[link.platform],
-              ];
-            }
-            duplicatePlatforms[link.platform].push(link.url);
-          } else {
-            currentSocialLinks[link.platform] = link.url;
-          }
-        });
-
-        // Store duplicates in state for UI display
-        setDuplicatePlatforms(duplicatePlatforms);
-
-        // Log duplicates for debugging
-        if (Object.keys(duplicatePlatforms).length > 0) {
-          console.warn("Duplicate social links found:", duplicatePlatforms);
-      }
+      socialLinks.forEach((link) => {
+        if (!currentSocialLinks[link.platform]) {
+          currentSocialLinks[link.platform] = [];
+        }
+        currentSocialLinks[link.platform].push(link.url);
+      });
 
       const socialLinksChanged =
         JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData);
@@ -302,7 +289,7 @@ const SettingsPage = () => {
         bio: profileDetails?.bio || "",
         location: profileDetails?.location || "",
         website: profileDetails?.website || "",
-        private: profileDetails?.private || false,
+        private: profileDetails?.is_private || false,
       };
 
       const profileChanged =
@@ -333,11 +320,30 @@ const SettingsPage = () => {
     originalDisplayName,
   ]);
 
-  const handleInputChange = (platform, value) => {
-    setSocialLinksData((prev) => ({
-          ...prev,
-          [platform]: value,
-    }));
+  const handleInputChange = (platform, value, index = 0) => {
+    setSocialLinksData((prev) => {
+      const arr = [...(prev[platform] || [""])];
+      arr[index] = value;
+      return { ...prev, [platform]: arr };
+    });
+  };
+
+  const addPlatformEntry = (platform) => {
+    setSocialLinksData((prev) => {
+      const arr = [...(prev[platform] || [""])];
+      if (arr.length >= 3) return prev;
+      return { ...prev, [platform]: [...arr, ""] };
+    });
+    setHasChanges(true);
+  };
+
+  const removePlatformEntry = (platform, index) => {
+    setSocialLinksData((prev) => {
+      const arr = [...(prev[platform] || [])];
+      arr.splice(index, 1);
+      return { ...prev, [platform]: arr.length > 0 ? arr : [""] };
+    });
+    setHasChanges(true);
   };
 
   const handleProfileChange = (field, value) => {
@@ -455,7 +461,7 @@ const SettingsPage = () => {
 
       // Upload compressed blob to Supabase storage
       const { error: uploadError } = await supabase.storage
-        .from("profile_photos")
+        .from("avatars")
         .upload(fileName, blob, {
           cacheControl: "3600",
           upsert: false,
@@ -469,7 +475,7 @@ const SettingsPage = () => {
       // Get public URL with transformation for faster loading
       const {
         data: { publicUrl },
-      } = supabase.storage.from("profile_photos").getPublicUrl(fileName);
+      } = supabase.storage.from("avatars").getPublicUrl(fileName);
 
       // Update profile URL state
       setProfileUrl(publicUrl);
@@ -510,11 +516,14 @@ const SettingsPage = () => {
       let profileUrlChanged = false;
       let displayNameChanged = false;
 
-      // Check if social links changed (URLs only)
+      // Check if social links changed - compare as grouped arrays
       const currentSocialLinks = {};
-        socialLinks.forEach((link) => {
-          currentSocialLinks[link.platform] = link.url;
-        });
+      socialLinks.forEach((link) => {
+        if (!currentSocialLinks[link.platform]) {
+          currentSocialLinks[link.platform] = [];
+        }
+        currentSocialLinks[link.platform].push(link.url);
+      });
       socialLinksChanged =
         JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData);
 
@@ -523,7 +532,7 @@ const SettingsPage = () => {
         bio: profileDetails?.bio || "",
         location: profileDetails?.location || "",
         website: profileDetails?.website || "",
-        private: profileDetails?.private || false,
+        private: profileDetails?.is_private || false,
       };
       profileDetailsChanged =
         JSON.stringify(currentProfileData) !== JSON.stringify(profileData);
@@ -532,43 +541,26 @@ const SettingsPage = () => {
       profileUrlChanged = profileUrl !== originalProfileUrl;
       displayNameChanged = displayName !== originalDisplayName;
 
-      // Only update social links if they changed (URLs or privacy)
+      // Only update social links if they changed
       if (socialLinksChanged) {
-        // First, clean up any duplicate social links
-        if (Object.keys(duplicatePlatforms).length > 0) {
-          // console.log("Cleaning up duplicate social links...");
-          for (const platform of Object.keys(duplicatePlatforms)) {
-            const { error: deleteError } = await supabase
-              .from("social_links")
-              .delete()
-              .eq("user_id", user.id)
-              .eq("platform", platform);
-
-            if (deleteError) {
-              console.error(
-                `Error deleting duplicate ${platform} links:`,
-                deleteError
-              );
-            }
-          }
-        }
-
         // Prepare all social links to insert (only non-empty ones)
         const linksToInsert = [];
 
         socialPlatforms.forEach((platform) => {
-            const newValue = socialLinksData[platform.key]?.trim() || "";
-
-            if (newValue) {
-              // Use global profile privacy setting for all social links
+          const values = socialLinksData[platform.key] || [];
+          values.forEach((val, idx) => {
+            const trimmed = val?.trim() || "";
+            if (trimmed) {
               linksToInsert.push({
                 user_id: user.id,
                 platform: platform.key,
-                url: newValue,
+                url: trimmed,
+                display_order: idx,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               });
-          }
+            }
+          });
         });
 
         // Delete all existing social links for this user first
@@ -606,7 +598,7 @@ const SettingsPage = () => {
             bio: profileData.bio.trim() || null,
             location: profileData.location.trim() || null,
             website: profileData.website.trim() || null,
-            private: profileData.private || false,
+            is_private: profileData.private || false,
             updated_at: new Date().toISOString(),
           })
           .eq("user_id", user.id);
@@ -1090,55 +1082,56 @@ const SettingsPage = () => {
                 Social Media Links
               </h2>
 
-            {/* Duplicate warning */}
-            {Object.keys(duplicatePlatforms).length > 0 && (
-              <div
-                className={`mb-4 p-3 rounded-lg ${
-                  isDark
-                    ? "bg-yellow-900/20 border border-yellow-700 text-yellow-300"
-                    : "bg-yellow-50 border border-yellow-200 text-yellow-700"
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <p className="text-sm">
-                    <span className="font-medium">Warning:</span> Multiple
-                    entries found for:{" "}
-                    {Object.keys(duplicatePlatforms).join(", ")}. Only the first
-                    entry is shown. Please save your changes to clean up
-                    duplicates.
-                  </p>
-                </div>
-              </div>
-            )}
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {socialPlatforms.map((platform) => (
-                  <div key={platform.key} className="space-y-3">
+              {socialPlatforms.map((platform) => {
+                const entries = socialLinksData[platform.key] || [""];
+                const isEmail = platform.key === "email";
+                return (
+                  <div key={platform.key} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label
-                      htmlFor={platform.key}
                         className={`flex items-center text-sm font-medium ${
                           isDark ? "text-gray-200" : "text-gray-700"
                         }`}
                       >
                         <span className="mr-2">{platform.icon}</span>
                         {platform.name}
+                        {entries.filter(v => v?.trim()).length > 1 && (
+                          <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                            isDark ? "bg-zinc-700 text-zinc-400" : "bg-zinc-100 text-zinc-500"
+                          }`}>
+                            {entries.filter(v => v?.trim()).length}
+                          </span>
+                        )}
                       </label>
+                      {!isEmail && entries.length < 3 && (
+                        <button
+                          type="button"
+                          onClick={() => addPlatformEntry(platform.key)}
+                          className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg transition-all duration-200 active:scale-95 ${
+                            isDark
+                              ? "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"
+                              : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
+                          }`}
+                        >
+                          <Plus className="w-3 h-3" />
+                          Add
+                        </button>
+                      )}
                     </div>
-                      <div className="relative">
+                    {entries.map((value, idx) => (
+                      <div key={idx} className="relative flex items-center gap-2">
                         <input
                           type={platform.type || "text"}
-                          id={platform.key}
-                      value={socialLinksData[platform.key] || ""}
+                          value={value || ""}
                           onChange={(e) =>
-                            handleInputChange(platform.key, e.target.value)
+                            handleInputChange(platform.key, e.target.value, idx)
                           }
-                          onFocus={() => setFocusedField(platform.key)}
+                          onFocus={() => setFocusedField(`${platform.key}-${idx}`)}
                           onBlur={() => setFocusedField(null)}
-                          disabled={platform.key === "email"}
-                          className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
-                            platform.key === "email"
+                          disabled={isEmail && idx === 0}
+                          className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
+                            isEmail && idx === 0
                               ? isDark
                                 ? "bg-slate-600/30 border border-slate-500 text-gray-400 cursor-not-allowed"
                                 : "bg-gray-100 border border-gray-200 text-gray-500 cursor-not-allowed"
@@ -1146,35 +1139,31 @@ const SettingsPage = () => {
                               ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
                               : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
                           }`}
-                          placeholder={platform.placeholder}
+                          placeholder={idx === 0 ? platform.placeholder : `Another ${platform.name}`}
                         />
-                        {platform.key === "email" && (
-                          <p className={`mt-1 text-xs pl-2 text-green-600`}>
-                            Email cannot be edited.
-                          </p>
+                        {entries.length > 1 && !(isEmail && idx === 0) && (
+                          <button
+                            type="button"
+                            onClick={() => removePlatformEntry(platform.key, idx)}
+                            className={`flex-shrink-0 p-2 rounded-lg transition-all duration-200 active:scale-95 ${
+                              isDark
+                                ? "text-zinc-500 hover:text-red-400 hover:bg-zinc-800"
+                                : "text-zinc-400 hover:text-red-500 hover:bg-zinc-100"
+                            }`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         )}
-                        {socialLinksData[platform.key] &&
-                          focusedField === platform.key &&
-                          platform.key !== "email" && (
-                            <button
-                              type="button"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                handleInputChange(platform.key, "");
-                              }}
-                              className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 ${
-                                isDark
-                                  ? "hover:bg-slate-600 text-gray-400 hover:text-white"
-                                  : "hover:bg-gray-200 text-gray-400 hover:text-gray-600"
-                              }`}
-                              title="Clear field"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
                       </div>
+                    ))}
+                    {isEmail && (
+                      <p className="text-xs pl-2 text-green-600">
+                        Email cannot be edited.
+                      </p>
+                    )}
                   </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

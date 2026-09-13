@@ -1,21 +1,35 @@
-// Home page component - move App.jsx content here
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { supabase } from "../lib/supabase";
-import ThemeToggle from "../components/ThemeToggle";
-import SearchOverlay from "../components/SearchOverlay";
-import { Search } from "lucide-react";
+import {
+  Link2,
+  Zap,
+  Users,
+  ArrowRight,
+  Check,
+  X,
+  Instagram,
+  Twitter,
+  Github,
+  Linkedin,
+  Youtube,
+  Mail,
+  Phone,
+  MessageCircle,
+  Sun,
+  Moon,
+} from "lucide-react";
 
 function Home() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const [handleInput, setHandleInput] = useState("");
-  const [showSearch, setShowSearch] = useState(false);
+  const [handleStatus, setHandleStatus] = useState(null);
+  const checkTimeout = useRef(null);
 
-  // Redirect logged-in users to their profile
   useEffect(() => {
     const redirectToProfile = async () => {
       if (user?.id && !loading) {
@@ -25,376 +39,309 @@ function Home() {
             .select("handle")
             .eq("user_id", user.id)
             .single();
-
-          if (profileData?.handle) {
-            navigate(`/${profileData.handle}`, { replace: true });
-          } else {
-            navigate(`/${user.id}`, { replace: true });
-          }
-        } catch (err) {
-          console.error("Error checking user profile:", err);
+          navigate(profileData?.handle ? `/${profileData.handle}` : `/${user.id}`, { replace: true });
+        } catch {
           navigate(`/${user.id}`, { replace: true });
         }
       }
     };
-
     redirectToProfile();
   }, [user?.id, loading, navigate]);
 
-  const handleGetStarted = () => {
-    if (user) {
-      // // console.log("User is logged in, going to profile");
-      // The useEffect will handle the redirect
-    } else {
-      navigate("/login");
-    }
+  const checkHandle = (value) => {
+    const clean = value.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    setHandleInput(clean);
+    if (checkTimeout.current) clearTimeout(checkTimeout.current);
+    if (clean.length < 3) { setHandleStatus(null); return; }
+    setHandleStatus("checking");
+    checkTimeout.current = setTimeout(async () => {
+      try {
+        const { data } = await supabase.from("flink_profiles").select("id").eq("handle", clean).maybeSingle();
+        setHandleStatus(data ? "taken" : "available");
+      } catch { setHandleStatus(null); }
+    }, 400);
   };
 
-  const checkAvailability = (handle) => {
-    setHandleInput(handle);
-    // This is to check in future for logins
-    // if (handle.length > 2) {
-    //   setIsChecking(true);
-    //   setTimeout(() => {
-    //     setIsChecking(false);
-    //   }, 800);
-    // }
+  const handleClaim = () => {
+    navigate("/login", { state: { claimedHandle: handleInput } });
   };
 
-  const openSearchOverlay = () => {
-    setShowSearch(true);
-  };
-
-  const closeSearchOverlay = () => {
-    setShowSearch(false);
-  };
-
-  // Note: Auth state changes are now handled by AppContent component
+  if (loading || user) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-zinc-950" : "bg-white"}`}>
+        <div className={`w-6 h-6 border-2 rounded-full animate-spin ${isDark ? "border-zinc-700 border-t-zinc-400" : "border-zinc-200 border-t-zinc-600"}`} />
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={`home-page min-h-screen transition-colors duration-300 ${
-        isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
-      }`}
-    >
-      <ThemeToggle />
-
-      {/* Hero Section */}
-      <section className="min-h-[75vh] flex items-center justify-center px-4 relative">
-        {/* Subtle background pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-20 left-20 w-32 h-32 bg-primary-500 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-20 w-40 h-40 bg-accent-500 rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="mb-8 fade-in">
-            <span
-              className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                isDark
-                  ? "bg-primary-500/10 text-primary-400 border border-primary-500/20"
-                  : "bg-primary-100 text-primary-700 border border-primary-200"
-              }`}
-            >
-              ✨ The Future of Social Connection
-            </span>
-          </div>
-
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold mb-8 leading-tight fade-in">
-            <span className="brand-font text-6xl sm:text-7xl md:text-8xl block mb-4">
-              Flink
-            </span>
-            <span
-              className={`text-2xl sm:text-3xl md:text-4xl font-normal ${
-                isDark ? "text-gray-300" : "text-gray-600"
-              }`}
-            >
-              All your socials. One link.
-            </span>
-          </h1>
-
-          <p
-            className={`text-lg sm:text-xl mb-12 max-w-2xl mx-auto leading-relaxed ${
-              isDark ? "text-gray-300" : "text-gray-600"
-            } fade-in`}
-          >
-            Why share multiple usernames when you can share one link? Connect
-            with anyone, instantly.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center fade-in">
-            <button
-              onClick={handleGetStarted}
-              className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 shadow-soft hover:shadow-soft-lg transform hover:scale-105"
-            >
-              {user ? "Go to Dashboard" : "Get Started"}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Handle Checker */}
-      <section className="pb-10 px-4">
-        <div className="max-w-md mx-auto">
-          <div
-            className={`rounded-2xl p-6 sm:p-8 shadow-soft ${
-              isDark
-                ? "bg-slate-800/50 border border-slate-700/50"
-                : "bg-white border border-gray-200"
+    <div className={`min-h-screen ${isDark ? "bg-zinc-950 text-zinc-100" : "bg-white text-zinc-900"}`}>
+      {/* Nav */}
+      <nav className="relative max-w-5xl mx-auto px-5 py-5 flex items-center justify-between">
+        <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+          Flink
+        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-lg transition-colors ${
+              isDark ? "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
             }`}
           >
-            <label
-              className={`block text-sm font-semibold mb-3 ${
-                isDark ? "text-gray-200" : "text-gray-700"
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => navigate("/login")}
+            className={`text-sm font-medium px-4 py-2 rounded-lg border transition-colors ${
+              isDark ? "text-zinc-400 hover:text-white border-zinc-700" : "text-zinc-600 hover:text-zinc-900 border-zinc-200"
+            }`}
+          >
+            Log in
+          </button>
+          <button
+            onClick={() => navigate("/login")}
+            className={`text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-200 active:scale-95 ${
+              isDark
+                ? "bg-white text-zinc-900 hover:bg-zinc-200"
+                : "bg-zinc-900 text-white hover:bg-zinc-800"
+            }`}
+          >
+            Sign up free
+          </button>
+        </div>
+      </nav>
+
+      {/* Subtle gradient wave BG */}
+      <div className="absolute top-0 inset-x-0 h-[600px] overflow-hidden pointer-events-none">
+        <div className={`absolute inset-0 ${
+          isDark
+            ? "bg-gradient-to-b from-purple-950/20 via-zinc-950 to-zinc-950"
+            : "bg-gradient-to-b from-purple-100/30 via-pink-50/10 to-white"
+        }`} />
+      </div>
+
+      {/* Hero */}
+      <section className="relative max-w-3xl mx-auto px-5 pt-24 sm:pt-32 pb-20 text-center">
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
+          All your socials.
+          <br />
+          <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+            One link.
+          </span>
+        </h1>
+
+        <p className={`text-lg sm:text-xl max-w-xl mx-auto mb-12 leading-relaxed ${
+          isDark ? "text-zinc-500" : "text-zinc-500"
+        }`}>
+          Stop sharing 10 different usernames. Create your Flink - a single link
+          to all your social profiles, contact info, and more.
+        </p>
+
+        {/* Handle claim input */}
+        <div className="max-w-md mx-auto">
+          <div className={`flex items-center rounded-xl p-1.5 ${
+            isDark
+              ? "bg-zinc-900 border border-zinc-800"
+              : "bg-zinc-50 border border-zinc-200"
+          }`}>
+            <span className={`pl-4 pr-1 text-sm font-mono ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
+              flink.to/
+            </span>
+            <input
+              type="text"
+              value={handleInput}
+              onChange={(e) => checkHandle(e.target.value)}
+              placeholder="yourname"
+              className={`flex-1 px-1 py-3 text-sm bg-transparent outline-none ${
+                isDark ? "text-white placeholder-zinc-700" : "text-zinc-900 placeholder-zinc-400"
+              }`}
+            />
+            <button
+              onClick={handleInput.length >= 3 && handleStatus === "available" ? handleClaim : () => navigate("/login")}
+              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 active:scale-95 flex-shrink-0 ${
+                isDark
+                  ? "bg-white text-zinc-900 hover:bg-zinc-200"
+                  : "bg-zinc-900 text-white hover:bg-zinc-800"
               }`}
             >
-              Check your Flink handle
-            </label>
-            <div className="flex items-center space-x-2 mb-3">
-              <span
-                className={`font-mono text-sm ${
-                  isDark ? "text-gray-400" : "text-gray-500"
-                }`}
-              >
-                flink.app/
-              </span>
-              <input
-                type="text"
-                placeholder="yourname"
-                className={`flex-1 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl focus:outline-none transition-all duration-200 text-sm ${
-                  isDark
-                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                }`}
-                value={handleInput}
-                onChange={(e) => checkAvailability(e.target.value)}
-              />
-            </div>
-            {handleInput.length > 2 && (
-              <p className="text-sm text-green-600 flex items-center space-x-2 fade-in">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <span>flink.app/{handleInput} is available!</span>
+              Claim
+            </button>
+          </div>
+          <div className="h-6 mt-2">
+            {handleStatus === "checking" && (
+              <p className={`text-xs ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>Checking...</p>
+            )}
+            {handleStatus === "available" && (
+              <p className="text-xs text-green-500 flex items-center justify-center gap-1">
+                <Check className="w-3 h-3" />
+                flink.to/{handleInput} is available
+              </p>
+            )}
+            {handleStatus === "taken" && (
+              <p className="text-xs text-red-500 flex items-center justify-center gap-1">
+                <X className="w-3 h-3" />
+                flink.to/{handleInput} is taken
               </p>
             )}
           </div>
         </div>
       </section>
 
-      {/* Search Profiles Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Discover Amazing Profiles
-          </h2>
-          <p
-            className={`text-lg mb-8 ${
-              isDark ? "text-gray-300" : "text-gray-600"
-            }`}
-          >
-            Find and connect with people from around the world
+      {/* Platform icons */}
+      <section className="pb-24 px-5">
+        <div className="max-w-2xl mx-auto text-center">
+          <p className={`text-xs font-medium uppercase tracking-widest mb-5 ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
+            Works with everything
           </p>
-
-          {/* Search Button */}
-          <button
-            onClick={openSearchOverlay}
-            className={`inline-flex items-center px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-200 hover:scale-105 ${
-              isDark
-                ? "bg-slate-800/50 border border-slate-600 text-white hover:bg-slate-700"
-                : "bg-white border border-gray-300 text-gray-900 hover:bg-gray-50"
-            }`}
-          >
-            <Search className="w-5 h-5 mr-3" />
-            Search Profiles
-          </button>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            {[
+              { icon: Instagram, color: "from-pink-500 to-rose-500" },
+              { icon: Twitter, color: "from-sky-400 to-blue-500" },
+              { icon: Github, color: "from-gray-600 to-gray-800" },
+              { icon: Linkedin, color: "from-blue-600 to-blue-700" },
+              { icon: Youtube, color: "from-red-500 to-red-600" },
+              { icon: Mail, color: "from-blue-500 to-blue-600" },
+              { icon: Phone, color: "from-green-500 to-green-600" },
+              { icon: MessageCircle, color: "from-emerald-500 to-emerald-600" },
+            ].map(({ icon: Icon, color }, i) => (
+              <div
+                key={i}
+                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-sm`}
+              >
+                <Icon className="w-[18px] h-[18px] text-white" />
+              </div>
+            ))}
+            <span className={`text-xs font-medium ml-1 ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
+              +10 more
+            </span>
+          </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section
-        className={`py-20 px-4 ${
-          isDark ? "bg-slate-800/30" : "bg-gray-100/50"
-        }`}
-      >
-        <div className="max-w-6xl mx-auto">
+      {/* Divider */}
+      <div className={`max-w-5xl mx-auto border-t ${isDark ? "border-zinc-900" : "border-zinc-100"}`} />
+
+      {/* Features */}
+      <section className="py-24 px-5">
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-              <span className="brand-font">What's Flink?</span>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
+              Why{" "}
+              <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                Flink
+              </span>
+              ?
             </h2>
-            <p
-              className={`text-xl max-w-2xl mx-auto ${
-                isDark ? "text-gray-300" : "text-gray-600"
-              }`}
-            >
-              Your digital social hub — all your online identity in one place.
+            <p className={`text-base max-w-lg mx-auto ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
+              Everything you need to share your online identity
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div
-              className={`p-8 rounded-2xl transition-all duration-200 hover:scale-105 ${
-                isDark
-                  ? "bg-slate-800/50 border border-slate-700/50 hover:border-primary-500/30"
-                  : "bg-white border border-gray-200 hover:border-primary-300"
-              }`}
-            >
-              <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center mb-6">
-                <svg
-                  className="w-6 h-6 text-primary-600 dark:text-primary-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <h3
-                className={`text-xl font-semibold mb-4 ${
-                  isDark ? "text-white" : "text-gray-800"
+          <div className="grid sm:grid-cols-3 gap-5">
+            {[
+              {
+                icon: Link2,
+                title: "One link for everything",
+                desc: "Instagram, WhatsApp, Twitter, LinkedIn, email, phone - all from a single URL.",
+                gradient: "from-pink-500 to-rose-500",
+              },
+              {
+                icon: Zap,
+                title: "Save as contact",
+                desc: "Visitors can download your info directly to their phone with one tap.",
+                gradient: "from-purple-500 to-indigo-500",
+              },
+              {
+                icon: Users,
+                title: "Share anywhere",
+                desc: "Bio, resume, email signature, business card, or QR code. It just works.",
+                gradient: "from-blue-500 to-cyan-500",
+              },
+            ].map(({ icon: Icon, title, desc, gradient }, i) => (
+              <div
+                key={i}
+                className={`group p-6 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${
+                  isDark
+                    ? "bg-zinc-900 border border-zinc-800 hover:border-zinc-700"
+                    : "bg-white border border-zinc-100 hover:border-zinc-200 hover:shadow-zinc-200/50"
                 }`}
               >
-                All Platforms
-              </h3>
-              <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
-                Instagram, WhatsApp, Twitter, Snapchat, YouTube… all in one
-                place.
-              </p>
-            </div>
-
-            <div
-              className={`p-8 rounded-2xl transition-all duration-200 hover:scale-105 ${
-                isDark
-                  ? "bg-slate-800/50 border border-slate-700/50 hover:border-accent-500/30"
-                  : "bg-white border border-gray-200 hover:border-accent-300"
-              }`}
-            >
-              <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/30 rounded-xl flex items-center justify-center mb-6">
-                <svg
-                  className="w-6 h-6 text-accent-600 dark:text-accent-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                  />
-                </svg>
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-sm`}>
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-base font-semibold mb-2">{title}</h3>
+                <p className={`text-sm leading-relaxed ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
+                  {desc}
+                </p>
               </div>
-              <h3
-                className={`text-xl font-semibold mb-4 ${
-                  isDark ? "text-white" : "text-gray-800"
-                }`}
-              >
-                One Link
-              </h3>
-              <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
-                One Flink link or QR code to share anywhere.
-              </p>
-            </div>
-
-            <div
-              className={`p-8 rounded-2xl transition-all duration-200 hover:scale-105 ${
-                isDark
-                  ? "bg-slate-800/50 border border-slate-700/50 hover:border-primary-500/30"
-                  : "bg-white border border-gray-200 hover:border-primary-300"
-              }`}
-            >
-              <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center mb-6">
-                <svg
-                  className="w-6 h-6 text-primary-600 dark:text-primary-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <h3
-                className={`text-xl font-semibold mb-4 ${
-                  isDark ? "text-white" : "text-gray-800"
-                }`}
-              >
-                Instant Connect
-              </h3>
-              <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
-                Connect with anyone, fast and hassle-free.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section
-        className={`py-20 px-4 ${isDark ? "bg-slate-800/50" : "bg-gray-100"}`}
-      >
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-            Ready to get started?
+      {/* How it works */}
+      <section className={`py-24 px-5 ${isDark ? "bg-zinc-900/50" : "bg-zinc-50"}`}>
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+              Ready in 60 seconds
+            </h2>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-10">
+            {[
+              { step: "1", title: "Sign up", desc: "Free account with email or Google", gradient: "from-pink-500 to-rose-500" },
+              { step: "2", title: "Add your links", desc: "Connect all your social profiles", gradient: "from-purple-500 to-indigo-500" },
+              { step: "3", title: "Share your Flink", desc: "One link everywhere you go", gradient: "from-blue-500 to-cyan-500" },
+            ].map(({ step, title, desc, gradient }, i) => (
+              <div key={i} className="text-center">
+                <div className={`w-10 h-10 rounded-full font-bold text-sm flex items-center justify-center mx-auto mb-4 bg-gradient-to-br ${gradient} text-white shadow-sm`}>
+                  {step}
+                </div>
+                <h3 className="text-base font-semibold mb-1">{title}</h3>
+                <p className={`text-sm ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-24 px-5">
+        <div className="max-w-lg mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+            Your link, your{" "}
+            <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+              identity
+            </span>
           </h2>
-          <p
-            className={`text-xl mb-8 ${
-              isDark ? "text-gray-300" : "text-gray-600"
-            }`}
-          >
-            Join thousands of users who've simplified their social connections.
+          <p className={`text-base mb-8 ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
+            Join Flink and make connecting effortless.
           </p>
           <button
-            onClick={handleGetStarted}
-            className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 shadow-soft hover:shadow-soft-lg transform hover:scale-105"
+            onClick={() => navigate("/login")}
+            className="inline-flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-xl text-white bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md"
           >
-            {user ? "Manage Your Flink" : "Create Your Flink"}
+            Create your Flink
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer
-        className={`py-12 px-4 text-center border-t ${
-          isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"
-        }`}
-      >
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            <h3 className="text-2xl font-bold brand-font mb-2">Flink</h3>
-            <p className={`${isDark ? "text-gray-400" : "text-gray-600"}`}>
-              Connect better, share easier.
-            </p>
+      <footer className={`py-10 px-5 border-t ${isDark ? "border-zinc-800" : "border-zinc-100"}`}>
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">Flink</span>
+            <span className={`text-sm ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
+              - All your socials, one link
+            </span>
           </div>
-          <p
-            className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}
-          >
-            © 2026 Flink. All rights reserved.
+          <p className={`text-xs ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
+            &copy; {new Date().getFullYear()} Flink. All rights reserved.
           </p>
         </div>
       </footer>
-
-      {/* Search Overlay */}
-      <SearchOverlay isOpen={showSearch} onClose={closeSearchOverlay} />
     </div>
   );
 }

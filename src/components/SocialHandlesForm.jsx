@@ -1,302 +1,199 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
-import { 
-  Mail,
-  Phone,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Github,
-  Youtube,
-  Facebook,
-  MessageCircle,
-  Gamepad2,
-  Send,
-  BookOpen,
-  Music,
-  Copy,
-  Check,
+import {
+  Mail, Phone, Instagram, Twitter, Linkedin, Github, Youtube,
+  Facebook, MessageCircle, Gamepad2, Send, BookOpen, Music, Link2,
 } from 'lucide-react';
+
+const PLATFORMS = [
+  { key: 'email', name: 'Email', icon: Mail, placeholder: 'your.email@example.com', type: 'email' },
+  { key: 'phone', name: 'Phone', icon: Phone, placeholder: 'phone number', type: 'tel' },
+  { key: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, placeholder: 'phone number or wa.me link' },
+  { key: 'instagram', name: 'Instagram', icon: Instagram, placeholder: '@username' },
+  { key: 'twitter', name: 'Twitter/X', icon: Twitter, placeholder: '@username' },
+  { key: 'linkedin', name: 'LinkedIn', icon: Linkedin, placeholder: 'linkedin.com/in/username' },
+  { key: 'github', name: 'GitHub', icon: Github, placeholder: 'username' },
+  { key: 'youtube', name: 'YouTube', icon: Youtube, placeholder: 'youtube.com/@username' },
+  { key: 'facebook', name: 'Facebook', icon: Facebook, placeholder: 'facebook.com/username' },
+  { key: 'snapchat', name: 'Snapchat', icon: MessageCircle, placeholder: '@username' },
+  { key: 'discord', name: 'Discord', icon: MessageCircle, placeholder: 'username#1234' },
+  { key: 'twitch', name: 'Twitch', icon: Gamepad2, placeholder: 'twitch.tv/username' },
+  { key: 'telegram', name: 'Telegram', icon: Send, placeholder: '@username' },
+  { key: 'reddit', name: 'Reddit', icon: MessageCircle, placeholder: 'u/username' },
+  { key: 'spotify', name: 'Spotify', icon: Music, placeholder: 'open.spotify.com/user/...' },
+  { key: 'medium', name: 'Medium', icon: BookOpen, placeholder: 'medium.com/@username' },
+  { key: 'threads', name: 'Threads', icon: Twitter, placeholder: '@username' },
+];
 
 const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' }) => {
   const { isDark } = useTheme();
-  const [socialLinks, setSocialLinks] = useState({
-    email: initialData.email || userEmail || '',
-    phone: initialData.phone || '',
-    whatsapp: initialData.whatsapp || '',
-    instagram: initialData.instagram || '',
-    twitter: initialData.twitter || '',
-    linkedin: initialData.linkedin || '',
-    github: initialData.github || '',
-    youtube: initialData.youtube || '',
-    facebook: initialData.facebook || '',
-    snapchat: initialData.snapchat || '',
-    discord: initialData.discord || '',
-    twitch: initialData.twitch || '',
-    telegram: initialData.telegram || '',
-    reddit: initialData.reddit || '',
-    spotify: initialData.spotify || '',
-    medium: initialData.medium || '',
-    threads: initialData.threads || '',
+  const [socialLinks, setSocialLinks] = useState(() => {
+    const defaults = {};
+    PLATFORMS.forEach(p => { defaults[p.key] = initialData[p.key] || ''; });
+    defaults.email = initialData.email || userEmail || '';
+    return defaults;
   });
-  
-  const [copiedPlatform, setCopiedPlatform] = useState(null);
 
-  // Keep local state in sync when navigating back to this step
   useEffect(() => {
-    setSocialLinks(prev => ({
-      ...prev,
-      email: initialData.email || userEmail || '',
-      phone: initialData.phone || '',
-      whatsapp: initialData.whatsapp || '',
-      instagram: initialData.instagram || '',
-      twitter: initialData.twitter || '',
-      linkedin: initialData.linkedin || '',
-      github: initialData.github || '',
-      youtube: initialData.youtube || '',
-      facebook: initialData.facebook || '',
-      snapchat: initialData.snapchat || '',
-      discord: initialData.discord || '',
-      twitch: initialData.twitch || '',
-      telegram: initialData.telegram || '',
-      reddit: initialData.reddit || '',
-      spotify: initialData.spotify || '',
-      medium: initialData.medium || '',
-      threads: initialData.threads || '',
-    }));
-    // We depend on both initialData and userEmail to rehydrate
+    setSocialLinks(prev => {
+      const updated = { ...prev };
+      PLATFORMS.forEach(p => { updated[p.key] = initialData[p.key] || (p.key === 'email' ? userEmail : '') || prev[p.key]; });
+      return updated;
+    });
   }, [initialData, userEmail]);
 
-  const socialPlatforms = [
-    { key: 'email', name: 'Email', icon: <Mail className="w-5 h-5" />, placeholder: 'your.email@example.com', type: 'email' },
-    { key: 'phone', name: 'Phone', icon: <Phone className="w-5 h-5" />, placeholder: 'phone number', type: 'tel' },
-    { key: 'whatsapp', name: 'WhatsApp', icon: <MessageCircle className="w-5 h-5" />, placeholder: 'phone number or wa.me/username' },
-    { key: 'instagram', name: 'Instagram', icon: <Instagram className="w-5 h-5" />, placeholder: '@username' },
-    { key: 'twitter', name: 'Twitter/X', icon: <Twitter className="w-5 h-5" />, placeholder: '@username' },
-    { key: 'linkedin', name: 'LinkedIn', icon: <Linkedin className="w-5 h-5" />, placeholder: 'linkedin.com/in/username' },
-    { key: 'github', name: 'GitHub', icon: <Github className="w-5 h-5" />, placeholder: 'github.com/username' },
-    { key: 'youtube', name: 'YouTube', icon: <Youtube className="w-5 h-5" />, placeholder: 'youtube.com/@username' },
-    { key: 'facebook', name: 'Facebook', icon: <Facebook className="w-5 h-5" />, placeholder: 'facebook.com/username' },
-    { key: 'snapchat', name: 'Snapchat', icon: <MessageCircle className="w-5 h-5" />, placeholder: '@username' },
-    { key: 'discord', name: 'Discord', icon: <MessageCircle className="w-5 h-5" />, placeholder: 'username#1234' },
-    { key: 'twitch', name: 'Twitch', icon: <Gamepad2 className="w-5 h-5" />, placeholder: 'twitch.tv/username' },
-    { key: 'telegram', name: 'Telegram', icon: <Send className="w-5 h-5" />, placeholder: '@username' },
-    { key: 'reddit', name: 'Reddit', icon: <MessageCircle className="w-5 h-5" />, placeholder: 'u/username' },
-    { key: 'spotify', name: 'Spotify', icon: <Music className="w-5 h-5" />, placeholder: 'open.spotify.com/user/username' },
-    { key: 'medium', name: 'Medium', icon: <BookOpen className="w-5 h-5" />, placeholder: 'medium.com/@username' },
-    { key: 'threads', name: 'Threads', icon: <Twitter className="w-5 h-5" />, placeholder: '@username' },
-  ];
-
   const handleInputChange = (platform, value) => {
-    setSocialLinks(prev => ({
-      ...prev,
-      [platform]: value
-    }));
+    setSocialLinks(prev => ({ ...prev, [platform]: value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Submit full set so navigating back restores exact values
     onNext({ socialLinks });
   };
 
-  const copyToClipboard = (text, platform) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedPlatform(platform);
-      setTimeout(() => setCopiedPlatform(null), 2000);
-    }).catch(err => {
-      console.error('Failed to copy:', err);
-    });
-  };
+  const filledCount = Object.values(socialLinks).filter(v => v.trim() !== '').length;
 
-  const usePhoneNumber = () => {
-    if (socialLinks.phone && socialLinks.phone.trim() !== '') {
-      setSocialLinks(prev => ({
-        ...prev,
-        whatsapp: prev.phone
-      }));
-    }
-  };
-
-  const hasAnyLinks = Object.values(socialLinks).some(value => value.trim() !== '');
+  const inputClass = `w-full pl-10 pr-4 py-2.5 rounded-xl text-sm transition-all duration-200 outline-none ${
+    isDark
+      ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500"
+      : "bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400"
+  }`;
 
   return (
-    <div className={`min-h-screen px-4 py-8 transition-colors duration-300 ${
-      isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
-    }`}>
-      <div className="max-w-2xl w-full mx-auto">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className={`text-sm font-medium ${
-              isDark ? "text-gray-300" : "text-gray-600"
+    <div className={`min-h-screen ${isDark ? "bg-zinc-950" : "bg-zinc-50"}`}>
+      <div className="min-h-screen flex">
+        {/* Left panel - visible on lg+ */}
+        <div className={`hidden lg:flex lg:w-[420px] xl:w-[480px] flex-shrink-0 flex-col items-center justify-center p-12 ${
+          isDark ? "bg-zinc-900" : "bg-zinc-100"
+        }`}>
+          <div className="max-w-xs text-center">
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 bg-gradient-to-br from-pink-500 to-purple-600`}>
+              <Link2 className="w-8 h-8 text-white" />
+            </div>
+            <h2 className={`text-2xl font-bold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>
+              All your socials, one link
+            </h2>
+            <p className={`text-sm leading-relaxed ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+              Add your social accounts and we'll create a beautiful profile page you can share with anyone.
+            </p>
+
+            {/* Live counter */}
+            <div className={`mt-8 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
+              isDark ? "bg-zinc-800 text-zinc-300" : "bg-white text-zinc-600 shadow-sm"
             }`}>
-              Step 1 of 2
-            </span>
-            <span className={`text-sm font-medium ${
-              isDark ? "text-gray-300" : "text-gray-600"
-            }`}>
-              Social Media Handles
-            </span>
-          </div>
-          <div className={`w-full h-2 rounded-full ${
-            isDark ? "bg-slate-700" : "bg-gray-200"
-          }`}>
-            <div className="h-2 bg-primary-600 rounded-full w-1/2 transition-all duration-300"></div>
+              <div className={`w-2 h-2 rounded-full ${filledCount > 0 ? "bg-green-500" : isDark ? "bg-zinc-600" : "bg-zinc-300"}`} />
+              {filledCount} link{filledCount !== 1 ? "s" : ""} added
+            </div>
+
+            {/* Visual decoration */}
+            <div className="mt-10 space-y-2">
+              {["Instagram", "Twitter", "GitHub", "LinkedIn"].map((name, i) => (
+                <div
+                  key={name}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-500 ${
+                    isDark ? "bg-zinc-800/50" : "bg-white/80"
+                  }`}
+                  style={{ opacity: 0.4 + (i * 0.15) }}
+                >
+                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${
+                    ["from-pink-500 to-rose-500", "from-sky-400 to-blue-500", "from-gray-700 to-gray-900", "from-blue-600 to-blue-700"][i]
+                  } flex items-center justify-center`}>
+                    {[<Instagram key="ig" className="w-3.5 h-3.5 text-white" />,
+                      <Twitter key="tw" className="w-3.5 h-3.5 text-white" />,
+                      <Github key="gh" className="w-3.5 h-3.5 text-white" />,
+                      <Linkedin key="li" className="w-3.5 h-3.5 text-white" />][i]}
+                  </div>
+                  <div className={`h-2 rounded-full flex-1 ${isDark ? "bg-zinc-700" : "bg-zinc-200"}`} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Form Card */}
-        <div className={`rounded-2xl p-4 sm:p-8 shadow-soft-lg ${
-          isDark 
-            ? "bg-slate-800/50 border border-slate-700/50" 
-            : "bg-white border border-gray-200"
-        }`}>
-          <div className="text-center mb-6 sm:mb-8">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
+        {/* Right panel - form */}
+        <div className="flex-1 flex items-start lg:items-center justify-center overflow-y-auto">
+          <div className="w-full max-w-lg px-4 py-8 lg:px-8">
+            {/* Progress */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-xs font-medium ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>Step 1 of 2</span>
+                <span className={`text-xs font-medium ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>Social links</span>
+              </div>
+              <div className={`w-full h-1 rounded-full ${isDark ? "bg-zinc-800" : "bg-zinc-200"}`}>
+                <div className="h-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full w-1/2 transition-all duration-300" />
+              </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2 brand-font">
-              Add Your Contact & Social Links
-            </h1>
-            <p className={`text-sm sm:text-base ${
-              isDark ? "text-gray-300" : "text-gray-600"
-            }`}>
-              Add your contact information and social media accounts to create your Flink profile
-            </p>
-          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {socialPlatforms.map((platform) => {
-                const isPhone = platform.key === 'phone';
-                const isWhatsapp = platform.key === 'whatsapp';
-                const hasPhoneValue = socialLinks.phone && socialLinks.phone.trim() !== '';
-                const showCopyButton = isPhone && hasPhoneValue;
-                const showUsePhoneButton = isWhatsapp && hasPhoneValue && (!socialLinks.whatsapp || socialLinks.whatsapp.trim() === '');
-                
-                return (
-                  <div key={platform.key}>
-                    <label htmlFor={platform.key} className={`flex items-center text-sm font-medium mb-2 ${
-                      isDark ? "text-gray-200" : "text-gray-700"
-                    }`}>
-                      <span className="mr-2">{platform.icon}</span>
-                      {platform.name}
-                    </label>
-                    <div className="relative">
+            {/* Header - hidden on lg since left panel has it */}
+            <div className="mb-6 lg:mb-8">
+              <h1 className={`text-2xl font-bold tracking-tight ${isDark ? "text-white" : "text-zinc-900"}`}>
+                Add your social links
+              </h1>
+              <p className={`mt-1 text-sm ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                Fill in what you use. Skip the rest.
+              </p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {PLATFORMS.map((platform) => {
+                  const Icon = platform.icon;
+                  const isEmailPrefilled = platform.key === 'email' && userEmail;
+
+                  return (
+                    <div key={platform.key} className="relative">
+                      <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
                       <input
                         type={platform.type || "text"}
-                        id={platform.key}
                         value={socialLinks[platform.key]}
                         onChange={(e) => handleInputChange(platform.key, e.target.value)}
-                        className={`w-full ${showCopyButton || showUsePhoneButton ? 'pr-10' : 'pr-4'} pl-4 py-2 rounded-xl focus:outline-none transition-all duration-200 ${
-                          platform.key === 'email' && userEmail
+                        className={`${inputClass} ${
+                          isEmailPrefilled
                             ? isDark
-                              ? "bg-slate-600/50 border border-green-500 text-green-300 cursor-not-allowed"
-                              : "bg-green-50 border border-green-300 text-green-700 cursor-not-allowed"
-                            : isDark
-                            ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                            : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                              ? "border-green-800 bg-green-900/10 text-green-300"
+                              : "border-green-300 bg-green-50 text-green-700"
+                            : ""
                         }`}
-                        placeholder={platform.placeholder}
-                        disabled={platform.key === 'email' && userEmail} // Disable email if pre-filled
+                        placeholder={platform.name}
+                        disabled={!!isEmailPrefilled}
                         autoCapitalize="off"
                         autoCorrect="off"
                         autoComplete="off"
                         spellCheck="false"
                       />
-                      {showCopyButton && (
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(socialLinks[platform.key], platform.key)}
-                          className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all duration-200 hover:scale-110 ${
-                            isDark
-                              ? "hover:bg-slate-600 text-gray-300 hover:text-white"
-                              : "hover:bg-gray-200 text-gray-500 hover:text-gray-700"
-                          }`}
-                        >
-                          {copiedPlatform === platform.key ? (
-                            <Check className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
-                      )}
-                      {showUsePhoneButton && (
-                        <button
-                          type="button"
-                          onClick={usePhoneNumber}
-                          className={`absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg transition-all duration-200 hover:scale-105 text-xs font-medium ${
-                            isDark
-                              ? "bg-primary-600 hover:bg-primary-700 text-white"
-                              : "bg-primary-500 hover:bg-primary-600 text-white"
-                          }`}
-                        >
-                          Use
-                        </button>
-                      )}
                     </div>
-                    {platform.key === 'email' && userEmail && (
-                      <p className={`mt-1 text-xs ${
-                        isDark ? "text-green-400" : "text-green-600"
-                      }`}>
-                        ✓ Pre-filled from your account
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-4 sm:pt-6">
-              <button
-                type="button"
-                onClick={onBack}
-                className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 text-base border-2 ${
-                  isDark
-                    ? "bg-slate-800/50 border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-gray-300 hover:text-white"
-                    : "bg-gray-50 border-gray-300 hover:bg-gray-100 hover:border-gray-400 text-gray-700 hover:text-gray-900"
-                }`}
-              >
-                ← Back
-              </button>
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] text-base"
-              >
-                Continue →
-              </button>
-            </div>
-          </form>
-
-          {!hasAnyLinks && (
-            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-              <p className={`text-sm ${
-                isDark ? "text-blue-300" : "text-blue-700"
-              }`}>
-                💡 <strong>Tip:</strong> Add your contact information and social media handles. You can skip any fields and add them later from your dashboard.
-              </p>
-            </div>
-          )}
-
-          {/* Skip Button */}
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => onNext({ socialLinks: {} })}
-              className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-all duration-200 text-sm ${
-                isDark 
-                  ? "text-gray-400 hover:text-gray-200 hover:bg-slate-800/30 border border-slate-700/50 hover:border-slate-600/50" 
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50 border border-gray-200/50 hover:border-gray-300/50"
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              </svg>
-              Skip for now
-            </button>
+              {/* Actions */}
+              <div className="mt-8 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => onNext({ socialLinks: {} })}
+                  className={`flex-1 py-3 rounded-xl text-sm font-medium border transition-all duration-200 active:scale-[0.98] ${
+                    isDark
+                      ? "border-zinc-800 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800/50"
+                      : "border-zinc-200 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
+                  }`}
+                >
+                  Skip
+                </button>
+                <button
+                  type="submit"
+                  className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
+                    isDark
+                      ? "bg-white text-zinc-900 hover:bg-zinc-100"
+                      : "bg-zinc-900 text-white hover:bg-zinc-800"
+                  }`}
+                >
+                  Continue
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>

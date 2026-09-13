@@ -1,13 +1,13 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
-import { Lock, Globe } from "lucide-react";
+import { Globe, Lock, Camera, X, User, MapPin, FileText, Check, Loader2 } from "lucide-react";
 
 const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
   const { isDark } = useTheme();
   const { supabase } = useAuth();
   const fileInputRef = useRef(null);
-  
+
   const [formData, setFormData] = useState({
     handle: initialData.handle || "",
     bio: initialData.bio || "",
@@ -20,150 +20,109 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
   const [errors, setErrors] = useState({});
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(initialData.profile_url || "");
+  const [handleStatus, setHandleStatus] = useState(null); // null | 'checking' | 'available' | 'taken'
+  const checkTimeout = useRef(null);
+
+  // Debounced handle availability check
+  const checkHandleAvailability = useCallback((handle) => {
+    if (checkTimeout.current) clearTimeout(checkTimeout.current);
+    if (!handle || handle.length < 3 || !/^[a-zA-Z0-9_-]+$/.test(handle)) {
+      setHandleStatus(null);
+      return;
+    }
+    setHandleStatus('checking');
+    checkTimeout.current = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from('flink_profiles')
+          .select('id')
+          .eq('handle', handle.toLowerCase())
+          .maybeSingle();
+        setHandleStatus(data ? 'taken' : 'available');
+      } catch {
+        setHandleStatus(null);
+      }
+    }, 400);
+  }, [supabase]);
+
+  useEffect(() => {
+    return () => { if (checkTimeout.current) clearTimeout(checkTimeout.current); };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === 'handle' ? value.toLowerCase() : value,
-    }));
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
+    const newValue = name === "handle" ? value.toLowerCase().replace(/[^a-z0-9_-]/g, '') : value;
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    if (name === "handle") checkHandleAvailability(newValue);
   };
 
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData.handle.trim()) {
       newErrors.handle = "Handle is required";
     } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.handle)) {
-      newErrors.handle =
-        "Handle can only contain letters, numbers, underscores, and hyphens";
+      newErrors.handle = "Only letters, numbers, underscores, hyphens";
     } else if (formData.handle.length < 3) {
-      newErrors.handle = "Handle must be at least 3 characters long";
+      newErrors.handle = "At least 3 characters";
     } else if (formData.handle.length > 30) {
-      newErrors.handle = "Handle must be less than 30 characters";
+      newErrors.handle = "Max 30 characters";
+    } else if (handleStatus === 'taken') {
+      newErrors.handle = "Handle already taken";
     }
-
     if (formData.bio && formData.bio.length > 160) {
-      newErrors.bio = "Bio must be less than 160 characters";
+      newErrors.bio = "Max 160 characters";
     }
-
-    if (formData.website && !isValidUrl(formData.website)) {
-      newErrors.website = "Please enter a valid URL";
+    if (formData.website && !formData.website.startsWith("http")) {
+      newErrors.website = "Include https://";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const isValidUrl = (string) => {
-    try {
-      new URL(string);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  // Image upload functions
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setErrors(prev => ({
-          ...prev,
-          profile_pic: 'Please select a valid image file'
-        }));
-        return;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({
-          ...prev,
-          profile_pic: 'Image size must be less than 5MB'
-        }));
-        return;
-      }
-
-      // Clear any previous errors
-      setErrors(prev => ({
-        ...prev,
-        profile_pic: ''
-      }));
-
-      // Create preview URL
-      const preview = URL.createObjectURL(file);
-      setPreviewUrl(preview);
-
-      // Upload image
-      uploadImage(file);
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setErrors((prev) => ({ ...prev, profile_pic: "Not a valid image" }));
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, profile_pic: "Max 5MB" }));
+      return;
+    }
+    setErrors((prev) => ({ ...prev, profile_pic: "" }));
+    setPreviewUrl(URL.createObjectURL(file));
+    uploadImage(file);
   };
 
   const uploadImage = async (file) => {
     setUploading(true);
     try {
-      // Generate unique filename
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      
-      // Upload to Supabase storage
       const { error } = await supabase.storage
-        .from('profile_photos')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile_photos')
-        .getPublicUrl(fileName);
-
-      // Update form data with the new URL
-      setFormData(prev => ({
-        ...prev,
-        profile_url: publicUrl
-      }));
-
+        .from("avatars")
+        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(fileName);
+      setFormData((prev) => ({ ...prev, profile_url: publicUrl }));
     } catch (error) {
-      console.error('Error uploading image:', error);
-      setErrors(prev => ({
-        ...prev,
-        profile_pic: 'Failed to upload image. Please try again.'
-      }));
+      console.error("Upload error:", error);
+      setErrors((prev) => ({ ...prev, profile_pic: "Upload failed" }));
     } finally {
       setUploading(false);
     }
   };
 
   const removeImage = () => {
-    setPreviewUrl('');
-    setFormData(prev => ({
-      ...prev,
-      profile_url: ''
-    }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    setPreviewUrl("");
+    setFormData((prev) => ({ ...prev, profile_url: "" }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     if (validateForm()) {
       onComplete({
         handle: formData.handle.trim(),
@@ -176,394 +135,307 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
     }
   };
 
+  const inputClass = `w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200 outline-none ${
+    isDark
+      ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500"
+      : "bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400"
+  }`;
+
+  const errorInputClass = isDark
+    ? "border-red-800 focus:border-red-600 focus:ring-red-600"
+    : "border-red-300 focus:border-red-400 focus:ring-red-400";
+
+  const initial = formData.handle ? formData.handle.charAt(0).toUpperCase() : "?";
+
   return (
-    <div
-      className={`min-h-screen px-4 py-8 transition-colors duration-300 ${
-        isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
-      }`}
-    >
-      <div className="max-w-2xl w-full mx-auto">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span
-              className={`text-sm font-medium ${
-                isDark ? "text-gray-300" : "text-gray-600"
-              }`}
-            >
-              Step 2 of 2
-            </span>
-            <span
-              className={`text-sm font-medium ${
-                isDark ? "text-gray-300" : "text-gray-600"
-              }`}
-            >
-              Profile Setup
-            </span>
-          </div>
-          <div
-            className={`w-full h-2 rounded-full ${
-              isDark ? "bg-slate-700" : "bg-gray-200"
-            }`}
-          >
-            <div className="h-2 bg-primary-600 rounded-full w-full transition-all duration-300"></div>
+    <div className={`min-h-screen ${isDark ? "bg-zinc-950" : "bg-zinc-50"}`}>
+      <div className="min-h-screen flex">
+        {/* Left panel - live preview on lg+ */}
+        <div className={`hidden lg:flex lg:w-[420px] xl:w-[480px] flex-shrink-0 flex-col items-center justify-center p-12 ${
+          isDark ? "bg-zinc-900" : "bg-zinc-100"
+        }`}>
+          <div className="w-full max-w-xs">
+            <p className={`text-xs font-medium uppercase tracking-wider mb-6 text-center ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+              Live preview
+            </p>
+
+            {/* Mini profile card preview */}
+            <div className={`rounded-2xl p-6 ${isDark ? "bg-zinc-800" : "bg-white shadow-sm"}`}>
+              <div className="flex flex-col items-center text-center">
+                {/* Avatar preview */}
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Preview" className="w-20 h-20 rounded-full object-cover mb-4" />
+                ) : (
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold mb-4 ${
+                    isDark ? "bg-zinc-700 text-zinc-400" : "bg-zinc-100 text-zinc-500"
+                  }`}>
+                    {initial}
+                  </div>
+                )}
+
+                {/* Handle */}
+                <p className={`text-lg font-bold ${isDark ? "text-white" : "text-zinc-900"}`}>
+                  @{formData.handle || "your-handle"}
+                </p>
+
+                {/* Bio */}
+                {formData.bio && (
+                  <p className={`mt-2 text-sm ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                    {formData.bio}
+                  </p>
+                )}
+
+                {/* Meta */}
+                <div className="flex flex-wrap gap-2 mt-3 justify-center">
+                  {formData.location && (
+                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
+                      isDark ? "bg-zinc-700 text-zinc-400" : "bg-zinc-100 text-zinc-500"
+                    }`}>
+                      <MapPin className="w-3 h-3" /> {formData.location}
+                    </span>
+                  )}
+                  {formData.website && (
+                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
+                      isDark ? "bg-zinc-700 text-zinc-400" : "bg-zinc-100 text-zinc-500"
+                    }`}>
+                      <Globe className="w-3 h-3" /> Website
+                    </span>
+                  )}
+                </div>
+
+                {/* Privacy badge */}
+                <div className={`mt-4 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ${
+                  formData.private
+                    ? isDark ? "bg-orange-900/20 text-orange-400 border border-orange-800/30" : "bg-orange-50 text-orange-600 border border-orange-200"
+                    : isDark ? "bg-green-900/20 text-green-400 border border-green-800/30" : "bg-green-50 text-green-600 border border-green-200"
+                }`}>
+                  {formData.private ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                  {formData.private ? "Private" : "Public"}
+                </div>
+              </div>
+
+              {/* Fake link items */}
+              <div className="mt-6 space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${
+                    isDark ? "bg-zinc-700/50" : "bg-zinc-50"
+                  }`}>
+                    <div className={`w-7 h-7 rounded-md ${isDark ? "bg-zinc-600" : "bg-zinc-200"}`} />
+                    <div className={`h-2 rounded-full flex-1 ${isDark ? "bg-zinc-600" : "bg-zinc-200"}`} />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Form Card */}
-        <div
-          className={`rounded-2xl p-8 shadow-soft-lg ${
-            isDark
-              ? "bg-slate-800/50 border border-slate-700/50"
-              : "bg-white border border-gray-200"
-          }`}
-        >
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-primary-600 dark:text-primary-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold mb-2 brand-font">
-              Complete Your Profile
-            </h1>
-            <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
-              Set up your Flink handle and tell people about yourself
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Handle */}
-            <div>
-              <label
-                htmlFor="handle"
-                className={`block text-sm font-medium mb-2 ${
-                  isDark ? "text-gray-200" : "text-gray-700"
-                }`}
-              >
-                Flink Handle *
-              </label>
-              <div className="relative">
-                <div
-                  className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${
-                    isDark ? "text-gray-400" : "text-gray-500"
-                  }`}
-                >
-                  <span className="text-sm">flink.to/</span>
-                </div>
-                <input
-                  type="text"
-                  id="handle"
-                  name="handle"
-                  value={formData.handle}
-                  onChange={handleInputChange}
-                  className={`w-full pl-20 pr-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
-                    errors.handle
-                      ? isDark
-                        ? "bg-slate-700/50 border border-red-500 text-white placeholder-gray-400"
-                        : "bg-gray-50 border border-red-500 text-gray-900 placeholder-gray-400"
-                      : isDark
-                      ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                      : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                  }`}
-                  placeholder="your-handle"
-                />
+        {/* Right panel - form */}
+        <div className="flex-1 flex items-start lg:items-center justify-center overflow-y-auto">
+          <div className="w-full max-w-lg px-4 py-8 lg:px-8">
+            {/* Progress */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-xs font-medium ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>Step 2 of 2</span>
+                <span className={`text-xs font-medium ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>Profile setup</span>
               </div>
-              {errors.handle && (
-                <p className="mt-2 text-sm text-red-500">{errors.handle}</p>
-              )}
-              <p
-                className={`mt-1 text-xs ${
-                  isDark ? "text-gray-400" : "text-gray-500"
-                }`}
-              >
-                This will be your unique Flink URL: flink.to/
-                {formData.handle || "your-handle"}
-              </p>
-            </div>
-
-            {/* Bio */}
-            <div>
-              <label
-                htmlFor="bio"
-                className={`block text-sm font-medium mb-2 ${
-                  isDark ? "text-gray-200" : "text-gray-700"
-                }`}
-              >
-                Bio
-              </label>
-              <textarea
-                id="bio"
-                name="bio"
-                value={formData.bio}
-                onChange={handleInputChange}
-                rows={3}
-                className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 resize-none ${
-                  errors.bio
-                    ? isDark
-                      ? "bg-slate-700/50 border border-red-500 text-white placeholder-gray-400"
-                      : "bg-gray-50 border border-red-500 text-gray-900 placeholder-gray-400"
-                    : isDark
-                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                }`}
-                placeholder="Tell people about yourself..."
-              />
-              {errors.bio && (
-                <p className="mt-2 text-sm text-red-500">{errors.bio}</p>
-              )}
-              <p
-                className={`mt-1 text-xs ${
-                  isDark ? "text-gray-400" : "text-gray-500"
-                }`}
-              >
-                {formData.bio.length}/160 characters
-              </p>
-            </div>
-
-            {/* Location */}
-            <div>
-              <label
-                htmlFor="location"
-                className={`block text-sm font-medium mb-2 ${
-                  isDark ? "text-gray-200" : "text-gray-700"
-                }`}
-              >
-                Location
-              </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
-                  isDark
-                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                }`}
-                placeholder="City, Country"
-              />
-            </div>
-
-            {/* Website */}
-            <div>
-              <label
-                htmlFor="website"
-                className={`block text-sm font-medium mb-2 ${
-                  isDark ? "text-gray-200" : "text-gray-700"
-                }`}
-              >
-                Website
-              </label>
-              <input
-                type="url"
-                id="website"
-                name="website"
-                value={formData.website}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
-                  errors.website
-                    ? isDark
-                      ? "bg-slate-700/50 border border-red-500 text-white placeholder-gray-400"
-                      : "bg-gray-50 border border-red-500 text-gray-900 placeholder-gray-400"
-                    : isDark
-                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                }`}
-                placeholder="https://yourwebsite.com"
-              />
-              {errors.website && (
-                <p className="mt-2 text-sm text-red-500">{errors.website}</p>
-              )}
-            </div>
-
-            {/* Profile Privacy Setting */}
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${
-                isDark ? "text-gray-200" : "text-gray-700"
-              }`}>
-                Profile Visibility
-              </label>
-              <div className={`p-4 rounded-xl ${
-                isDark 
-                  ? "bg-slate-700/50 border border-slate-600" 
-                  : "bg-gray-50 border border-gray-300"
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h3 className={`font-medium ${
-                        isDark ? "text-white" : "text-gray-800"
-                      }`}>
-                        {formData.private ? "Private Profile" : "Public Profile"}
-                      </h3>
-                      {formData.private ? (
-                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          isDark 
-                            ? "bg-orange-900/30 text-orange-400 border border-orange-800" 
-                            : "bg-orange-100 text-orange-800 border border-orange-200"
-                        }`}>
-                          <Lock className="w-3 h-3 inline mr-1" />
-                          Private
-                        </div>
-                      ) : (
-                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          isDark 
-                            ? "bg-green-900/30 text-green-400 border border-green-800" 
-                            : "bg-green-100 text-green-800 border border-green-200"
-                        }`}>
-                          <Globe className="w-3 h-3 inline mr-1" />
-                          Public
-                        </div>
-                      )}
-                    </div>
-                    <p className={`text-sm ${
-                      isDark ? "text-gray-300" : "text-gray-600"
-                    }`}>
-                      {formData.private 
-                        ? "Only you can see your profile details and social links"
-                        : "Anyone can view your profile and social links"
-                      }
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, private: !prev.private }))}
-                    aria-label={`Toggle profile visibility to ${formData.private ? 'public' : 'private'}`}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                      formData.private
-                        ? isDark ? "bg-orange-600" : "bg-orange-500"
-                        : isDark ? "bg-green-600" : "bg-green-500"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                        formData.private ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
+              <div className={`w-full h-1 rounded-full ${isDark ? "bg-zinc-800" : "bg-zinc-200"}`}>
+                <div className="h-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full w-full transition-all duration-300" />
               </div>
             </div>
 
-            {/* Profile Picture Upload */}
-            <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${
-                  isDark ? "text-gray-200" : "text-gray-700"
-                }`}
-              >
-                Profile Picture
-              </label>
-              
-              {/* Image Preview */}
-              {previewUrl && (
-                <div className="mb-4 flex justify-center">
-                  <div className="relative">
-                    <img
-                      src={previewUrl}
-                      alt="Profile preview"
-                      className="w-24 h-24 rounded-full object-cover border-4 border-primary-500 shadow-lg"
-                    />
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className={`text-2xl font-bold tracking-tight ${isDark ? "text-white" : "text-zinc-900"}`}>
+                Set up your profile
+              </h1>
+              <p className={`mt-1 text-sm ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                Choose a handle and tell people about yourself.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Profile picture */}
+              <div className="flex justify-center mb-2">
+                <div className="relative">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  {previewUrl ? (
+                    <>
+                      <img src={previewUrl} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </>
+                  ) : (
                     <button
                       type="button"
-                      onClick={removeImage}
-                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs transition-colors duration-200"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className={`w-24 h-24 rounded-full flex flex-col items-center justify-center transition-all duration-200 active:scale-95 ${
+                        isDark
+                          ? "bg-zinc-800 border-2 border-dashed border-zinc-700 text-zinc-500 hover:border-zinc-600"
+                          : "bg-zinc-100 border-2 border-dashed border-zinc-300 text-zinc-400 hover:border-zinc-400"
+                      }`}
                     >
-                      ×
+                      {uploading ? (
+                        <div className="w-5 h-5 border-2 rounded-full animate-spin border-zinc-400 border-t-transparent" />
+                      ) : (
+                        <Camera className="w-5 h-5" />
+                      )}
                     </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Upload Button */}
-              <div className="flex flex-col items-center">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-                
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className={`w-full py-3 px-4 rounded-xl border-2 border-dashed transition-all duration-200 ${
-                    uploading
-                      ? isDark
-                        ? "border-gray-600 bg-gray-700/50 text-gray-400 cursor-not-allowed"
-                        : "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : errors.profile_pic
-                      ? isDark
-                        ? "border-red-500 bg-slate-700/50 text-red-400 hover:border-red-400"
-                        : "border-red-500 bg-gray-50 text-red-400 hover:border-red-400"
-                      : isDark
-                      ? "border-slate-600 bg-slate-700/50 text-gray-300 hover:border-primary-500 hover:bg-slate-700"
-                      : "border-gray-300 bg-gray-50 text-gray-600 hover:border-primary-500 hover:bg-gray-100"
-                  }`}
-                >
-                  {uploading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-                      Uploading...
-                    </div>
-                  ) : previewUrl ? (
-                    "Change Photo"
-                  ) : (
-                    <div className="flex items-center justify-center">
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Upload Profile Photo
-                    </div>
                   )}
-                </button>
-                
-                {errors.profile_pic && (
-                  <p className="mt-2 text-sm text-red-500">{errors.profile_pic}</p>
+                </div>
+              </div>
+              {errors.profile_pic && <p className="text-center text-xs text-red-500">{errors.profile_pic}</p>}
+
+              {/* Handle */}
+              <div>
+                <label className={`block text-sm font-medium mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
+                  Handle *
+                </label>
+                <div className="relative">
+                  <span className={`absolute left-4 top-1/2 -translate-y-1/2 text-sm ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>@</span>
+                  <input
+                    type="text"
+                    name="handle"
+                    value={formData.handle}
+                    onChange={handleInputChange}
+                    className={`${inputClass} pl-8 pr-10 ${errors.handle || handleStatus === 'taken' ? errorInputClass : handleStatus === 'available' ? (isDark ? "border-green-700 focus:border-green-600 focus:ring-green-600" : "border-green-400 focus:border-green-500 focus:ring-green-500") : ""}`}
+                    placeholder="your-handle"
+                  />
+                  {formData.handle.length >= 3 && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {handleStatus === 'checking' && <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />}
+                      {handleStatus === 'available' && <Check className="w-4 h-4 text-green-500" />}
+                      {handleStatus === 'taken' && <X className="w-4 h-4 text-red-500" />}
+                    </span>
+                  )}
+                </div>
+                {errors.handle ? (
+                  <p className="mt-1 text-xs text-red-500">{errors.handle}</p>
+                ) : handleStatus === 'taken' ? (
+                  <p className="mt-1 text-xs text-red-500">This handle is already taken</p>
+                ) : handleStatus === 'available' ? (
+                  <p className="mt-1 text-xs text-green-500">Handle is available</p>
+                ) : (
+                  <p className={`mt-1 text-xs ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+                    flink.to/{formData.handle || "..."}
+                  </p>
                 )}
-                
-                <p className={`mt-2 text-xs text-center ${
-                  isDark ? "text-gray-400" : "text-gray-500"
-                }`}>
-                  JPG, PNG, or GIF. Max 5MB.
+              </div>
+
+              {/* Bio */}
+              <div>
+                <label className={`block text-sm font-medium mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>Bio</label>
+                <textarea
+                  name="bio"
+                  value={formData.bio}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className={`${inputClass} resize-none ${errors.bio ? errorInputClass : ""}`}
+                  placeholder="Tell people about yourself..."
+                />
+                <p className={`mt-1 text-xs ${formData.bio.length > 160 ? "text-red-500" : isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+                  {formData.bio.length}/160
                 </p>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onBack}
-                className={`py-2 px-4 rounded-xl font-medium transition-all duration-200 text-sm border-2 ${
-                  isDark
-                    ? "bg-slate-800/50 border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-gray-300 hover:text-white"
-                    : "bg-gray-50 border-gray-300 hover:bg-gray-100 hover:border-gray-400 text-gray-700 hover:text-gray-900"
-                }`}
-              >
-                ← Back
-              </button>
-              <button
-                type="submit"
-                className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] text-sm"
-              >
-                Complete →
-              </button>
-            </div>
-          </form>
+              {/* Location & Website side by side on sm+ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>Location</label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                    placeholder="City, Country"
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>Website</label>
+                  <input
+                    type="url"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleInputChange}
+                    className={`${inputClass} ${errors.website ? errorInputClass : ""}`}
+                    placeholder="https://yoursite.com"
+                  />
+                  {errors.website && <p className="mt-1 text-xs text-red-500">{errors.website}</p>}
+                </div>
+              </div>
+
+              {/* Privacy toggle */}
+              <div className={`flex items-center justify-between p-4 rounded-xl ${
+                isDark ? "bg-zinc-800/50 border border-zinc-700" : "bg-zinc-50 border border-zinc-200"
+              }`}>
+                <div className="flex items-center gap-2">
+                  {formData.private ? (
+                    <Lock className={`w-4 h-4 ${isDark ? "text-orange-400" : "text-orange-500"}`} />
+                  ) : (
+                    <Globe className={`w-4 h-4 ${isDark ? "text-green-400" : "text-green-500"}`} />
+                  )}
+                  <div>
+                    <p className={`text-sm font-medium ${isDark ? "text-white" : "text-zinc-900"}`}>
+                      {formData.private ? "Private" : "Public"}
+                    </p>
+                    <p className={`text-xs ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                      {formData.private ? "Only you can see your profile" : "Anyone can view your profile"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, private: !prev.private }))}
+                  className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
+                    formData.private
+                      ? isDark ? "bg-orange-600" : "bg-orange-500"
+                      : isDark ? "bg-green-600" : "bg-green-500"
+                  }`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
+                    formData.private ? "left-5.5 translate-x-0.5" : "left-0.5"
+                  }`} />
+                </button>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className={`flex-1 py-3 rounded-xl text-sm font-medium border transition-all duration-200 active:scale-[0.98] ${
+                    isDark
+                      ? "border-zinc-800 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800/50"
+                      : "border-zinc-200 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
+                  }`}
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
+                    isDark
+                      ? "bg-white text-zinc-900 hover:bg-zinc-100"
+                      : "bg-zinc-900 text-white hover:bg-zinc-800"
+                  }`}
+                >
+                  Complete setup
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
