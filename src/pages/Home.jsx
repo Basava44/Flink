@@ -77,11 +77,11 @@ function Home() {
   return (
     <div className={`min-h-screen ${isDark ? "bg-zinc-950 text-zinc-100" : "bg-white text-zinc-900"}`}>
       {/* Nav */}
-      <nav className="relative max-w-5xl mx-auto px-5 py-5 flex items-center justify-between">
+      <nav className="relative max-w-5xl mx-auto px-4 sm:px-5 py-4 sm:py-5 flex items-center justify-between">
         <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
           Flink
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={toggleTheme}
             className={`p-2 rounded-lg transition-colors ${
@@ -92,7 +92,7 @@ function Home() {
           </button>
           <button
             onClick={() => navigate("/login")}
-            className={`text-sm font-medium px-4 py-2 rounded-lg border transition-colors ${
+            className={`text-sm font-medium px-3 sm:px-4 py-2 rounded-lg border transition-colors ${
               isDark ? "text-zinc-400 hover:text-white border-zinc-700" : "text-zinc-600 hover:text-zinc-900 border-zinc-200"
             }`}
           >
@@ -100,29 +100,29 @@ function Home() {
           </button>
           <button
             onClick={() => navigate("/login")}
-            className={`text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-200 active:scale-95 ${
+            className={`text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 active:scale-95 ${
               isDark
                 ? "bg-white text-zinc-900 hover:bg-zinc-200"
                 : "bg-zinc-900 text-white hover:bg-zinc-800"
             }`}
           >
-            Sign up free
+            Sign up
           </button>
         </div>
       </nav>
 
       {/* Subtle gradient wave BG */}
-      <div className="absolute top-0 inset-x-0 h-[600px] overflow-hidden pointer-events-none">
+      <div className="absolute top-0 inset-x-0 h-[600px] overflow-hidden pointer-events-none -z-10">
         <div className={`absolute inset-0 ${
           isDark
-            ? "bg-gradient-to-b from-purple-950/20 via-zinc-950 to-zinc-950"
-            : "bg-gradient-to-b from-purple-100/30 via-pink-50/10 to-white"
+            ? "bg-gradient-to-b from-purple-950/20 via-transparent to-transparent"
+            : "bg-gradient-to-b from-purple-100/30 via-pink-50/10 to-transparent"
         }`} />
       </div>
 
       {/* Hero */}
-      <section className="relative max-w-3xl mx-auto px-5 pt-24 sm:pt-32 pb-20 text-center">
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
+      <section className="relative max-w-3xl mx-auto px-4 sm:px-5 pt-20 sm:pt-32 pb-16 sm:pb-20 text-center">
+        <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-5 sm:mb-6">
           All your socials.
           <br />
           <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
@@ -130,7 +130,7 @@ function Home() {
           </span>
         </h1>
 
-        <p className={`text-lg sm:text-xl max-w-xl mx-auto mb-12 leading-relaxed ${
+        <p className={`text-base sm:text-xl max-w-xl mx-auto mb-10 sm:mb-12 leading-relaxed ${
           isDark ? "text-zinc-500" : "text-zinc-500"
         }`}>
           Stop sharing 10 different usernames. Create your Flink - a single link
@@ -144,7 +144,7 @@ function Home() {
               ? "bg-zinc-900 border border-zinc-800"
               : "bg-zinc-50 border border-zinc-200"
           }`}>
-            <span className={`pl-4 pr-1 text-sm font-mono ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
+            <span className={`pl-3 sm:pl-4 pr-0.5 text-xs sm:text-sm font-mono flex-shrink-0 ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
               flink.to/
             </span>
             <input
@@ -152,13 +152,13 @@ function Home() {
               value={handleInput}
               onChange={(e) => checkHandle(e.target.value)}
               placeholder="yourname"
-              className={`flex-1 px-1 py-3 text-sm bg-transparent outline-none ${
+              className={`flex-1 min-w-0 px-1 py-3 text-sm bg-transparent outline-none ${
                 isDark ? "text-white placeholder-zinc-700" : "text-zinc-900 placeholder-zinc-400"
               }`}
             />
             <button
               onClick={handleInput.length >= 3 && handleStatus === "available" ? handleClaim : () => navigate("/login")}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 active:scale-95 flex-shrink-0 ${
+              className={`px-4 sm:px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 active:scale-95 flex-shrink-0 ${
                 isDark
                   ? "bg-white text-zinc-900 hover:bg-zinc-200"
                   : "bg-zinc-900 text-white hover:bg-zinc-800"
@@ -188,12 +188,12 @@ function Home() {
       </section>
 
       {/* Platform icons */}
-      <section className="pb-24 px-5">
+      <section className="pb-20 sm:pb-24 px-4 sm:px-5">
         <div className="max-w-2xl mx-auto text-center">
-          <p className={`text-xs font-medium uppercase tracking-widest mb-5 ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
+          <p className={`text-xs font-medium uppercase tracking-widest mb-4 sm:mb-5 ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
             Works with everything
           </p>
-          <div className="flex items-center justify-center gap-3 flex-wrap">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
             {[
               { icon: Instagram, color: "from-pink-500 to-rose-500" },
               { icon: Twitter, color: "from-sky-400 to-blue-500" },
@@ -206,9 +206,9 @@ function Home() {
             ].map(({ icon: Icon, color }, i) => (
               <div
                 key={i}
-                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-sm`}
+                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-sm`}
               >
-                <Icon className="w-[18px] h-[18px] text-white" />
+                <Icon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white" />
               </div>
             ))}
             <span className={`text-xs font-medium ml-1 ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
