@@ -28,8 +28,6 @@ import {
   Link2,
   Star,
   PhoneCall,
-  UserPlus,
-  ChevronRight,
   Download,
 } from "lucide-react";
 
@@ -81,26 +79,69 @@ const formatUrlForClick = (url, platform) => {
 };
 
 const formatDisplayUrl = (url, platform) => {
-  const clean = url.replace(/^(mailto:|tel:)/, "").replace(/^https?:\/\//, "").replace(/\/$/, "");
-  if (["instagram", "twitter", "telegram", "threads"].includes(platform))
-    return `@${clean.replace(/^@/, "")}`;
-  if (platform === "reddit") return clean.startsWith("u/") ? clean : `u/${clean}`;
+  const clean = url.replace(/^(mailto:|tel:)/, "").replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/$/, "");
+
+  // Extract username from full URLs
+  const extractUsername = (str, domain) => {
+    const match = str.match(new RegExp(`${domain}/(?:in/|@)?([^/?#]+)`));
+    return match ? match[1] : str.replace(new RegExp(`.*${domain}/?`), "");
+  };
+
+  if (["instagram", "twitter", "telegram", "threads"].includes(platform)) {
+    const username = clean.includes("/") ? clean.split("/").filter(Boolean).pop() : clean;
+    return `@${username.replace(/^@/, "")}`;
+  }
+  if (platform === "linkedin") {
+    const username = extractUsername(clean, "linkedin\\.com");
+    return username || clean;
+  }
+  if (platform === "github") {
+    const username = clean.includes("github.com") ? clean.split("github.com/")[1]?.split("/")[0] : clean;
+    return username || clean;
+  }
+  if (platform === "youtube") {
+    const username = clean.includes("youtube.com") ? clean.split("youtube.com/")[1]?.replace(/^@/, "") : clean;
+    return username ? `@${username.replace(/^@/, "")}` : clean;
+  }
+  if (platform === "facebook") {
+    const username = clean.includes("facebook.com") ? clean.split("facebook.com/")[1]?.split("/")[0] : clean;
+    return username || clean;
+  }
+  if (platform === "reddit") {
+    const username = clean.includes("reddit.com") ? clean.split("/").filter(Boolean).pop() : clean;
+    return username.startsWith("u/") ? username : `u/${username}`;
+  }
   return clean;
 };
 
-// Categorize links into sections
+// Categorize links into sections, keeping same platforms grouped
 const categorizeSocialLinks = (links) => {
   const contact = [];
   const featured = [];
   const elsewhere = [];
 
+  // Track which section each platform was first placed in
+  const platformSection = {};
+
   links.forEach((link) => {
     if (CONTACT_PLATFORMS.has(link.platform)) {
       contact.push(link);
-    } else if (FEATURED_PLATFORMS.has(link.platform) && featured.length < 4) {
+      return;
+    }
+
+    // If this platform already has a section, put it there
+    if (platformSection[link.platform]) {
+      platformSection[link.platform].push(link);
+      return;
+    }
+
+    // New platform - decide where it goes
+    if (FEATURED_PLATFORMS.has(link.platform) && featured.length < 4) {
       featured.push(link);
+      platformSection[link.platform] = featured;
     } else {
       elsewhere.push(link);
+      platformSection[link.platform] = elsewhere;
     }
   });
 
@@ -160,7 +201,7 @@ const generateVCard = (profileData, socialLinks) => {
   return lines.join("\r\n");
 };
 
-const LinkCard = ({ link, isDark, grouped = false }) => {
+const LinkCard = ({ link, isDark, index = 0 }) => {
   const meta = PLATFORM_META[link.platform] || {
     icon: ExternalLink,
     label: link.platform,
@@ -176,11 +217,12 @@ const LinkCard = ({ link, isDark, grouped = false }) => {
       href={clickUrl}
       target={isInternal ? "_self" : "_blank"}
       rel={isInternal ? undefined : "noopener noreferrer"}
-      className={`group flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 active:scale-[0.98] hover:scale-[1.01] ${
+      className={`group flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 active:scale-[0.98] hover:scale-[1.01] animate-fade-in-up ${
         isDark
           ? "hover:bg-zinc-800/60"
           : "hover:bg-zinc-50"
       }`}
+      style={{ animationDelay: `${index * 40}ms` }}
     >
       <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${meta.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
         <Icon className="w-[18px] h-[18px] text-white" />
@@ -194,11 +236,27 @@ const LinkCard = ({ link, isDark, grouped = false }) => {
           {displayUrl}
         </span>
       </div>
-
-      <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-all duration-200 group-hover:translate-x-0.5 ${
-        isDark ? "text-zinc-700 group-hover:text-zinc-500" : "text-zinc-300 group-hover:text-zinc-400"
-      }`} />
     </a>
+  );
+};
+
+const LinkGrid = ({ links, isDark, indexOffset = 0 }) => {
+  if (links.length === 0) return null;
+  if (links.length === 1) return <LinkCard link={links[0]} isDark={isDark} index={indexOffset} />;
+
+  const isOdd = links.length % 2 !== 0;
+  const gridLinks = isOdd ? links.slice(0, -1) : links;
+  const lastLink = isOdd ? links[links.length - 1] : null;
+
+  return (
+    <>
+      <div className="grid grid-cols-2">
+        {gridLinks.map((link, i) => (
+          <LinkCard key={link.id} link={link} isDark={isDark} index={indexOffset + i} />
+        ))}
+      </div>
+      {lastLink && <LinkCard link={lastLink} isDark={isDark} index={indexOffset + gridLinks.length} />}
+    </>
   );
 };
 
@@ -375,20 +433,12 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
 
   return (
     <div className={`min-h-screen ${isDark ? "bg-zinc-950" : "bg-zinc-50"}`}>
-      {/* Gradient aurora header */}
-      <div className="relative overflow-hidden">
-        <div className={`absolute inset-0 h-72 ${
-          isDark
-            ? "bg-gradient-to-b from-purple-950/40 via-pink-950/20 to-transparent"
-            : "bg-gradient-to-b from-pink-100/80 via-purple-100/50 to-transparent"
-        }`} />
-        <div className={`absolute top-0 -left-20 w-72 h-72 rounded-full blur-3xl ${
-          isDark ? "bg-purple-900/20" : "bg-pink-200/40"
-        }`} />
-        <div className={`absolute top-0 -right-20 w-72 h-72 rounded-full blur-3xl ${
-          isDark ? "bg-pink-900/15" : "bg-purple-200/30"
-        }`} />
-      </div>
+      {/* Subtle gradient header */}
+      <div className={`absolute inset-x-0 top-0 h-64 ${
+        isDark
+          ? "bg-gradient-to-b from-zinc-900 to-transparent"
+          : "bg-gradient-to-b from-zinc-100 to-transparent"
+      }`} />
 
       {/* Preview banner */}
       {isPreview && (
@@ -504,9 +554,9 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
             {hasContact && (
               <button
                 onClick={handleSaveContact}
-                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:opacity-90 transition-all duration-200 active:scale-[0.97] shadow-lg shadow-purple-500/20"
+                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold whitespace-nowrap px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:opacity-90 transition-all duration-200 active:scale-[0.97] shadow-lg shadow-purple-500/20"
               >
-                <UserPlus className="w-4 h-4" />
+                <Download className="w-4 h-4" />
                 Save contact
               </button>
             )}
@@ -524,35 +574,17 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
           </div>
         </div>
 
-        {/* Divider with text */}
-        <div className="relative mt-8 mb-6">
-          <div className={`absolute inset-0 flex items-center`}>
-            <div className={`w-full border-t ${isDark ? "border-zinc-800" : "border-zinc-200/80"}`} />
-          </div>
-          <div className="relative flex justify-center">
-            <span className={`px-3 text-xs font-medium ${
-              isDark ? "bg-zinc-950 text-zinc-600" : "bg-zinc-50 text-zinc-400"
-            }`}>
-              Connect with {profileData.name?.split(" ")[0] || profileData.handle}
-            </span>
-          </div>
-        </div>
-
         {/* Categorized sections */}
-        <div className="space-y-3">
+        <div className="mt-8 space-y-3">
           {/* Featured */}
           {featured.length > 0 && (
             <Section
               icon={Star}
               title="Featured"
-              subtitle="Highlights"
+              subtitle={`${featured.length} ${featured.length === 1 ? "link" : "links"}`}
               isDark={isDark}
             >
-              <div className={featured.length > 1 ? "grid grid-cols-2" : ""}>
-                {featured.map((link) => (
-                  <LinkCard key={link.id} link={link} isDark={isDark} grouped={featured.length > 1} />
-                ))}
-              </div>
+              <LinkGrid links={featured} isDark={isDark} indexOffset={0} />
             </Section>
           )}
 
@@ -561,14 +593,10 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
             <Section
               icon={PhoneCall}
               title="Contact"
-              subtitle="Get in touch"
+              subtitle={`${contact.length} ${contact.length === 1 ? "link" : "links"}`}
               isDark={isDark}
             >
-              <div className={contact.length > 1 ? "grid grid-cols-2" : ""}>
-                {contact.map((link) => (
-                  <LinkCard key={link.id} link={link} isDark={isDark} grouped={contact.length > 1} />
-                ))}
-              </div>
+              <LinkGrid links={contact} isDark={isDark} indexOffset={featured.length} />
             </Section>
           )}
 
@@ -577,24 +605,20 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
             <Section
               icon={Globe}
               title="Elsewhere"
-              subtitle="More places"
+              subtitle={`${elsewhere.length} ${elsewhere.length === 1 ? "link" : "links"}`}
               isDark={isDark}
             >
-              <div className={elsewhere.length > 1 ? "grid grid-cols-2" : ""}>
-                {elsewhere.map((link) => (
-                  <LinkCard key={link.id} link={link} isDark={isDark} grouped={elsewhere.length > 1} />
-                ))}
-              </div>
+              <LinkGrid links={elsewhere} isDark={isDark} indexOffset={featured.length + contact.length} />
             </Section>
           )}
-        </div>
 
-        {/* Empty state */}
-        {socialLinks.length === 0 && (
-          <div className={`text-center py-12 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
-            <p className="text-sm">No links added yet.</p>
-          </div>
-        )}
+          {/* Empty state */}
+          {socialLinks.length === 0 && (
+            <div className={`text-center py-12 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+              <p className="text-sm">No links added yet.</p>
+            </div>
+          )}
+        </div>
 
         {/* Copy link - subtle */}
         <button
@@ -612,7 +636,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
         </button>
 
         {/* Footer */}
-        <div className="mt-10 text-center">
+        <div className={`mt-10 text-center ${!user ? "pb-16" : ""}`}>
           <div className={`inline-flex items-center gap-1.5 text-xs ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
             <Link2 className="w-3 h-3" />
             <span>Powered by</span>
@@ -620,18 +644,28 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
               Flink
             </span>
           </div>
-          {!user && (
-            <div className="mt-4">
-              <button
-                onClick={() => navigate("/login")}
-                className="text-sm font-semibold px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:opacity-90 transition-all duration-200 active:scale-95 shadow-lg shadow-purple-500/20"
-              >
-                Create your Flink
-              </button>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Sticky CTA for logged-out visitors */}
+      {!user && (
+        <div className={`fixed bottom-0 inset-x-0 z-20 border-t backdrop-blur-lg ${
+          isDark ? "bg-zinc-950/90 border-zinc-800" : "bg-white/90 border-zinc-200"
+        }`}>
+          <div className="max-w-md mx-auto px-5 py-3 flex items-center justify-between">
+            <div className={`text-sm ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+              <span className="font-semibold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">Flink</span>
+              <span className="ml-1.5">- All your socials. One link.</span>
+            </div>
+            <button
+              onClick={() => navigate("/login")}
+              className="text-sm font-semibold px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:opacity-90 transition-all duration-200 active:scale-95 whitespace-nowrap"
+            >
+              Get yours
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

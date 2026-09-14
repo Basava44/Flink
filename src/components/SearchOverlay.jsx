@@ -36,6 +36,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
             )
           `)
           .or(`handle.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%`)
+          .eq('is_private', false) // Only show public profiles
           .neq('user_id', user?.id) // Exclude current user's profile
           .limit(20);
 
@@ -64,7 +65,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
             isVerified: false,
             created_at: profile.users.created_at,
             connectionStatus: connectionStatus?.status || null,
-            isPrivate: profile.private || false
+            isPrivate: profile.is_private || false
           };
         }));
 
