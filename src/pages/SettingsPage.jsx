@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
+import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import BackgroundPattern from "../components/BackgroundPattern";
 import {
   ArrowLeft,
@@ -38,6 +39,7 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const { user, supabase, getSocialLinks, getProfileDetails } = useAuth();
+  useDocumentMeta({ title: "Settings", path: "/settings" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [socialLinks, setSocialLinks] = useState([]);
@@ -331,7 +333,7 @@ const SettingsPage = () => {
   const addPlatformEntry = (platform) => {
     setSocialLinksData((prev) => {
       const arr = [...(prev[platform] || [""])];
-      if (arr.length >= 3) return prev;
+      if (arr.length >= 5) return prev;
       return { ...prev, [platform]: [...arr, ""] };
     });
     setHasChanges(true);
@@ -773,7 +775,7 @@ const SettingsPage = () => {
     return (
       <div
         className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
-          isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
+          isDark ? "bg-zinc-950 text-white" : "bg-gray-50 text-gray-900"
         }`}
       >
         <div className="text-center">
@@ -828,7 +830,7 @@ const SettingsPage = () => {
       {/* Header */}
       <div
         className={`sticky top-0 z-10 border-b ${
-          isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"
+          isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"
         }`}
       >
         <div className="container mx-auto px-4 py-3">
@@ -837,7 +839,7 @@ const SettingsPage = () => {
               onClick={handleBack}
               className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
                 isDark
-                  ? "hover:bg-slate-700 text-gray-300 hover:text-white"
+                  ? "hover:bg-zinc-800 text-gray-300 hover:text-white"
                   : "hover:bg-gray-100 text-gray-500 hover:text-gray-800"
               }`}
             >
@@ -872,7 +874,7 @@ const SettingsPage = () => {
         <div
           className={`mb-6 p-3 rounded-lg ${
             isDark
-              ? "bg-slate-800/30 border border-slate-700 text-slate-300"
+              ? "bg-zinc-900/30 border border-zinc-800 text-zinc-400"
               : "bg-gray-100 border border-gray-200 text-gray-600"
           }`}
         >
@@ -891,7 +893,7 @@ const SettingsPage = () => {
           <div
             className={`p-4 rounded-2xl ${
               isDark
-                ? "bg-slate-800 border border-slate-700"
+                ? "bg-zinc-900 border border-zinc-800"
                 : "bg-white border border-gray-200"
             }`}
           >
@@ -937,7 +939,7 @@ const SettingsPage = () => {
                   <div
                     className={`w-24 h-24 rounded-full flex items-center justify-center border-2 ${
                       isDark
-                        ? "border-slate-600 bg-slate-700"
+                        ? "border-zinc-700 bg-zinc-800"
                         : "border-gray-300 bg-gray-100"
                     }`}
                   >
@@ -967,10 +969,10 @@ const SettingsPage = () => {
                   className={`w-full py-2.5 px-3 rounded-xl border-2 border-dashed transition-all duration-200 flex items-center justify-center space-x-2 ${
                     uploading
                       ? isDark
-                        ? "border-gray-600 bg-gray-700/40 text-gray-400 cursor-not-allowed"
+                        ? "border-zinc-700 bg-zinc-800/40 text-zinc-500 cursor-not-allowed"
                         : "border-gray-300 bg-gray-100/80 text-gray-400 cursor-not-allowed"
                       : isDark
-                      ? "border-slate-600 bg-slate-700/50 text-gray-300 hover:border-primary-500 hover:bg-slate-700"
+                      ? "border-zinc-700 bg-zinc-800/50 text-gray-300 hover:border-primary-500 hover:bg-zinc-800"
                       : "border-gray-300 bg-gray-50 text-gray-600 hover:border-primary-500 hover:bg-gray-100"
                   }`}
                 >
@@ -1007,7 +1009,7 @@ const SettingsPage = () => {
           <div
             className={`p-4 rounded-2xl ${
               isDark
-                ? "bg-slate-800 border border-slate-700"
+                ? "bg-zinc-900 border border-zinc-800"
                 : "bg-white border border-gray-200"
             }`}
           >
@@ -1040,7 +1042,7 @@ const SettingsPage = () => {
                   onBlur={() => setFocusedField(null)}
                   className={`w-full px-4 py-2.5 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
                     isDark
-                      ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                      ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-gray-400 focus:border-primary-500"
                       : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
                   }`}
                   placeholder="Your name as shown on your profile"
@@ -1054,7 +1056,7 @@ const SettingsPage = () => {
                     }}
                     className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 ${
                       isDark
-                        ? "hover:bg-slate-600 text-gray-400 hover:text-white"
+                        ? "hover:bg-zinc-700 text-gray-400 hover:text-white"
                         : "hover:bg-gray-200 text-gray-400 hover:text-gray-600"
                     }`}
                     title="Clear field"
@@ -1070,7 +1072,7 @@ const SettingsPage = () => {
           <div
             className={`p-6 rounded-2xl ${
               isDark
-                ? "bg-slate-800 border border-slate-700"
+                ? "bg-zinc-900 border border-zinc-800"
                 : "bg-white border border-gray-200"
             }`}
           >
@@ -1104,7 +1106,7 @@ const SettingsPage = () => {
                           </span>
                         )}
                       </label>
-                      {!isEmail && entries.length < 3 && (
+                      {!isEmail && entries.length < 5 && (
                         <button
                           type="button"
                           onClick={() => addPlatformEntry(platform.key)}
@@ -1133,10 +1135,10 @@ const SettingsPage = () => {
                           className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
                             isEmail && idx === 0
                               ? isDark
-                                ? "bg-slate-600/30 border border-slate-500 text-gray-400 cursor-not-allowed"
+                                ? "bg-zinc-800/30 border border-zinc-700 text-gray-400 cursor-not-allowed"
                                 : "bg-gray-100 border border-gray-200 text-gray-500 cursor-not-allowed"
                               : isDark
-                              ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                              ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-gray-400 focus:border-primary-500"
                               : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
                           }`}
                           placeholder={idx === 0 ? platform.placeholder : `Another ${platform.name}`}
@@ -1171,7 +1173,7 @@ const SettingsPage = () => {
           <div
             className={`p-6 rounded-2xl ${
               isDark
-                ? "bg-slate-800 border border-slate-700"
+                ? "bg-zinc-900 border border-zinc-800"
                 : "bg-white border border-gray-200"
             }`}
           >
@@ -1204,7 +1206,7 @@ const SettingsPage = () => {
                   rows={3}
                   className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 resize-none ${
                     isDark
-                      ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                      ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-gray-400 focus:border-primary-500"
                       : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
                   }`}
                   placeholder="Tell us about yourself..."
@@ -1238,7 +1240,7 @@ const SettingsPage = () => {
                       onBlur={() => setFocusedField(null)}
                       className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
                         isDark
-                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                          ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-gray-400 focus:border-primary-500"
                           : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
                       }`}
                       placeholder="City, Country"
@@ -1252,7 +1254,7 @@ const SettingsPage = () => {
                         }}
                         className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 ${
                           isDark
-                            ? "hover:bg-slate-600 text-gray-400 hover:text-white"
+                            ? "hover:bg-zinc-700 text-gray-400 hover:text-white"
                             : "hover:bg-gray-200 text-gray-400 hover:text-gray-600"
                         }`}
                         title="Clear field"
@@ -1288,7 +1290,7 @@ const SettingsPage = () => {
                       onBlur={() => setFocusedField(null)}
                       className={`w-full px-4 py-3 pr-10 rounded-xl focus:outline-none transition-all duration-200 ${
                         isDark
-                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
+                          ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-gray-400 focus:border-primary-500"
                           : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
                       }`}
                       placeholder="https://yourwebsite.com"
@@ -1302,7 +1304,7 @@ const SettingsPage = () => {
                         }}
                         className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-all duration-200 ${
                           isDark
-                            ? "hover:bg-slate-600 text-gray-400 hover:text-white"
+                            ? "hover:bg-zinc-700 text-gray-400 hover:text-white"
                             : "hover:bg-gray-200 text-gray-400 hover:text-gray-600"
                         }`}
                         title="Clear field"
@@ -1320,7 +1322,7 @@ const SettingsPage = () => {
           <div
             className={`p-6 rounded-2xl ${
               isDark
-                ? "bg-slate-800 border border-slate-700"
+                ? "bg-zinc-900 border border-zinc-800"
                 : "bg-white border border-gray-200"
             }`}
           >
@@ -1335,7 +1337,7 @@ const SettingsPage = () => {
             <div
               className={`p-4 rounded-xl ${
                 isDark
-                  ? "bg-slate-700/50 border border-slate-600"
+                  ? "bg-zinc-800/50 border border-zinc-700"
                   : "bg-gray-50 border border-gray-300"
               }`}
             >
@@ -1439,7 +1441,7 @@ const SettingsPage = () => {
           <div
             className={`backdrop-blur-lg rounded-2xl shadow-2xl border ${
               isDark
-                ? "bg-slate-800/90 border-slate-600/50"
+                ? "bg-zinc-900/90 border-zinc-700/50"
                 : "bg-white/90 border-gray-200/50"
             }`}
           >
@@ -1451,7 +1453,7 @@ const SettingsPage = () => {
                   disabled={loading}
                   className={`flex-1 py-2 px-3 rounded-lg font-medium transition-all duration-200 text-sm ${
                     isDark
-                      ? "bg-slate-700/50 hover:bg-slate-600/50 text-gray-300 hover:text-white disabled:opacity-50 border border-slate-600/30"
+                      ? "bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-400 hover:text-white disabled:opacity-50 border border-zinc-700/30"
                       : "bg-gray-100/50 hover:bg-gray-200/50 text-gray-600 hover:text-gray-800 disabled:opacity-50 border border-gray-200/50"
                   }`}
                 >

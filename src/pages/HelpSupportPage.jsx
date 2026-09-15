@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { supabase } from '../lib/supabase';
 import BackgroundPattern from '../components/BackgroundPattern';
 import emailjs from '@emailjs/browser';
@@ -22,6 +23,7 @@ const HelpSupportPage = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const { user } = useAuth();
+  useDocumentMeta({ title: "Help & Support", path: "/help" });
   const [formData, setFormData] = useState({
     name: user?.user_metadata?.full_name || user?.email || '',
     email: user?.email || '',

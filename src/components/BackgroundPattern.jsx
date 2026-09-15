@@ -9,7 +9,7 @@ const BackgroundPattern = () => {
       {/* Base Background */}
       <div className={`absolute inset-0 ${
         isDark 
-          ? "bg-slate-900" 
+          ? "bg-zinc-950"
           : "bg-gray-50"
       }`}>
         

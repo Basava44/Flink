@@ -2,10 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
+import { useDocumentMeta } from "../hooks/useDocumentMeta";
+import { ArrowLeft, Sun, Moon, KeyRound } from "lucide-react";
 
 function ForgotPassword() {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
+  useDocumentMeta({ title: "Forgot Password", path: "/forgot-password" });
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -32,145 +35,100 @@ function ForgotPassword() {
     }
   };
 
-  const onBackToLogin = () => {
-    navigate('/login');
-  };
+  const inputClass = `w-full px-4 py-3 rounded-xl text-sm transition-all duration-200 outline-none ${
+    isDark
+      ? "bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600"
+      : "bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400"
+  }`;
 
   return (
-    <>
-      {/* Desktop Warning Message - Hidden on mobile */}
-      <div className="hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-        <div className="text-center p-8 max-w-md">
-          <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-            Mobile Only
-          </h1>
-          <p className="text-gray-300 text-lg mb-6">
-            Password reset is designed for mobile devices. Please access it from your phone or resize your browser window.
-          </p>
-          <button
-            onClick={() => navigate('/login')}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transform hover:scale-105 transition-all duration-300"
-          >
-            Back to Login
-          </button>
-        </div>
+    <div className={`min-h-screen relative ${isDark ? "bg-zinc-950 text-zinc-100" : "bg-white text-zinc-900"}`}>
+      {/* Subtle gradient wave BG */}
+      <div className="absolute top-0 inset-x-0 h-[500px] overflow-hidden pointer-events-none">
+        <div className={`absolute inset-0 ${
+          isDark
+            ? "bg-gradient-to-b from-purple-950/30 via-zinc-950/80 to-zinc-950"
+            : "bg-gradient-to-b from-purple-100/60 via-pink-50/30 to-white"
+        }`} />
       </div>
 
-      {/* Mobile Forgot Password - Visible only on mobile */}
-      <div className={`md:hidden min-h-screen flex items-center justify-center px-4 transition-colors duration-300 ${
-        isDark ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"
-      }`}>
-        {/* Background elements */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 float-animation"></div>
-        <div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 float-animation"
-          style={{ animationDelay: "1s" }}
-        ></div>
-
-        <div className="max-w-md w-full relative z-10">
-        {/* Back button */}
+      {/* Nav */}
+      <nav className="relative max-w-5xl mx-auto px-5 py-5 flex items-center justify-between">
         <button
-          onClick={onBackToLogin}
-          className={`mb-8 flex items-center transition-colors duration-200 ${
-            isDark ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2"
+        >
+          <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+            Flink
+          </span>
+        </button>
+        <button
+          onClick={toggleTheme}
+          className={`p-2 rounded-lg transition-colors ${
+            isDark ? "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
           }`}
         >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Back to Login
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
+      </nav>
 
-        {/* Forgot Password form */}
-        <div className={`rounded-3xl py-8 px-12  border transition-all duration-300 ${
-          isDark 
-            ? "bg-slate-800/50 backdrop-blur-md border-slate-700/50" 
-            : "bg-white border-gray-200 shadow-lg"
-        }`}>
+      {/* Content */}
+      <div className="relative flex flex-col items-center justify-center px-5 pt-12 sm:pt-20 pb-20">
+        <div className="w-full max-w-sm">
+          {/* Back to login */}
+          <button
+            onClick={() => navigate("/login")}
+            className={`flex items-center gap-1.5 text-sm mb-8 transition-colors duration-200 ${
+              isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-500 hover:text-zinc-700"
+            }`}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to login
+          </button>
+
+          {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-                />
-              </svg>
+            <div className={`w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center ${
+              isDark ? "bg-zinc-800/80" : "bg-zinc-100"
+            }`}>
+              <KeyRound className={`w-6 h-6 ${isDark ? "text-zinc-400" : "text-zinc-500"}`} />
             </div>
-            <h1 className={`text-2xl sm:text-3xl md:text-4xl font-bold mb-2 ${
-              isDark ? "text-white" : "text-gray-800"
-            }`}>
-              Forgot Password?
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
+              Forgot password?
             </h1>
-            <p className={`text-sm sm:text-base ${
-              isDark ? "text-gray-300" : "text-gray-600"
-            }`}>
-              No worries! Enter your email and we'll send you reset instructions.
+            <p className={`text-sm ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
+              No worries. We'll send you reset instructions.
             </p>
           </div>
 
+          {/* Messages */}
           {message && (
-            <div className={`mb-6 p-4 rounded-xl text-sm ${
-              isDark 
-                ? "bg-green-500/20 border border-green-500/30 text-green-300" 
-                : "bg-green-50 border border-green-200 text-green-700"
-            }`}>
+            <div className="mb-4 p-3 rounded-xl text-sm bg-green-500/10 border border-green-500/20 text-green-500">
               {message}
             </div>
           )}
-
           {error && (
-            <div className={`mb-6 p-4 rounded-xl text-sm ${
-              isDark 
-                ? "bg-red-500/20 border border-red-500/30 text-red-300" 
-                : "bg-red-50 border border-red-200 text-red-700"
-            }`}>
+            <div className="mb-4 p-3 rounded-xl text-sm bg-red-500/10 border border-red-500/20 text-red-500">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label
                 htmlFor="email"
-                className={`block text-sm font-medium mb-2 ${
-                  isDark ? "text-gray-200" : "text-gray-700"
-                }`}
+                className={`block text-sm font-medium mb-2 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}
               >
-                Email Address
+                Email address
               </label>
               <input
                 type="email"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
-                  isDark
-                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-primary-500"
-                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                }`}
-                placeholder="Enter your email address"
+                className={inputClass}
+                placeholder="Enter your email"
                 required
               />
             </div>
@@ -178,30 +136,37 @@ function ForgotPassword() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-soft hover:shadow-soft-lg transform hover:scale-105 disabled:hover:scale-100 text-sm sm:text-base"
+              className={`w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
+                isDark
+                  ? "bg-white text-zinc-900 hover:bg-zinc-200"
+                  : "bg-zinc-900 text-white hover:bg-zinc-800"
+              }`}
             >
-              {isLoading ? "Sending..." : "Send Reset Instructions"}
+              {isLoading ? "Sending..." : "Send reset instructions"}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className={`text-sm ${
-              isDark ? "text-gray-300" : "text-gray-600"
-            }`}>
-              Remember your password?{" "}
-              <button
-                type="button"
-                onClick={() => navigate('/login')}
-                className="text-primary-600 hover:text-primary-500 font-medium transition-colors duration-200"
-              >
-                Sign in instead
-              </button>
-            </p>
-          </div>
+          {/* Toggle */}
+          <p className={`mt-8 text-center text-sm ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
+            Remember your password?
+            <button
+              type="button"
+              onClick={() => navigate("/login")}
+              className={`ml-1.5 font-semibold transition-colors ${
+                isDark ? "text-white hover:text-zinc-300" : "text-zinc-900 hover:text-zinc-700"
+              }`}
+            >
+              Sign in
+            </button>
+          </p>
         </div>
       </div>
+
+      {/* Footer */}
+      <div className={`absolute bottom-0 inset-x-0 py-6 text-center ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
+        <p className="text-xs">&copy; {new Date().getFullYear()} Flink. All rights reserved.</p>
       </div>
-    </>
+    </div>
   );
 }
 

@@ -1,32 +1,35 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../hooks/useTheme";
+import { useDocumentMeta } from "../hooks/useDocumentMeta";
+import { ArrowLeft, Sun, Moon, KeyRound, CheckCircle, Eye, EyeOff } from "lucide-react";
 
 function ResetPassword() {
   const navigate = useNavigate();
+  const { isDark, toggleTheme } = useTheme();
+  useDocumentMeta({ title: "Reset Password", path: "/reset-password" });
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { supabase } = useAuth();
 
   useEffect(() => {
-    // Check if we have a session (user clicked reset link)
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        // No session means user didn't come from a reset link
         setError("Invalid or expired reset link. Please request a new one.");
       }
     };
-    
     checkSession();
   }, [supabase]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       setError("Passwords don't match");
       return;
@@ -41,10 +44,7 @@ function ResetPassword() {
     setError("");
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
-
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) {
         setError(error.message);
       } else {
@@ -57,209 +57,185 @@ function ResetPassword() {
     }
   };
 
-  if (success) {
-    return (
-      <>
-        {/* Desktop Warning Message - Hidden on mobile */}
-        <div className="hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-          <div className="text-center p-8 max-w-md">
-            <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Mobile Only
-            </h1>
-            <p className="text-gray-300 text-lg mb-6">
-              Password reset confirmation is designed for mobile devices. Please access it from your phone or resize your browser window.
-            </p>
-            <button
-              onClick={() => navigate('/login')}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transform hover:scale-105 transition-all duration-300"
-            >
-              Back to Login
-            </button>
-          </div>
-        </div>
-        
-        {/* Mobile Success Screen - Visible only on mobile */}
-        <div className="md:hidden min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex items-center justify-center px-4">
-          <div className="max-w-md w-full relative z-10">
-            <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20 text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <h1 className="text-2xl font-bold mb-4 text-white">
-                Password Updated Successfully!
-              </h1>
-              <p className="text-gray-300 mb-6">
-                Your password has been updated. You can now sign in with your new password.
-              </p>
-              <button
-                onClick={() => navigate('/login')}
-                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl transform hover:scale-105 transition-all duration-300"
-              >
-                Back to Login
-              </button>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
+  const passwordsMatch = !confirmPassword || !password || password === confirmPassword;
+
+  const inputClass = `w-full px-4 py-3 rounded-xl text-sm transition-all duration-200 outline-none ${
+    isDark
+      ? "bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600"
+      : "bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400"
+  }`;
 
   return (
-    <>
-      {/* Desktop Warning Message - Hidden on mobile */}
-      <div className="hidden md:flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-        <div className="text-center p-8 max-w-md">
-          <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-            Mobile Only
-          </h1>
-          <p className="text-gray-300 text-lg mb-6">
-            Password reset is designed for mobile devices. Please access it from your phone or resize your browser window.
-          </p>
-          <button
-            onClick={() => navigate('/login')}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transform hover:scale-105 transition-all duration-300"
-          >
-            Back to Login
-          </button>
-        </div>
+    <div className={`min-h-screen relative ${isDark ? "bg-zinc-950 text-zinc-100" : "bg-white text-zinc-900"}`}>
+      {/* Subtle gradient wave BG */}
+      <div className="absolute top-0 inset-x-0 h-[500px] overflow-hidden pointer-events-none">
+        <div className={`absolute inset-0 ${
+          isDark
+            ? "bg-gradient-to-b from-purple-950/30 via-zinc-950/80 to-zinc-950"
+            : "bg-gradient-to-b from-purple-100/60 via-pink-50/30 to-white"
+        }`} />
       </div>
 
-      {/* Mobile Reset Password - Visible only on mobile */}
-      <div className="md:hidden min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex items-center justify-center px-4">
-        {/* Background elements */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 float-animation"></div>
-        <div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 float-animation"
-          style={{ animationDelay: "1s" }}
-        ></div>
-
-        <div className="max-w-md w-full relative z-10">
-        {/* Back button */}
+      {/* Nav */}
+      <nav className="relative max-w-5xl mx-auto px-5 py-5 flex items-center justify-between">
         <button
-          onClick={() => navigate('/login')}
-          className="mb-8 flex items-center text-gray-300 hover:text-white transition-colors duration-300"
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2"
         >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Back to Login
+          <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+            Flink
+          </span>
         </button>
+        <button
+          onClick={toggleTheme}
+          className={`p-2 rounded-lg transition-colors ${
+            isDark ? "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+          }`}
+        >
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+      </nav>
 
-        {/* Reset Password form */}
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+      {/* Content */}
+      <div className="relative flex flex-col items-center justify-center px-5 pt-12 sm:pt-20 pb-20">
+        <div className="w-full max-w-sm">
+          {/* Back to login */}
+          <button
+            onClick={() => navigate("/login")}
+            className={`flex items-center gap-1.5 text-sm mb-8 transition-colors duration-200 ${
+              isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-500 hover:text-zinc-700"
+            }`}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to login
+          </button>
+
+          {success ? (
+            /* Success state */
+            <div className="text-center">
+              <div className="w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center bg-green-500/10">
+                <CheckCircle className="w-6 h-6 text-green-500" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
+                Password updated
+              </h1>
+              <p className={`text-sm mb-8 ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
+                Your password has been reset successfully. You can now sign in with your new password.
+              </p>
+              <button
+                onClick={() => navigate("/login")}
+                className={`w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98] ${
+                  isDark
+                    ? "bg-white text-zinc-900 hover:bg-zinc-200"
+                    : "bg-zinc-900 text-white hover:bg-zinc-800"
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-                />
-              </svg>
+                Back to sign in
+              </button>
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Reset Password
-            </h1>
-            <p className="text-sm sm:text-base text-gray-300">
-              Enter your new password below.
-            </p>
-          </div>
+          ) : (
+            /* Form state */
+            <>
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className={`w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center ${
+                  isDark ? "bg-zinc-800/80" : "bg-zinc-100"
+                }`}>
+                  <KeyRound className={`w-6 h-6 ${isDark ? "text-zinc-400" : "text-zinc-500"}`} />
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
+                  Set new password
+                </h1>
+                <p className={`text-sm ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
+                  Enter your new password below.
+                </p>
+              </div>
 
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm">
-              {error}
-            </div>
+              {/* Error */}
+              {error && (
+                <div className="mb-4 p-3 rounded-xl text-sm bg-red-500/10 border border-red-500/20 text-red-500">
+                  {error}
+                </div>
+              )}
+
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div>
+                  <label
+                    htmlFor="password"
+                    className={`block text-sm font-medium mb-2 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}
+                  >
+                    New password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      id="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className={`${inputClass} pr-10`}
+                      placeholder="At least 6 characters"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"}`}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="confirmPassword"
+                    className={`block text-sm font-medium mb-2 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}
+                  >
+                    Confirm password
+                  </label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`${inputClass} ${
+                      confirmPassword && !passwordsMatch
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : ""
+                    }`}
+                    placeholder="Confirm your new password"
+                    required
+                    minLength={6}
+                  />
+                  {confirmPassword && !passwordsMatch && (
+                    <p className="mt-1.5 text-xs text-red-500">Passwords don't match</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading || !passwordsMatch}
+                  className={`w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isDark
+                      ? "bg-white text-zinc-900 hover:bg-zinc-200"
+                      : "bg-zinc-900 text-white hover:bg-zinc-800"
+                  }`}
+                >
+                  {isLoading ? "Updating..." : "Update password"}
+                </button>
+              </form>
+            </>
           )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-300 mb-2"
-              >
-                New Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                placeholder="Enter your new password"
-                required
-                minLength={6}
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-300 mb-2"
-              >
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                placeholder="Confirm your new password"
-                required
-                minLength={6}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl transform hover:scale-105 disabled:hover:scale-100 transition-all duration-300 shadow-2xl hover:shadow-pink-500/25 text-sm sm:text-base"
-            >
-              {isLoading ? "Updating..." : "Update Password"}
-            </button>
-          </form>
         </div>
       </div>
+
+      {/* Footer */}
+      <div className={`absolute bottom-0 inset-x-0 py-6 text-center ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
+        <p className="text-xs">&copy; {new Date().getFullYear()} Flink. All rights reserved.</p>
       </div>
-    </>
+    </div>
   );
 }
 

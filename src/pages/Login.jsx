@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
+import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { supabase } from "../lib/supabase";
 import { Eye, EyeOff, ArrowLeft, Sun, Moon } from "lucide-react";
 
@@ -10,6 +11,7 @@ function Login() {
   const location = useLocation();
   const { user, signIn, signUp, signInWithGoogle } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  useDocumentMeta({ title: "Log in", path: "/login" });
   const [formData, setFormData] = useState({
     name: "",
     email: "",

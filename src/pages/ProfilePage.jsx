@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
+import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { supabase } from "../lib/supabase";
 import OnboardingFlow from "../components/OnboardingFlow";
 import SocialLinksSection from "../components/SocialLinksSection";
@@ -17,6 +18,9 @@ import {
   MapPin,
   Globe,
   ExternalLink,
+  Search,
+  Home,
+  ArrowRight,
 } from "lucide-react";
 
 function ProfilePage() {
@@ -45,6 +49,18 @@ function ProfilePage() {
     return null;
   });
   const [copied, setCopied] = useState(false);
+
+  const profileName = userDetails?.name || handle;
+  useDocumentMeta(
+    !profileExists
+      ? { title: "Profile not found", description: `@${handle} doesn't exist on Flink`, path: `/${handle}` }
+      : {
+          title: profileName ? `${profileName} (@${handle})` : `@${handle}`,
+          description: profileDetails?.bio || `Check out ${profileName || handle}'s links on Flink`,
+          path: `/${handle}`,
+          ogImage: profileDetails?.profile_url || undefined,
+        }
+  );
 
   const hasLoadedData = useRef(false);
   const isSigningOut = useRef(false);
@@ -205,21 +221,83 @@ function ProfilePage() {
   // 404
   if (!profileExists) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-zinc-950 text-white" : "bg-zinc-50 text-zinc-900"}`}>
-        <div className="text-center px-4">
-          <p className="text-6xl font-bold opacity-10 mb-4">404</p>
-          <h1 className="text-xl font-bold mb-2">Profile not found</h1>
-          <p className={`text-sm mb-6 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
-            @{handle} doesn't exist.
+      <div className={`min-h-screen flex flex-col ${isDark ? "bg-zinc-950" : "bg-zinc-50"}`}>
+        {/* Top bar */}
+        <div className={`border-b ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
+          <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+            <button
+              onClick={() => navigate("/")}
+              className="text-sm font-semibold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent"
+            >
+              Flink
+            </button>
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-lg transition-all duration-200 active:scale-95 ${
+                isDark ? "text-zinc-400 hover:text-white hover:bg-zinc-800" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+              }`}
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center max-w-sm">
+            {/* Icon */}
+            <div className={`w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center ${
+              isDark ? "bg-zinc-800/80" : "bg-zinc-100"
+            }`}>
+              <Search className={`w-7 h-7 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
+            </div>
+
+            <h1 className={`text-2xl font-bold tracking-tight mb-2 ${isDark ? "text-white" : "text-zinc-900"}`}>
+              Profile not found
+            </h1>
+            <p className={`text-sm leading-relaxed mb-1 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+              The handle{" "}
+              <span className={`font-medium ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>@{handle}</span>{" "}
+              doesn't exist yet.
+            </p>
+            <p className={`text-sm mb-8 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+              It might have been changed, or it was never claimed.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={() => navigate("/")}
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 active:scale-95 ${
+                  isDark ? "bg-white text-zinc-900 hover:bg-zinc-100" : "bg-zinc-900 text-white hover:bg-zinc-800"
+                }`}
+              >
+                <Home className="w-4 h-4" />
+                Go home
+              </button>
+              {!user && (
+                <button
+                  onClick={() => navigate("/login")}
+                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 active:scale-95 ${
+                    isDark
+                      ? "text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700"
+                      : "text-zinc-600 hover:text-zinc-900 border border-zinc-200 hover:border-zinc-300"
+                  }`}
+                >
+                  Claim this handle
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="py-6 text-center">
+          <p className={`text-xs ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
+            <span className="font-semibold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+              Flink
+            </span>
+            {" "}- All your socials, one link
           </p>
-          <button
-            onClick={() => navigate("/")}
-            className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 active:scale-95 ${
-              isDark ? "bg-white text-zinc-900 hover:bg-zinc-100" : "bg-zinc-900 text-white hover:bg-zinc-800"
-            }`}
-          >
-            Go home
-          </button>
         </div>
       </div>
     );

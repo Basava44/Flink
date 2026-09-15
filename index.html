@@ -2,19 +2,38 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Flink - All Your Socials. One Link.</title>
+    <meta name="description" content="Flink puts all your social profiles, contact info, and links in one beautiful page. Share a single link instead of juggling usernames." />
+    <meta name="theme-color" content="#18181b" />
+    <link rel="canonical" href="https://flink-smoky.vercel.app/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://flink-smoky.vercel.app/" />
+    <meta property="og:title" content="Flink - All Your Socials. One Link." />
+    <meta property="og:description" content="Flink puts all your social profiles, contact info, and links in one beautiful page. Share a single link instead of juggling usernames." />
+    <meta property="og:image" content="https://flink-smoky.vercel.app/og-image.png" />
+    <meta property="og:site_name" content="Flink" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Flink - All Your Socials. One Link." />
+    <meta name="twitter:description" content="All your social profiles, contact info, and links in one beautiful page." />
+    <meta name="twitter:image" content="https://flink-smoky.vercel.app/og-image.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
     <script>
-      // Apply theme immediately to prevent flash of unstyled content
       (function() {
         try {
           const saved = localStorage.getItem('flink-theme');
           if (saved === 'dark') {
             document.documentElement.classList.add('dark');
           }
-        } catch (e) {
-          // Ignore localStorage errors
-        }
+        } catch (e) {}
       })();
     </script>
   </head>

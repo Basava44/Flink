@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
+import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { supabase } from "../lib/supabase";
 import {
   Link2,
@@ -26,6 +27,7 @@ function Home() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  useDocumentMeta({ path: "/" });
   const [handleInput, setHandleInput] = useState("");
   const [handleStatus, setHandleStatus] = useState(null);
   const checkTimeout = useRef(null);
