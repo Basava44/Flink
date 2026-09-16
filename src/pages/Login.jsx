@@ -290,6 +290,20 @@ function Login() {
             </button>
           </form>
 
+          {/* Consent note */}
+          {isSignUp && (
+            <p className={`mt-4 text-center text-xs leading-relaxed ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
+              By creating an account, you agree to our{" "}
+              <button onClick={() => navigate("/terms")} className={`underline ${isDark ? "hover:text-zinc-400" : "hover:text-zinc-600"}`}>
+                Terms of Service
+              </button>{" "}
+              and{" "}
+              <button onClick={() => navigate("/privacy")} className={`underline ${isDark ? "hover:text-zinc-400" : "hover:text-zinc-600"}`}>
+                Privacy Policy
+              </button>.
+            </p>
+          )}
+
           {/* Toggle */}
           <p className={`mt-8 text-center text-sm ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
             {isSignUp ? "Already have an account?" : "Don't have an account?"}
@@ -311,8 +325,20 @@ function Login() {
       </div>
 
       {/* Footer */}
-      <div className={`absolute bottom-0 inset-x-0 py-6 text-center ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
-        <p className="text-xs">&copy; {new Date().getFullYear()} Flink. All rights reserved.</p>
+      <div className={`absolute bottom-0 inset-x-0 py-6 flex items-center justify-center gap-4 ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
+        <button
+          onClick={() => navigate("/privacy")}
+          className={`text-xs transition-colors ${isDark ? "hover:text-zinc-500" : "hover:text-zinc-600"}`}
+        >
+          Privacy
+        </button>
+        <button
+          onClick={() => navigate("/terms")}
+          className={`text-xs transition-colors ${isDark ? "hover:text-zinc-500" : "hover:text-zinc-600"}`}
+        >
+          Terms
+        </button>
+        <p className="text-xs">&copy; {new Date().getFullYear()} Flink</p>
       </div>
     </div>
   );

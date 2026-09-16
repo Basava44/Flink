@@ -147,7 +147,7 @@ export const AuthProvider = ({ children }) => {
   // Add user to users table after successful signup
   const addUserToDatabase = useCallback(async (user, additionalData = {}) => {
     try {
-      // First check if user already exists in database
+      // First check if user already exists by ID
       const { data: existingUser, error: checkError } = await supabase
         .from("users")
         .select("id")
@@ -159,13 +159,77 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (checkError && checkError.code !== "PGRST116") {
-        // PGRST116 is "not found" error, which is expected for new users
         console.error("Error checking if user exists:", checkError);
         return { data: null, error: checkError };
       }
 
+      // Check by email as fallback (handles OAuth linking with existing email accounts)
+      // Gmail ignores dots, so karibasava.t.g@ and karibasava.tg@ are the same person
+      if (user.email) {
+        const normalizeGmail = (email) => {
+          const [local, domain] = email.toLowerCase().split("@");
+          if (domain === "gmail.com" || domain === "googlemail.com") {
+            return local.replace(/\./g, "") + "@" + domain;
+          }
+          return email.toLowerCase();
+        };
+
+        // Try exact match first
+        let existingByEmail = null;
+        const { data: exactMatch } = await supabase
+          .from("users")
+          .select("id, email")
+          .eq("email", user.email)
+          .single();
+
+        if (exactMatch) {
+          existingByEmail = exactMatch;
+        } else {
+          // For Gmail, check with dot variations by fetching Gmail users
+          const normalizedNew = normalizeGmail(user.email);
+          const { data: gmailUsers } = await supabase
+            .from("users")
+            .select("id, email")
+            .ilike("email", "%@gmail.com");
+
+          if (gmailUsers) {
+            existingByEmail = gmailUsers.find(
+              (u) => normalizeGmail(u.email) === normalizedNew
+            ) || null;
+          }
+        }
+
+        if (existingByEmail) {
+          // User exists with this email but different auth ID - link accounts
+          const { data: updated, error: updateError } = await supabase
+            .from("users")
+            .update({ id: user.id, email: user.email })
+            .eq("id", existingByEmail.id)
+            .select()
+            .single();
+
+          if (updateError) {
+            console.error("Error linking accounts:", updateError);
+          }
+
+          // Also update flink_profiles and social_links to point to new auth ID
+          if (!updateError) {
+            await supabase
+              .from("flink_profiles")
+              .update({ user_id: user.id })
+              .eq("user_id", existingByEmail.id);
+            await supabase
+              .from("social_links")
+              .update({ user_id: user.id })
+              .eq("user_id", existingByEmail.id);
+          }
+
+          return { data: updated || existingByEmail, error: updateError };
+        }
+      }
+
       const userData = {
-        id: user.id, // This will be the UUID from auth.users.id
+        id: user.id,
         email: user.email,
         name:
           user.user_metadata?.full_name ||
@@ -436,6 +500,30 @@ export const AuthProvider = ({ children }) => {
     }
   }, [cacheGet, cacheSet]);
 
+  // Delete user account
+  const deleteAccount = useCallback(async () => {
+    try {
+      const { error } = await supabase.rpc("delete_user_account");
+      if (error) {
+        console.error("Error deleting account:", error);
+        return { error };
+      }
+
+      // Clear all local state and storage
+      setUser(null);
+      setUserDetails(null);
+      localStorage.clear();
+
+      // Sign out locally (auth user is already deleted server-side)
+      try { await supabase.auth.signOut(); } catch {}
+
+      return { error: null };
+    } catch (err) {
+      console.error("Unexpected error deleting account:", err);
+      return { error: err };
+    }
+  }, []);
+
   // Test database connection
   const testDatabaseConnection = useCallback(async () => {
     try {
@@ -464,6 +552,7 @@ export const AuthProvider = ({ children }) => {
     signInWithGoogle,
     signOut,
     resetPassword,
+    deleteAccount,
     getUserDetails,
     addUserToDatabase,
     getSocialLinks,
@@ -472,7 +561,7 @@ export const AuthProvider = ({ children }) => {
     cacheClear,
     supabase,
   }), [user, userDetails, loading, signUp, signIn, signInWithGoogle, signOut,
-       resetPassword, getUserDetails, addUserToDatabase, getSocialLinks,
+       resetPassword, deleteAccount, getUserDetails, addUserToDatabase, getSocialLinks,
        getProfileDetails, testDatabaseConnection, cacheClear]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -3,6 +3,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { Link, Share2, X, Copy, QrCode, Check, MessageCircle, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import QRCodeImg from './QRCode';
 
 const QuickActionsSection = ({ profileDetails }) => {
   const navigate = useNavigate();
@@ -71,8 +72,6 @@ const QuickActionsSection = ({ profileDetails }) => {
     window.open(`https://wa.me/?text=${encodeURIComponent(`Check out my Flink profile: ${profileUrl}`)}`);
   };
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(profileUrl)}`;
-
   const userName = userDetails?.name || profileDetails?.handle || 'User';
   const userInitial = userName.charAt(0).toUpperCase();
 
@@ -139,11 +138,12 @@ const QuickActionsSection = ({ profileDetails }) => {
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className={`rounded-t-3xl pb-8 ${
+              className={`rounded-t-3xl ${
                 isDark
                   ? "bg-slate-900 border-t border-slate-700"
                   : "bg-white border-t border-gray-100"
               }`}
+              style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}
             >
               {/* Drag Handle */}
               <div className="flex justify-center pt-3 pb-2">
@@ -217,12 +217,7 @@ const QuickActionsSection = ({ profileDetails }) => {
 
                   {/* QR Mini */}
                   <div className="ml-3 p-2 bg-white rounded-xl shadow-sm">
-                    <img
-                      src={qrUrl}
-                      alt="QR"
-                      loading="lazy"
-                      className="w-12 h-12"
-                    />
+                    <QRCodeImg value={profileUrl} size={48} className="w-12 h-12" />
                   </div>
                 </div>
               </div>
@@ -376,12 +371,7 @@ const QuickActionsSection = ({ profileDetails }) => {
                   }`}
                 >
                   <div className="inline-block p-4 bg-white rounded-2xl shadow-sm mb-3">
-                    <img
-                      src={qrUrl}
-                      alt="QR Code"
-                      loading="lazy"
-                      className="w-40 h-40"
-                    />
+                    <QRCodeImg value={profileUrl} size={160} className="w-40 h-40" />
                   </div>
                   <p
                     className={`text-sm font-medium ${

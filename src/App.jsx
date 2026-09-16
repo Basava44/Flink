@@ -11,6 +11,8 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const HelpSupportPage = lazy(() => import("./pages/HelpSupportPage"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
 function LoadingSpinner() {
   return (
@@ -35,6 +37,8 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="/:handle" element={<ProfilePage />} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/help" element={<ProtectedRoute><HelpSupportPage /></ProtectedRoute>} />

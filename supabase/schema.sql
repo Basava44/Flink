@@ -122,7 +122,34 @@ CREATE TRIGGER social_links_updated_at
 -- Allowed MIME types: image/jpeg, image/png, image/webp, image/gif
 -- Max file size: 2MB
 
--- 6. VERIFICATION
+-- 6. ACCOUNT DELETION FUNCTION
+-- ==============================================
+-- Allows authenticated users to delete their own account.
+-- SECURITY DEFINER runs with the function owner's privileges,
+-- which is needed to delete from auth.users.
+-- CASCADE on foreign keys handles social_links + flink_profiles.
+
+CREATE OR REPLACE FUNCTION delete_user_account()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Delete avatar files from storage
+  DELETE FROM storage.objects
+  WHERE bucket_id = 'avatars'
+    AND owner = auth.uid();
+
+  -- Delete from public.users (cascades to flink_profiles + social_links)
+  DELETE FROM public.users WHERE id = auth.uid();
+
+  -- Delete the auth user
+  DELETE FROM auth.users WHERE id = auth.uid();
+END;
+$$;
+
+-- 7. VERIFICATION
 -- ==============================================
 
 SELECT tablename, rowsecurity AS rls_enabled

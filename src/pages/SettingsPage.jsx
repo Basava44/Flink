@@ -38,7 +38,7 @@ import {
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
-  const { user, supabase, getSocialLinks, getProfileDetails } = useAuth();
+  const { user, supabase, getSocialLinks, getProfileDetails, deleteAccount } = useAuth();
   useDocumentMeta({ title: "Settings", path: "/settings" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -47,6 +47,9 @@ const SettingsPage = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
@@ -1147,7 +1150,7 @@ const SettingsPage = () => {
                           <button
                             type="button"
                             onClick={() => removePlatformEntry(platform.key, idx)}
-                            className={`flex-shrink-0 p-2 rounded-lg transition-all duration-200 active:scale-95 ${
+                            className={`flex-shrink-0 p-2.5 rounded-lg transition-all duration-200 active:scale-95 ${
                               isDark
                                 ? "text-zinc-500 hover:text-red-400 hover:bg-zinc-800"
                                 : "text-zinc-400 hover:text-red-500 hover:bg-zinc-100"
@@ -1415,6 +1418,42 @@ const SettingsPage = () => {
             </div>
           </div>
 
+          {/* Delete Account Section */}
+          <div
+            className={`p-6 rounded-2xl border ${
+              isDark
+                ? "bg-red-950/20 border-red-900/50"
+                : "bg-red-50 border-red-200"
+            }`}
+          >
+            <h2
+              className={`text-lg font-semibold mb-2 ${
+                isDark ? "text-red-400" : "text-red-700"
+              }`}
+            >
+              Delete Account
+            </h2>
+            <p
+              className={`text-sm mb-4 ${
+                isDark ? "text-red-300/70" : "text-red-600/80"
+              }`}
+            >
+              Permanently delete your account, profile, social links, and avatar.
+              This action cannot be undone.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 active:scale-95 ${
+                isDark
+                  ? "bg-red-900/50 text-red-300 border border-red-800 hover:bg-red-900 hover:text-red-200"
+                  : "bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 hover:text-red-800"
+              }`}
+            >
+              Delete my account
+            </button>
+          </div>
+
           {/* Error Message */}
           {error && (
             <div
@@ -1433,10 +1472,83 @@ const SettingsPage = () => {
         </form>
       </div>
 
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}
+          />
+          <div
+            className={`relative w-full max-w-sm rounded-2xl p-6 shadow-2xl ${
+              isDark ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-zinc-200"
+            }`}
+          >
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? "text-red-400" : "text-red-700"}`}>
+              Delete your account?
+            </h3>
+            <p className={`text-sm mb-4 ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+              This will permanently delete your profile, social links, and avatar. This cannot be undone.
+            </p>
+            <p className={`text-sm mb-3 ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+              Type <strong className={isDark ? "text-zinc-200" : "text-zinc-900"}>delete</strong> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="delete"
+              className={`w-full px-4 py-2.5 rounded-xl text-sm mb-4 outline-none transition-all duration-200 ${
+                isDark
+                  ? "bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-600 focus:border-red-800"
+                  : "bg-zinc-50 border border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-red-300"
+              }`}
+            />
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  isDark
+                    ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                    : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteConfirmText !== "delete" || deleting}
+                onClick={async () => {
+                  setDeleting(true);
+                  const { error } = await deleteAccount();
+                  if (error) {
+                    setDeleting(false);
+                    setShowDeleteModal(false);
+                    setDeleteConfirmText("");
+                    setError("Failed to delete account. Please try again.");
+                  } else {
+                    navigate("/");
+                  }
+                }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
+                  isDark
+                    ? "bg-red-900 text-red-200 hover:bg-red-800 disabled:hover:bg-red-900"
+                    : "bg-red-600 text-white hover:bg-red-700 disabled:hover:bg-red-600"
+                }`}
+              >
+                {deleting ? "Deleting..." : "Delete account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Smart Floating Action Bar */}
       {hasChanges && (
         <div
           className={`fixed bottom-6 left-4 right-4 z-20 transform transition-all duration-300 ease-out translate-y-0 opacity-100`}
+          style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           <div
             className={`backdrop-blur-lg rounded-2xl shadow-2xl border ${

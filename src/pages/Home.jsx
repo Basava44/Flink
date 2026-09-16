@@ -208,7 +208,7 @@ function Home() {
             ].map(({ icon: Icon, color }, i) => (
               <div
                 key={i}
-                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-sm`}
+                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-sm`}
               >
                 <Icon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white" />
               </div>
@@ -339,9 +339,23 @@ function Home() {
               - All your socials, one link
             </span>
           </div>
-          <p className={`text-xs ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
-            &copy; {new Date().getFullYear()} Flink. All rights reserved.
-          </p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate("/privacy")}
+              className={`text-xs transition-colors ${isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"}`}
+            >
+              Privacy
+            </button>
+            <button
+              onClick={() => navigate("/terms")}
+              className={`text-xs transition-colors ${isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"}`}
+            >
+              Terms
+            </button>
+            <p className={`text-xs ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
+              &copy; {new Date().getFullYear()} Flink
+            </p>
+          </div>
         </div>
       </footer>
     </div>

@@ -16,6 +16,9 @@ import {
   BookOpen,
   Music,
   Settings,
+  Star,
+  PhoneCall,
+  Globe,
 } from "lucide-react";
 
 const PLATFORM_META = {
@@ -38,22 +41,18 @@ const PLATFORM_META = {
   threads: { icon: Twitter, label: "Threads", color: "from-gray-800 to-black" },
 };
 
+const CONTACT_PLATFORMS = new Set(["email", "phone", "whatsapp", "telegram"]);
+const FEATURED_PLATFORMS = new Set(["instagram", "twitter", "linkedin", "youtube", "facebook", "threads"]);
+
 const formatUrlForClick = (url, platform) => {
-  if (platform === "email") {
-    return `mailto:${url.replace(/^mailto:/, "").trim()}`;
-  }
-  if (platform === "phone") {
-    return url.startsWith("tel:") ? url : `tel:${url}`;
-  }
+  if (platform === "email") return `mailto:${url.replace(/^mailto:/, "").trim()}`;
+  if (platform === "phone") return url.startsWith("tel:") ? url : `tel:${url}`;
   if (platform === "whatsapp") {
-    if (url.includes("wa.me/") || url.includes("whatsapp.com")) {
+    if (url.includes("wa.me/") || url.includes("whatsapp.com"))
       return url.startsWith("http") ? url : `https://${url}`;
-    }
     return `https://wa.me/${url.replace(/[^0-9]/g, "")}`;
   }
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    return url;
-  }
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
   const builders = {
     telegram: (u) => u.includes("t.me/") ? `https://${u}` : `https://t.me/${u.replace("@", "")}`,
     instagram: (u) => `https://instagram.com/${u.replace("@", "")}`,
@@ -69,21 +68,133 @@ const formatUrlForClick = (url, platform) => {
   return builders[platform] ? builders[platform](url) : `https://${url}`;
 };
 
-// Group consecutive same-platform links together
-const groupLinksByPlatform = (links) => {
-  const groups = [];
-  let i = 0;
-  while (i < links.length) {
-    const platform = links[i].platform;
-    const group = [links[i]];
-    while (i + 1 < links.length && links[i + 1].platform === platform) {
-      i++;
-      group.push(links[i]);
-    }
-    groups.push(group);
-    i++;
+const formatDisplayUrl = (url, platform) => {
+  const clean = url.replace(/^(mailto:|tel:)/, "").replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/$/, "");
+  if (["instagram", "twitter", "telegram", "threads"].includes(platform)) {
+    const username = clean.includes("/") ? clean.split("/").filter(Boolean).pop() : clean;
+    return `@${username.replace(/^@/, "")}`;
   }
-  return groups;
+  if (platform === "github") {
+    const username = clean.includes("github.com") ? clean.split("github.com/")[1]?.split("/")[0] : clean;
+    return username || clean;
+  }
+  if (platform === "youtube") {
+    const username = clean.includes("youtube.com") ? clean.split("youtube.com/")[1]?.replace(/^@/, "") : clean;
+    return username ? `@${username.replace(/^@/, "")}` : clean;
+  }
+  if (platform === "linkedin") {
+    const match = clean.match(/linkedin\.com\/in\/([^/?#]+)/);
+    return match ? match[1] : clean;
+  }
+  return clean;
+};
+
+const categorizeSocialLinks = (links) => {
+  const contact = [];
+  const featured = [];
+  const elsewhere = [];
+  const platformSection = {};
+
+  links.forEach((link) => {
+    if (CONTACT_PLATFORMS.has(link.platform)) {
+      contact.push(link);
+      return;
+    }
+    if (platformSection[link.platform]) {
+      platformSection[link.platform].push(link);
+      return;
+    }
+    if (FEATURED_PLATFORMS.has(link.platform) && featured.length < 4) {
+      featured.push(link);
+      platformSection[link.platform] = featured;
+    } else {
+      elsewhere.push(link);
+      platformSection[link.platform] = elsewhere;
+    }
+  });
+
+  return { contact, featured, elsewhere };
+};
+
+const LinkCard = ({ link, isDark, index = 0 }) => {
+  const meta = PLATFORM_META[link.platform] || {
+    icon: ExternalLink,
+    label: link.platform,
+    color: "from-zinc-500 to-zinc-600",
+  };
+  const Icon = meta.icon;
+  const clickUrl = formatUrlForClick(link.url, link.platform);
+  const isInternal = ["email", "phone", "whatsapp", "telegram"].includes(link.platform);
+  const displayUrl = formatDisplayUrl(link.url, link.platform);
+
+  return (
+    <a
+      href={clickUrl}
+      target={isInternal ? "_self" : "_blank"}
+      rel={isInternal ? undefined : "noopener noreferrer"}
+      className={`group flex items-center gap-2.5 sm:gap-3 w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all duration-200 active:scale-[0.98] hover:scale-[1.01] ${
+        isDark ? "hover:bg-zinc-800/60" : "hover:bg-zinc-50"
+      }`}
+    >
+      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br ${meta.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <span className={`block font-medium text-[13px] sm:text-sm ${isDark ? "text-zinc-200" : "text-zinc-800"}`}>
+          {meta.label}
+        </span>
+        <span className={`block text-[11px] sm:text-xs truncate mt-0.5 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+          {displayUrl}
+        </span>
+      </div>
+    </a>
+  );
+};
+
+const LinkGrid = ({ links, isDark, indexOffset = 0 }) => {
+  if (links.length === 0) return null;
+  if (links.length === 1) return <LinkCard link={links[0]} isDark={isDark} index={indexOffset} />;
+
+  const isOdd = links.length % 2 !== 0;
+  const gridLinks = isOdd ? links.slice(0, -1) : links;
+  const lastLink = isOdd ? links[links.length - 1] : null;
+
+  return (
+    <>
+      <div className="grid grid-cols-2">
+        {gridLinks.map((link, i) => (
+          <LinkCard key={link.id} link={link} isDark={isDark} index={indexOffset + i} />
+        ))}
+      </div>
+      {lastLink && <LinkCard link={lastLink} isDark={isDark} index={indexOffset + gridLinks.length} />}
+    </>
+  );
+};
+
+const Section = ({ icon: SectionIcon, title, subtitle, children, isDark }) => {
+  if (!children || (Array.isArray(children) && children.length === 0)) return null;
+
+  return (
+    <div className={`rounded-2xl border overflow-hidden ${
+      isDark ? "bg-zinc-900/50 border-zinc-800/60" : "bg-white border-zinc-200/60 shadow-sm"
+    }`}>
+      <div className="px-4 sm:px-5 pt-3.5 pb-1.5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <SectionIcon className={`w-3.5 h-3.5 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
+          <h3 className={`text-xs sm:text-sm font-semibold ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
+            {title}
+          </h3>
+        </div>
+        <span className={`text-[11px] ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
+          {subtitle}
+        </span>
+      </div>
+      <div className="px-1.5 pb-1.5">
+        {children}
+      </div>
+    </div>
+  );
 };
 
 const SocialLinksSection = ({ socialLinks, profileDetails }) => {
@@ -111,6 +222,8 @@ const SocialLinksSection = ({ socialLinks, profileDetails }) => {
     );
   }
 
+  const { contact, featured, elsewhere } = categorizeSocialLinks(socialLinks);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -127,52 +240,39 @@ const SocialLinksSection = ({ socialLinks, profileDetails }) => {
         </button>
       </div>
 
-      <div className="space-y-2">
-        {groupLinksByPlatform(socialLinks).map((group, gi) => (
-          <div key={gi} className={group.length > 1 ? "grid grid-cols-2 gap-2" : ""}>
-            {group.map((link, li) => {
-              const meta = PLATFORM_META[link.platform] || {
-                icon: ExternalLink,
-                label: link.platform,
-                color: "from-zinc-500 to-zinc-600",
-              };
-              const Icon = meta.icon;
-              const clickUrl = formatUrlForClick(link.url, link.platform);
-              const isInternal = ["email", "phone", "whatsapp", "telegram"].includes(link.platform);
+      <div className="space-y-2.5">
+        {featured.length > 0 && (
+          <Section
+            icon={Star}
+            title="Featured"
+            subtitle={`${featured.length} ${featured.length === 1 ? "link" : "links"}`}
+            isDark={isDark}
+          >
+            <LinkGrid links={featured} isDark={isDark} indexOffset={0} />
+          </Section>
+        )}
 
-              return (
-                <a
-                  key={link.id || `${gi}-${li}`}
-                  href={clickUrl}
-                  target={isInternal ? "_self" : "_blank"}
-                  rel={isInternal ? undefined : "noopener noreferrer"}
-                  className={`group flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border transition-all duration-200 active:scale-[0.98] hover:scale-[1.01] hover:shadow-lg ${
-                    isDark
-                      ? "bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/80"
-                      : "bg-white border-zinc-200/80 hover:border-zinc-300 hover:bg-zinc-50"
-                  }`}
-                >
-                  <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${meta.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
-                    <Icon className="w-4 h-4 text-white" />
-                  </div>
+        {contact.length > 0 && (
+          <Section
+            icon={PhoneCall}
+            title="Contact"
+            subtitle={`${contact.length} ${contact.length === 1 ? "link" : "links"}`}
+            isDark={isDark}
+          >
+            <LinkGrid links={contact} isDark={isDark} indexOffset={featured.length} />
+          </Section>
+        )}
 
-                  <div className="flex-1 min-w-0">
-                    <span className={`block font-medium text-sm ${isDark ? "text-zinc-200" : "text-zinc-800"}`}>
-                      {meta.label}
-                    </span>
-                    <span className={`block text-xs truncate ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
-                      {link.url.replace(/^(mailto:|tel:)/, "").replace(/^https?:\/\//, "")}
-                    </span>
-                  </div>
-
-                  <ExternalLink className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0 ${
-                    isDark ? "text-zinc-500" : "text-zinc-400"
-                  }`} />
-                </a>
-              );
-            })}
-          </div>
-        ))}
+        {elsewhere.length > 0 && (
+          <Section
+            icon={Globe}
+            title="Elsewhere"
+            subtitle={`${elsewhere.length} ${elsewhere.length === 1 ? "link" : "links"}`}
+            isDark={isDark}
+          >
+            <LinkGrid links={elsewhere} isDark={isDark} indexOffset={featured.length + contact.length} />
+          </Section>
+        )}
       </div>
     </div>
   );

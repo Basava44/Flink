@@ -1,38 +1,95 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { supabase } from '../lib/supabase';
-import BackgroundPattern from '../components/BackgroundPattern';
 import emailjs from '@emailjs/browser';
-import { 
-  ArrowLeft, 
-  HelpCircle, 
-  Mail, 
-  MessageSquare, 
-  Send, 
+import {
+  ArrowLeft,
+  Sun,
+  Moon,
+  Send,
   CheckCircle,
   AlertCircle,
-  Phone,
-  Clock,
-  FileText
+  ChevronDown,
 } from 'lucide-react';
+
+const faqs = [
+  {
+    question: 'What is Flink?',
+    answer:
+      'Flink is a free link-in-bio service that lets you create a clean, public profile page with all your social links and contact info in one place. Share a single URL and let people find you everywhere.',
+  },
+  {
+    question: 'How do I change my handle?',
+    answer:
+      'Go to Settings from your profile page. You can update your handle in the Profile section. Note that your old URL will stop working once you change it.',
+  },
+  {
+    question: 'How do I delete my account?',
+    answer:
+      'Head to Settings and scroll to the bottom. You will find a "Delete Account" option there. This will permanently remove your profile, social links, and all associated data.',
+  },
+  {
+    question: 'Is Flink free?',
+    answer:
+      'Yes, Flink is completely free to use. There are no premium tiers or hidden charges. You get a full-featured profile page at no cost.',
+  },
+];
+
+function FaqItem({ question, answer, isDark }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      className={`border rounded-xl overflow-hidden transition-colors ${
+        isDark ? 'border-zinc-800' : 'border-zinc-200'
+      }`}
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium transition-colors ${
+          isDark
+            ? 'text-zinc-200 hover:bg-zinc-800/50'
+            : 'text-zinc-800 hover:bg-zinc-50'
+        }`}
+      >
+        {question}
+        <ChevronDown
+          className={`w-4 h-4 flex-shrink-0 ml-3 transition-transform duration-200 ${
+            open ? 'rotate-180' : ''
+          } ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}
+        />
+      </button>
+      {open && (
+        <div
+          className={`px-5 pb-4 text-sm leading-relaxed ${
+            isDark ? 'text-zinc-400' : 'text-zinc-600'
+          }`}
+        >
+          {answer}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const HelpSupportPage = () => {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const { user } = useAuth();
-  useDocumentMeta({ title: "Help & Support", path: "/help" });
+  useDocumentMeta({ title: 'Help & Support', path: '/help' });
+
   const [formData, setFormData] = useState({
     name: user?.user_metadata?.full_name || user?.email || '',
     email: user?.email || '',
     subject: '',
     message: '',
-    priority: 'medium'
+    priority: 'medium',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null); // 'success', 'error', null
+  const [submitStatus, setSubmitStatus] = useState(null);
   const [userProfileHandle, setUserProfileHandle] = useState(null);
 
   // EmailJS Configuration
@@ -41,7 +98,10 @@ const HelpSupportPage = () => {
   const EMAILJS_PUBLIC_KEY = 'p7oUEROenZNCa6crO';
   const SUPPORT_EMAIL = 'karibasava.t.g@gmail.com';
 
-  // Get user's profile handle for navigation
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     const getUserProfileHandle = async () => {
       if (user?.id) {
@@ -51,7 +111,7 @@ const HelpSupportPage = () => {
             .select('handle')
             .eq('user_id', user.id)
             .single();
-          
+
           if (profileData?.handle) {
             setUserProfileHandle(profileData.handle);
           }
@@ -70,10 +130,7 @@ const HelpSupportPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -82,7 +139,6 @@ const HelpSupportPage = () => {
     setSubmitStatus(null);
 
     try {
-      // Prepare email parameters for EmailJS
       const templateParams = {
         from_name: formData.name,
         from_email: formData.email,
@@ -91,11 +147,9 @@ const HelpSupportPage = () => {
         priority: formData.priority,
         message: formData.message,
         user_email: formData.email,
-        // Combine subject and message for better visibility
         reply_to: formData.email,
       };
 
-      // Send email using EmailJS
       const response = await emailjs.send(
         EMAILJS_SERVICE_ID,
         EMAILJS_TEMPLATE_ID,
@@ -104,132 +158,159 @@ const HelpSupportPage = () => {
       );
 
       console.log('Email sent successfully:', response);
-      
-      // Show success message
       setSubmitStatus('success');
-      
-      // Reset form after 3 seconds
+
       setTimeout(() => {
         setFormData({
           name: user?.user_metadata?.full_name || user?.email || '',
           email: user?.email || '',
           subject: '',
           message: '',
-          priority: 'medium'
+          priority: 'medium',
         });
         setSubmitStatus(null);
       }, 3000);
-
     } catch (error) {
       console.error('Error submitting feedback:', error);
       setSubmitStatus('error');
-      alert('Failed to send feedback. Please try again later or contact us directly at ' + SUPPORT_EMAIL);
+      alert(
+        'Failed to send feedback. Please try again later or contact us directly at ' +
+          SUPPORT_EMAIL
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className={`min-h-screen relative ${
-      isDark ? "text-white" : "text-gray-900"
-    }`}>
-      <BackgroundPattern />
-      {/* Header */}
-      <div className={`sticky top-0 z-10 border-b ${
-        isDark 
-          ? "bg-slate-800 border-slate-700" 
-          : "bg-white border-gray-200"
-      }`}>
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleBack}
-              className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                isDark
-                  ? "hover:bg-slate-700 text-gray-300 hover:text-white"
-                  : "hover:bg-gray-100 text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            
-            <div className="flex items-center space-x-2">
-              <HelpCircle className={`w-5 h-5 ${
-                isDark ? "text-gray-400" : "text-gray-500"
-              }`} />
-              <h1 className={`text-lg font-semibold ${
-                isDark ? "text-white" : "text-gray-800"
-              }`}>
-                Feedback Form
-              </h1>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div
+      className={`min-h-screen ${
+        isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-white text-zinc-900'
+      }`}
+    >
+      {/* Nav */}
+      <nav className="max-w-3xl mx-auto px-5 py-5 flex items-center justify-between">
+        <button onClick={handleBack} className="flex items-center gap-2">
+          <ArrowLeft
+            className={`w-4 h-4 ${
+              isDark ? 'text-zinc-500' : 'text-zinc-400'
+            }`}
+          />
+          <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+            Flink
+          </span>
+        </button>
+        <button
+          onClick={toggleTheme}
+          className={`p-2 rounded-lg transition-colors ${
+            isDark
+              ? 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+              : 'text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100'
+          }`}
+        >
+          {isDark ? (
+            <Sun className="w-4 h-4" />
+          ) : (
+            <Moon className="w-4 h-4" />
+          )}
+        </button>
+      </nav>
 
       {/* Content */}
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <div className="max-w-3xl mx-auto px-5 pt-8 pb-20">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
+          Help & Support
+        </h1>
+        <p
+          className={`text-sm mb-12 ${
+            isDark ? 'text-zinc-600' : 'text-zinc-400'
+          }`}
+        >
+          Find answers or get in touch
+        </p>
 
-          {/* Feedback Form */}
-        <div className={`p-6 rounded-2xl ${
-          isDark 
-            ? "bg-slate-800 border border-slate-700" 
-            : "bg-white border border-gray-200"
-        }`}>
-          <div className="text-center mb-8">
-            <div className={`inline-flex p-4 rounded-full mb-4 ${
-              isDark ? "bg-blue-500/20" : "bg-blue-100"
-            }`}>
-              <HelpCircle className={`w-8 h-8 ${
-                isDark ? "text-blue-400" : "text-blue-600"
-              }`} />
-            </div>
-            <h2 className={`text-2xl font-bold mb-2 ${
-              isDark ? "text-white" : "text-gray-800"
-            }`}>
-              Share Your Feedback
-            </h2>
-            <p className={`text-sm ${
-              isDark ? "text-gray-400" : "text-gray-600"
-            }`}>
-              Help us improve by sharing your thoughts and suggestions
-            </p>
+        {/* FAQ Section */}
+        <div className="mb-14">
+          <h2
+            className={`text-lg font-semibold mb-4 ${
+              isDark ? 'text-zinc-100' : 'text-zinc-900'
+            }`}
+          >
+            Frequently asked questions
+          </h2>
+          <div className="space-y-3">
+            {faqs.map((faq) => (
+              <FaqItem
+                key={faq.question}
+                question={faq.question}
+                answer={faq.answer}
+                isDark={isDark}
+              />
+            ))}
           </div>
+        </div>
+
+        {/* Contact Form */}
+        <div
+          className={`rounded-2xl border p-6 sm:p-8 ${
+            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+          }`}
+        >
+          <h2
+            className={`text-lg font-semibold mb-1 ${
+              isDark ? 'text-zinc-100' : 'text-zinc-900'
+            }`}
+          >
+            Send us a message
+          </h2>
+          <p
+            className={`text-sm mb-6 ${
+              isDark ? 'text-zinc-500' : 'text-zinc-500'
+            }`}
+          >
+            Have a question or suggestion? We would love to hear from you.
+          </p>
 
           {/* Status Messages */}
           {submitStatus === 'success' && (
-            <div className={`mb-6 p-4 rounded-lg flex items-center space-x-3 ${
-              isDark 
-                ? "bg-green-900/20 border border-green-800 text-green-300" 
-                : "bg-green-50 border border-green-200 text-green-700"
-            }`}>
+            <div
+              className={`mb-6 p-4 rounded-xl flex items-center gap-3 text-sm ${
+                isDark
+                  ? 'bg-green-900/20 border border-green-800 text-green-300'
+                  : 'bg-green-50 border border-green-200 text-green-700'
+              }`}
+            >
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              <p className="text-sm">
-                Your feedback has been sent successfully! Thank you for helping us improve.
+              <p>
+                Your message has been sent successfully. Thank you for reaching
+                out.
               </p>
             </div>
           )}
 
           {submitStatus === 'error' && (
-            <div className={`mb-6 p-4 rounded-lg flex items-center space-x-3 ${
-              isDark 
-                ? "bg-red-900/20 border border-red-800 text-red-300" 
-                : "bg-red-50 border border-red-200 text-red-700"
-            }`}>
+            <div
+              className={`mb-6 p-4 rounded-xl flex items-center gap-3 text-sm ${
+                isDark
+                  ? 'bg-red-900/20 border border-red-800 text-red-300'
+                  : 'bg-red-50 border border-red-200 text-red-700'
+              }`}
+            >
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <p className="text-sm">
-                There was an error sending your feedback. Please try again.
-              </p>
+              <p>There was an error sending your message. Please try again.</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Subject */}
             <div>
-              <label htmlFor="subject" className={`block text-sm font-medium mb-2 ${
-                isDark ? "text-gray-200" : "text-gray-700"
-              }`}>
-                Subject *
+              <label
+                htmlFor="subject"
+                className={`block text-sm font-medium mb-2 ${
+                  isDark ? 'text-zinc-300' : 'text-zinc-700'
+                }`}
+              >
+                Subject
               </label>
               <input
                 type="text"
@@ -238,21 +319,24 @@ const HelpSupportPage = () => {
                 value={formData.subject}
                 onChange={handleInputChange}
                 required
-                className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
+                className={`w-full px-4 py-3 rounded-xl text-sm focus:outline-none transition-colors ${
                   isDark
-                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-blue-500"
-                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500"
+                    ? 'bg-zinc-800/50 border border-zinc-700 text-zinc-100 placeholder-zinc-600 focus:border-zinc-500'
+                    : 'bg-zinc-50 border border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400'
                 }`}
-                placeholder="Briefly describe your feedback or suggestion..."
+                placeholder="What is this about?"
               />
             </div>
 
             {/* Message */}
             <div>
-              <label htmlFor="message" className={`block text-sm font-medium mb-2 ${
-                isDark ? "text-gray-200" : "text-gray-700"
-              }`}>
-                Message *
+              <label
+                htmlFor="message"
+                className={`block text-sm font-medium mb-2 ${
+                  isDark ? 'text-zinc-300' : 'text-zinc-700'
+                }`}
+              >
+                Message
               </label>
               <textarea
                 id="message"
@@ -261,56 +345,61 @@ const HelpSupportPage = () => {
                 onChange={handleInputChange}
                 required
                 rows={6}
-                className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 resize-none ${
+                className={`w-full px-4 py-3 rounded-xl text-sm focus:outline-none transition-colors resize-none ${
                   isDark
-                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:border-blue-500"
-                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500"
+                    ? 'bg-zinc-800/50 border border-zinc-700 text-zinc-100 placeholder-zinc-600 focus:border-zinc-500'
+                    : 'bg-zinc-50 border border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400'
                 }`}
-                placeholder="Share your thoughts, suggestions, or feedback in detail..."
+                placeholder="Tell us more..."
               />
             </div>
 
             {/* Submit Button */}
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`w-full px-8 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
-                  isSubmitting
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-[1.02] shadow-lg hover:shadow-xl"
-                }`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Sending...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    <span>Send Feedback</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full px-8 py-3 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                isSubmitting
+                  ? isDark
+                    ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                    : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                  : isDark
+                    ? 'bg-white text-zinc-900 hover:bg-zinc-200'
+                    : 'bg-zinc-900 text-white hover:bg-zinc-800'
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <span>Sending...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Send Message</span>
+                </>
+              )}
+            </button>
           </form>
         </div>
       </div>
 
-      {/* Footer with Flink Branding */}
-      <div className="mt-6 mb-2">
-        <div className={`text-center ${
-          isDark ? "text-gray-500" : "text-gray-400"
-        }`}>
-          <div className="text-xs opacity-60">
-            Made with ❤️ by <span className="font-semibold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Flink</span>
-          </div>
-          <div className="text-xs opacity-50 mt-1">
-            © 2026 Flink. All rights reserved.
-          </div>
+      {/* Footer */}
+      <footer
+        className={`py-8 px-5 border-t ${
+          isDark ? 'border-zinc-800' : 'border-zinc-100'
+        }`}
+      >
+        <div className="max-w-3xl mx-auto text-center">
+          <p
+            className={`text-xs ${
+              isDark ? 'text-zinc-700' : 'text-zinc-400'
+            }`}
+          >
+            &copy; {new Date().getFullYear()} Flink. All rights reserved.
+          </p>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

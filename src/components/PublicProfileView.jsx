@@ -651,7 +651,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
       {!user && (
         <div className={`fixed bottom-0 inset-x-0 z-20 border-t backdrop-blur-lg ${
           isDark ? "bg-zinc-950/90 border-zinc-800" : "bg-white/90 border-zinc-200"
-        }`}>
+        }`} style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
           <div className="max-w-md mx-auto px-5 py-3 flex items-center justify-between">
             <div className={`text-sm ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
               <span className="font-semibold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">Flink</span>
