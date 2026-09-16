@@ -36,10 +36,12 @@ CREATE TABLE IF NOT EXISTS social_links (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   platform TEXT NOT NULL,
   url TEXT NOT NULL,
+  label TEXT,
   display_order INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  -- Multiple links per platform allowed (max 3 enforced in app)
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+  -- Multiple links per platform allowed (max enforced in app)
+  -- label is used for custom links (platform='custom') to store user-provided title
 );
 
 -- 2. INDEXES

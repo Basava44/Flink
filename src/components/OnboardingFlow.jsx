@@ -16,7 +16,7 @@ const OnboardingFlow = ({ onComplete, userName, userEmail, userId }) => {
   const [error, setError] = useState('');
 
   const handleSocialHandlesNext = (data) => {
-    setFormData(prev => ({ ...prev, socialLinks: data.socialLinks }));
+    setFormData(prev => ({ ...prev, socialLinks: data.socialLinks, customLinks: data.customLinks || [] }));
     setCurrentStep(2);
   };
 
@@ -45,15 +45,30 @@ const OnboardingFlow = ({ onComplete, userName, userEmail, userId }) => {
         ([, url]) => url && url.trim() !== ''
       );
 
-      if (nonEmptySocialLinks.length > 0) {
-        const socialLinksData = nonEmptySocialLinks.map(([platform, url]) => ({
-          user_id: formData.userId,
-          platform,
-          url: url.trim(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }));
+      const socialLinksData = nonEmptySocialLinks.map(([platform, url]) => ({
+        user_id: formData.userId,
+        platform,
+        url: url.trim(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
 
+      // Add custom links
+      if (formData.customLinks?.length > 0) {
+        formData.customLinks.forEach((link, idx) => {
+          socialLinksData.push({
+            user_id: formData.userId,
+            platform: 'custom',
+            url: link.url.trim(),
+            label: link.label.trim(),
+            display_order: idx,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        });
+      }
+
+      if (socialLinksData.length > 0) {
         const { error: socialLinksError } = await supabase
           .from('social_links')
           .insert(socialLinksData);

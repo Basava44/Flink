@@ -33,6 +33,7 @@ import {
   Music,
   Plus,
   Trash2,
+  Link,
 } from "lucide-react";
 
 const SettingsPage = () => {
@@ -63,6 +64,9 @@ const SettingsPage = () => {
 
   // Convert social links array to object format for editing
   const [socialLinksData, setSocialLinksData] = useState({});
+  // Custom links (platform="custom") with label + url
+  const [customLinks, setCustomLinks] = useState([]);
+  const [originalCustomLinks, setOriginalCustomLinks] = useState([]);
   // Profile details for editing
   const [profileData, setProfileData] = useState({
     bio: "",
@@ -211,13 +215,20 @@ const SettingsPage = () => {
           // Initialize form data - group by platform as arrays
           if (socialData) {
             const linksObject = {};
+            const customs = [];
             socialData.forEach((link) => {
-              if (!linksObject[link.platform]) {
-                linksObject[link.platform] = [];
+              if (link.platform === "custom") {
+                customs.push({ label: link.label || "", url: link.url });
+              } else {
+                if (!linksObject[link.platform]) {
+                  linksObject[link.platform] = [];
+                }
+                linksObject[link.platform].push(link.url);
               }
-              linksObject[link.platform].push(link.url);
             });
             setSocialLinksData(linksObject);
+            setCustomLinks(customs);
+            setOriginalCustomLinks(JSON.parse(JSON.stringify(customs)));
           }
 
           if (profileData) {
@@ -304,12 +315,16 @@ const SettingsPage = () => {
       const profileUrlChanged = profileUrl !== originalProfileUrl;
       // Check if display name changed
       const displayNameChanged = displayName !== originalDisplayName;
+      // Check if custom links changed
+      const customLinksChanged =
+        JSON.stringify(customLinks) !== JSON.stringify(originalCustomLinks);
 
       const hasChanges =
         socialLinksChanged ||
         profileChanged ||
         profileUrlChanged ||
-        displayNameChanged;
+        displayNameChanged ||
+        customLinksChanged;
       setHasChanges(hasChanges);
     };
 
@@ -323,6 +338,8 @@ const SettingsPage = () => {
     originalProfileUrl,
     displayName,
     originalDisplayName,
+    customLinks,
+    originalCustomLinks,
   ]);
 
   const handleInputChange = (platform, value, index = 0) => {
@@ -349,6 +366,23 @@ const SettingsPage = () => {
       return { ...prev, [platform]: arr.length > 0 ? arr : [""] };
     });
     setHasChanges(true);
+  };
+
+  const addCustomLink = () => {
+    if (customLinks.length >= 10) return;
+    setCustomLinks((prev) => [...prev, { label: "", url: "" }]);
+  };
+
+  const updateCustomLink = (index, field, value) => {
+    setCustomLinks((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const removeCustomLink = (index) => {
+    setCustomLinks((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleProfileChange = (field, value) => {
@@ -523,14 +557,20 @@ const SettingsPage = () => {
 
       // Check if social links changed - compare as grouped arrays
       const currentSocialLinks = {};
+      const currentCustomLinks = [];
       socialLinks.forEach((link) => {
-        if (!currentSocialLinks[link.platform]) {
-          currentSocialLinks[link.platform] = [];
+        if (link.platform === "custom") {
+          currentCustomLinks.push({ label: link.label || "", url: link.url });
+        } else {
+          if (!currentSocialLinks[link.platform]) {
+            currentSocialLinks[link.platform] = [];
+          }
+          currentSocialLinks[link.platform].push(link.url);
         }
-        currentSocialLinks[link.platform].push(link.url);
       });
       socialLinksChanged =
-        JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData);
+        JSON.stringify(currentSocialLinks) !== JSON.stringify(socialLinksData) ||
+        JSON.stringify(currentCustomLinks) !== JSON.stringify(customLinks);
 
       // Check if profile details changed
       const currentProfileData = {
@@ -566,6 +606,23 @@ const SettingsPage = () => {
               });
             }
           });
+        });
+
+        // Add custom links
+        customLinks.forEach((link, idx) => {
+          const trimmedUrl = link.url?.trim() || "";
+          const trimmedLabel = link.label?.trim() || "";
+          if (trimmedUrl && trimmedLabel) {
+            linksToInsert.push({
+              user_id: user.id,
+              platform: "custom",
+              url: trimmedUrl,
+              label: trimmedLabel,
+              display_order: idx,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+          }
         });
 
         // Delete all existing social links for this user first
@@ -1169,6 +1226,99 @@ const SettingsPage = () => {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Custom Links */}
+            <div className={`mt-6 pt-6 border-t ${isDark ? "border-zinc-800" : "border-gray-200"}`}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className={`text-base font-semibold ${isDark ? "text-white" : "text-gray-800"}`}>
+                    Custom Links
+                  </h3>
+                  <p className={`text-xs mt-0.5 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+                    Add a resume, portfolio, or any other link
+                  </p>
+                </div>
+                {customLinks.length < 10 && (
+                  <button
+                    type="button"
+                    onClick={addCustomLink}
+                    className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-200 active:scale-95 ${
+                      isDark
+                        ? "text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700"
+                        : "text-zinc-700 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200"
+                    }`}
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add link
+                  </button>
+                )}
+              </div>
+
+              {customLinks.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={addCustomLink}
+                  className={`w-full py-4 rounded-xl border-2 border-dashed transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
+                    isDark
+                      ? "border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-400"
+                      : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500"
+                  }`}
+                >
+                  <Link className="w-4 h-4" />
+                  Add a custom link
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  {customLinks.map((link, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex items-start gap-2 p-3 rounded-xl border ${
+                        isDark ? "bg-zinc-800/30 border-zinc-800" : "bg-gray-50 border-gray-200"
+                      }`}
+                    >
+                      <div className={`mt-2.5 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+                        <Link className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="text"
+                          value={link.label}
+                          onChange={(e) => updateCustomLink(idx, "label", e.target.value)}
+                          className={`w-full px-3 py-2 rounded-lg text-sm focus:outline-none transition-all duration-200 ${
+                            isDark
+                              ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:border-zinc-500"
+                              : "bg-white border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                          }`}
+                          placeholder="Label (e.g. Resume, Portfolio)"
+                        />
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(e) => updateCustomLink(idx, "url", e.target.value)}
+                          className={`w-full px-3 py-2 rounded-lg text-sm focus:outline-none transition-all duration-200 ${
+                            isDark
+                              ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:border-zinc-500"
+                              : "bg-white border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                          }`}
+                          placeholder="https://example.com/resume.pdf"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeCustomLink(idx)}
+                        className={`mt-2.5 flex-shrink-0 p-1.5 rounded-lg transition-all duration-200 active:scale-95 ${
+                          isDark
+                            ? "text-zinc-500 hover:text-red-400 hover:bg-zinc-800"
+                            : "text-zinc-400 hover:text-red-500 hover:bg-zinc-100"
+                        }`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

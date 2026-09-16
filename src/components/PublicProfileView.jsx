@@ -124,6 +124,12 @@ const categorizeSocialLinks = (links) => {
   const platformSection = {};
 
   links.forEach((link) => {
+    // Custom links always go to elsewhere
+    if (link.platform === "custom") {
+      elsewhere.push(link);
+      return;
+    }
+
     if (CONTACT_PLATFORMS.has(link.platform)) {
       contact.push(link);
       return;
@@ -202,15 +208,22 @@ const generateVCard = (profileData, socialLinks) => {
 };
 
 const LinkCard = ({ link, isDark, index = 0 }) => {
-  const meta = PLATFORM_META[link.platform] || {
-    icon: ExternalLink,
-    label: link.platform,
-    color: "from-zinc-500 to-zinc-600",
-  };
+  const isCustom = link.platform === "custom";
+  const meta = isCustom
+    ? { icon: ExternalLink, label: link.label || "Link", color: "from-violet-500 to-purple-600" }
+    : PLATFORM_META[link.platform] || {
+        icon: ExternalLink,
+        label: link.platform,
+        color: "from-zinc-500 to-zinc-600",
+      };
   const Icon = meta.icon;
-  const clickUrl = formatUrlForClick(link.url, link.platform);
+  const clickUrl = isCustom
+    ? (link.url.startsWith("http") ? link.url : `https://${link.url}`)
+    : formatUrlForClick(link.url, link.platform);
   const isInternal = ["email", "phone", "whatsapp", "telegram"].includes(link.platform);
-  const displayUrl = formatDisplayUrl(link.url, link.platform);
+  const displayUrl = isCustom
+    ? link.url.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/$/, "")
+    : formatDisplayUrl(link.url, link.platform);
 
   return (
     <a

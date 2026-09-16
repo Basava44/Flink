@@ -3,6 +3,7 @@ import { useTheme } from '../hooks/useTheme';
 import {
   Mail, Phone, Instagram, Twitter, Linkedin, Github, Youtube,
   Facebook, MessageCircle, Gamepad2, Send, BookOpen, Music, Link2,
+  Plus, Trash2, Link,
 } from 'lucide-react';
 
 const PLATFORMS = [
@@ -33,6 +34,7 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
     defaults.email = initialData.email || userEmail || '';
     return defaults;
   });
+  const [customLinks, setCustomLinks] = useState(initialData.customLinks || []);
 
   useEffect(() => {
     setSocialLinks(prev => {
@@ -40,18 +42,37 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
       PLATFORMS.forEach(p => { updated[p.key] = initialData[p.key] || (p.key === 'email' ? userEmail : '') || prev[p.key]; });
       return updated;
     });
+    if (initialData.customLinks) setCustomLinks(initialData.customLinks);
   }, [initialData, userEmail]);
 
   const handleInputChange = (platform, value) => {
     setSocialLinks(prev => ({ ...prev, [platform]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onNext({ socialLinks });
+  const addCustomLink = () => {
+    if (customLinks.length >= 5) return;
+    setCustomLinks(prev => [...prev, { label: '', url: '' }]);
   };
 
-  const filledCount = Object.values(socialLinks).filter(v => v.trim() !== '').length;
+  const updateCustomLink = (index, field, value) => {
+    setCustomLinks(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const removeCustomLink = (index) => {
+    setCustomLinks(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onNext({ socialLinks, customLinks: customLinks.filter(l => l.label.trim() && l.url.trim()) });
+  };
+
+  const filledCount = Object.values(socialLinks).filter(v => v.trim() !== '').length
+    + customLinks.filter(l => l.label.trim() && l.url.trim()).length;
 
   const inputClass = `w-full pl-10 pr-4 py-2.5 rounded-xl text-sm transition-all duration-200 outline-none ${
     isDark
@@ -167,6 +188,80 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Custom Links */}
+              <div className={`mt-6 pt-5 border-t ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className={`text-sm font-medium ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
+                    Custom links
+                  </p>
+                  {customLinks.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={addCustomLink}
+                      className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg transition-all duration-200 active:scale-95 ${
+                        isDark
+                          ? "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                          : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
+                      }`}
+                    >
+                      <Plus className="w-3 h-3" />
+                      Add
+                    </button>
+                  )}
+                </div>
+                {customLinks.length === 0 ? (
+                  <button
+                    type="button"
+                    onClick={addCustomLink}
+                    className={`w-full py-3 rounded-xl border border-dashed text-xs transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                      isDark
+                        ? "border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-400"
+                        : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500"
+                    }`}
+                  >
+                    <Link className="w-3.5 h-3.5" />
+                    Add a resume, portfolio, or other link
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    {customLinks.map((link, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <div className={`${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+                          <Link className="w-4 h-4" />
+                        </div>
+                        <input
+                          type="text"
+                          value={link.label}
+                          onChange={(e) => updateCustomLink(idx, 'label', e.target.value)}
+                          className={inputClass}
+                          placeholder="Label"
+                          style={{ paddingLeft: '0.75rem' }}
+                        />
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(e) => updateCustomLink(idx, 'url', e.target.value)}
+                          className={inputClass}
+                          placeholder="https://..."
+                          style={{ paddingLeft: '0.75rem' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeCustomLink(idx)}
+                          className={`flex-shrink-0 p-1.5 rounded-lg transition-all duration-200 active:scale-95 ${
+                            isDark
+                              ? "text-zinc-500 hover:text-red-400"
+                              : "text-zinc-400 hover:text-red-500"
+                          }`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
