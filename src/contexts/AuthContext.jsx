@@ -262,41 +262,6 @@ export const AuthProvider = ({ children }) => {
         return { data: null, error };
       }
 
-      // Only add email as a social link for OAuth users (not email/password users)
-      const isOAuthUser =
-        user.app_metadata?.provider && user.app_metadata.provider !== "email";
-
-      if (user.email && isOAuthUser) {
-        try {
-          const { data: existingEmailLink } = await supabase
-            .from("social_links")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("platform", "email")
-            .single();
-
-          if (!existingEmailLink) {
-            const { error: socialLinkError } = await supabase
-              .from("social_links")
-              .insert([
-                {
-                  user_id: user.id,
-                  platform: "email",
-                  url: `mailto:${user.email}`,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                },
-              ]);
-
-            if (socialLinkError) {
-              console.error("Error adding email social link:", socialLinkError);
-            }
-          }
-        } catch (err) {
-          console.error("Unexpected error adding email social link:", err);
-        }
-      }
-
       return { data, error: null };
     } catch (err) {
       console.error("Unexpected error adding user to database:", err);

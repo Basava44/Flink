@@ -84,6 +84,7 @@ const HelpSupportPage = () => {
   const [formData, setFormData] = useState({
     name: user?.user_metadata?.full_name || user?.email || '',
     email: user?.email || '',
+    type: 'question',
     subject: '',
     message: '',
     priority: 'medium',
@@ -143,7 +144,8 @@ const HelpSupportPage = () => {
         from_name: formData.name,
         from_email: formData.email,
         to_email: SUPPORT_EMAIL,
-        subject: formData.subject,
+        subject: `[${formData.type.replace('_', ' ').toUpperCase()}] ${formData.subject}`,
+        type: formData.type,
         priority: formData.priority,
         message: formData.message,
         user_email: formData.email,
@@ -164,6 +166,7 @@ const HelpSupportPage = () => {
         setFormData({
           name: user?.user_metadata?.full_name || user?.email || '',
           email: user?.email || '',
+          type: 'question',
           subject: '',
           message: '',
           priority: 'medium',
@@ -302,6 +305,34 @@ const HelpSupportPage = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Type */}
+            <div>
+              <label
+                htmlFor="type"
+                className={`block text-sm font-medium mb-2 ${
+                  isDark ? 'text-zinc-300' : 'text-zinc-700'
+                }`}
+              >
+                What is this about?
+              </label>
+              <select
+                id="type"
+                name="type"
+                value={formData.type}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-3 rounded-xl text-sm focus:outline-none transition-colors appearance-none ${
+                  isDark
+                    ? 'bg-zinc-800/50 border border-zinc-700 text-zinc-100 focus:border-zinc-500'
+                    : 'bg-zinc-50 border border-zinc-200 text-zinc-900 focus:border-zinc-400'
+                }`}
+              >
+                <option value="question">Question</option>
+                <option value="bug_report">Bug Report</option>
+                <option value="feature_request">Feature Request</option>
+                <option value="feedback">General Feedback</option>
+              </select>
+            </div>
+
             {/* Subject */}
             <div>
               <label

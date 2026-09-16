@@ -24,6 +24,7 @@ import {
   QrCode,
   X,
   Download,
+  HelpCircle,
 } from "lucide-react";
 import QRCodeImg from "../components/QRCode";
 
@@ -347,6 +348,14 @@ function ProfilePage() {
               }`}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => navigate("/help")}
+              className={`p-2.5 rounded-lg transition-all duration-200 active:scale-95 ${
+                isDark ? "text-zinc-400 hover:text-white hover:bg-zinc-800" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+              }`}
+            >
+              <HelpCircle className="w-4 h-4" />
             </button>
             <button
               onClick={() => navigate("/settings")}
