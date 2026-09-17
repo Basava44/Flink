@@ -68,6 +68,12 @@ const OnboardingFlow = ({ onComplete, userName, userEmail, userId }) => {
         });
       }
 
+      // Delete any existing social links first (prevents duplicates on re-onboarding)
+      await supabase
+        .from('social_links')
+        .delete()
+        .eq('user_id', formData.userId);
+
       if (socialLinksData.length > 0) {
         const { error: socialLinksError } = await supabase
           .from('social_links')

@@ -182,7 +182,9 @@ function ProfilePage() {
   const handleOnboardingComplete = async () => {
     // Refresh userDetails so first_login is false (prevents onboarding flash)
     await getUserDetails(user.id);
-    hasLoadedData.current = false;
+    // Load fresh data before navigating so links are immediately visible
+    await loadDashboardData();
+    hasLoadedData.current = true;
     // Fetch the newly created profile and redirect to handle URL
     const { data: newProfile } = await supabase
       .from("flink_profiles")
@@ -190,10 +192,9 @@ function ProfilePage() {
       .eq("user_id", user.id)
       .single();
     if (newProfile?.handle) {
+      // Set forceRefresh flag so the profile page re-fetches after navigation
+      localStorage.setItem(`forceRefresh_${user.id}`, "true");
       navigate(`/${newProfile.handle}`, { replace: true });
-    } else {
-      await loadDashboardData();
-      hasLoadedData.current = true;
     }
   };
 
