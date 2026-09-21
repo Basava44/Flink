@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flink - Promotion</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #18181b;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .mobile-frame {
+      width: 405px;
+      height: 812px;
+      background: #ffffff;
+      border-radius: 44px;
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: scale(0.85) translateY(30px);
+      animation: phonePopUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s forwards;
+    }
+
+    .screen-content {
+      width: 100%;
+      height: 100%;
+      padding: 24px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #fdf2f8, #ede9fe, #e0f2fe, #fdf2f8);
+      background-size: 300% 300%;
+      animation: gradientShift 6s ease infinite;
+      transition: background 0.8s ease;
+    }
+
+    .screen-content.dark {
+      background: #18181b;
+      animation: none;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* === SCENE 1: Hi === */
+    .hi-text {
+      position: absolute;
+      font-size: 72px;
+      font-family: 'Pacifico', cursive;
+      font-weight: 400;
+      color: #18181b;
+      opacity: 0;
+      transform: scale(0);
+      z-index: 5;
+    }
+
+    /* === SCENE 2: Question bubbles === */
+    .question-bubble {
+      position: absolute;
+      padding: 12px 20px;
+      border-radius: 20px;
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      opacity: 0;
+      transform: scale(0);
+      z-index: 3;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .question-bubble .q-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      padding: 5px;
+    }
+
+    .question-bubble .q-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* Floating bob animation after pop-in */
+    @keyframes floatBob1 {
+      0%, 100% { translate: 0 0; }
+      50% { translate: 0 -6px; }
+    }
+    @keyframes floatBob2 {
+      0%, 100% { translate: 0 0; }
+      50% { translate: 0 6px; }
+    }
+    @keyframes floatBob3 {
+      0%, 100% { translate: 0 0; }
+      33% { translate: 4px -4px; }
+      66% { translate: -4px 3px; }
+    }
+
+    .q1  { background: #fce7f3; color: #be185d; top: 6%;  left: 8%; }
+    .q2  { background: #e0e7ff; color: #4338ca; top: 14%; right: 6%; }
+    .q7  { background: #e8f5e9; color: #2e7d32; top: 23%; left: 10%; font-size: 12px; padding: 8px 14px; }
+    .q3  { background: #dbeafe; color: #1d4ed8; top: 31%; right: 5%; }
+    .q9  { background: #fef9c3; color: #854d0e; top: 40%; left: 6%; }
+    .q4  { background: #fef3c7; color: #b45309; top: 49%; right: 8%; }
+    .q10 { background: #f0fdf4; color: #166534; top: 57%; left: 12%; font-size: 12px; padding: 8px 14px; }
+    .q5  { background: #ede9fe; color: #6d28d9; top: 65%; right: 10%; }
+    .q6  { background: #fce4ec; color: #c62828; top: 74%; left: 5%; }
+    .q8  { background: #fff3e0; color: #e65100; top: 83%; right: 6%; font-size: 12px; padding: 8px 14px; }
+
+    /* === SCENE 3: Frustration emoji === */
+    .frustration {
+      position: absolute;
+      font-size: 64px;
+      opacity: 0;
+      transform: scale(0);
+      z-index: 10;
+    }
+
+    /* === SCENE 4: Flink reveal === */
+    .reveal-group {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      z-index: 20;
+    }
+
+    .introducing-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #a1a1aa;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(10px);
+      margin-bottom: 8px;
+    }
+
+    .flink-text {
+      font-size: 80px;
+      font-family: 'Pacifico', cursive;
+      background: linear-gradient(135deg, #ec4899, #a855f7, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      opacity: 0;
+      transform: scale(0);
+      line-height: 1.1;
+    }
+
+    .tagline {
+      font-size: 16px;
+      font-weight: 500;
+      color: #a1a1aa;
+      opacity: 0;
+      transform: translateY(10px);
+      margin-top: 12px;
+    }
+
+    .flink-url {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      opacity: 0;
+      transform: translateY(10px);
+      margin-top: 20px;
+      padding: 10px 28px;
+      background: #27272a;
+      border-radius: 12px;
+    }
+
+    /* === Sparkle particles === */
+    .sparkle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      opacity: 0;
+      z-index: 15;
+    }
+
+    /* === Screen shake === */
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0); }
+      10% { transform: translate(-4px, -2px); }
+      20% { transform: translate(4px, 2px); }
+      30% { transform: translate(-3px, 3px); }
+      40% { transform: translate(3px, -3px); }
+      50% { transform: translate(-2px, 2px); }
+      60% { transform: translate(2px, -1px); }
+      70% { transform: translate(-1px, 1px); }
+    }
+
+    @keyframes phonePopUp {
+      0% { opacity: 0; transform: scale(0.85) translateY(30px); }
+      60% { opacity: 1; transform: scale(1.02) translateY(-5px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes tadaPop {
+      0% { opacity: 0; transform: scale(0) rotate(-12deg); }
+      50% { opacity: 1; transform: scale(1.3) rotate(5deg); }
+      70% { transform: scale(0.9) rotate(-3deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+
+    @keyframes bubblePop {
+      0% { opacity: 0; transform: scale(0) rotate(var(--rot, 0deg)); }
+      60% { opacity: 1; transform: scale(1.1) rotate(var(--rot, 0deg)); }
+      100% { opacity: 1; transform: scale(1) rotate(var(--rot, 0deg)); }
+    }
+
+    @keyframes collapseToCenter {
+      0% { opacity: 1; }
+      100% { opacity: 0; top: 50% !important; left: 50% !important; right: auto !important; transform: translate(-50%, -50%) scale(0) !important; }
+    }
+
+    @keyframes emojiPop {
+      0% { opacity: 0; transform: scale(0) rotate(-20deg); }
+      50% { opacity: 1; transform: scale(1.4) rotate(10deg); }
+      70% { transform: scale(0.85) rotate(-5deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      100% { opacity: 0; transform: scale(0.5); }
+    }
+
+    @keyframes flinkBurst {
+      0% { opacity: 0; transform: scale(0); }
+      50% { opacity: 1; transform: scale(1.2); }
+      70% { transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes sparkleBurst {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+      30% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1); }
+      100% { opacity: 0; transform: translate(calc(var(--tx) * 2), calc(var(--ty) * 2)) scale(0); }
+    }
+
+    /* === SCENE 6: One link, your whole identity === */
+    .scene-identity {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 40px;
+      opacity: 0;
+      z-index: 25;
+      pointer-events: none;
+      background: linear-gradient(180deg, #fdf2f8 0%, #f5f5f5 30%, #f5f5f5 100%);
+      overflow: hidden;
+    }
+
+    .scene-identity-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      transition: transform 2.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+
+    .scene-identity .headline {
+      font-size: 30px;
+      font-weight: 800;
+      color: #18181b;
+      text-align: center;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .scene-identity .headline em {
+      font-style: normal;
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .url-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      border-radius: 24px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .url-pill .link-icon { width: 16px; height: 16px; }
+
+    .arrow-down {
+      font-size: 20px;
+      color: #a1a1aa;
+      margin-bottom: 10px;
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+
+    /* Profile card - matching real app */
+    .profile-card {
+      width: 100%;
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 20px 18px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    .pc-avatar {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: conic-gradient(#ec4899, #a855f7, #6366f1, #06b6d4, #a855f7, #ec4899);
+      padding: 3px;
+      margin-bottom: 10px;
+      animation: auroraRotate 3s linear infinite;
+    }
+
+    @keyframes auroraRotate {
+      0% { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(360deg); }
+    }
+
+    .pc-avatar-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #d4d4d8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .pc-name { font-size: 18px; font-weight: 700; color: #18181b; }
+    .pc-handle { font-size: 12px; color: #a1a1aa; margin-bottom: 4px; }
+    .pc-bio { font-size: 12px; color: #71717a; margin-bottom: 10px; }
+
+    .pc-meta {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .pc-meta-item {
+      font-size: 10px;
+      color: #71717a;
+      background: #f4f4f5;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pc-buttons {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      margin-bottom: 14px;
+    }
+
+    .pc-btn {
+      flex: 1;
+      padding: 9px 0;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .pc-btn-save {
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      color: #fff;
+    }
+
+    .pc-btn-share {
+      background: #fff;
+      color: #18181b;
+      border: 1px solid #e4e4e7;
+    }
+
+    /* Category sections */
+    .pc-section {
+      width: 100%;
+      background: #f9fafb;
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 8px;
+      opacity: 0;
+      transform: translateY(15px);
+    }
+
+    .pc-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .pc-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #18181b;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pc-section-count {
+      font-size: 10px;
+      color: #a1a1aa;
+    }
+
+    .pc-links-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .pc-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px;
+      border-radius: 10px;
+      background: #fff;
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+
+    .pc-link-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .pc-link-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: #fff;
+    }
+
+    .pc-link-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #18181b;
+      line-height: 1.2;
+    }
+
+    .pc-link-sub {
+      font-size: 9px;
+      color: #a1a1aa;
+    }
+
+    @keyframes linkSlideIn {
+      0% { opacity: 0; transform: translateX(-10px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes sectionIn {
+      0% { opacity: 0; transform: translateY(15px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === SCENE 7: One tap, saved === */
+    .scene-saved {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      z-index: 26;
+      pointer-events: none;
+      background: linear-gradient(160deg, #fdf2f8 0%, #ede9fe 40%, #e0f2fe 100%);
+    }
+
+    .scene-saved .headline {
+      font-size: 32px;
+      font-weight: 800;
+      color: #18181b;
+      text-align: center;
+      line-height: 1.2;
+      margin-bottom: 32px;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .scene-saved .headline em {
+      font-style: normal;
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .icons-ring {
+      position: relative;
+      width: 260px;
+      height: 260px;
+    }
+
+    @keyframes ringFloat1 {
+      0%, 100% { translate: 0 0; }
+      50% { translate: 0 -5px; }
+    }
+    @keyframes ringFloat2 {
+      0%, 100% { translate: 0 0; }
+      50% { translate: 4px 4px; }
+    }
+    @keyframes ringFloat3 {
+      0%, 100% { translate: 0 0; }
+      50% { translate: -4px 3px; }
+    }
+
+    .ring-icon {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      opacity: 0;
+      transform: scale(0);
+    }
+
+    .mini-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      width: 160px;
+      background: #fff;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04);
+      text-align: center;
+      opacity: 0;
+    }
+
+    .mini-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: conic-gradient(#ec4899, #a855f7, #6366f1, #06b6d4, #a855f7, #ec4899);
+      padding: 2px;
+      margin: 0 auto 8px;
+    }
+
+    .mini-avatar-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #d4d4d8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .mini-card .mini-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #18181b;
+    }
+
+    .mini-card .mini-url {
+      font-size: 9px;
+      color: #a1a1aa;
+      margin-bottom: 10px;
+    }
+
+    .save-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #18181b;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .cursor-svg {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      opacity: 0;
+      z-index: 30;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .saved-toast {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: #18181b;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 24px;
+      opacity: 0;
+      transform: translateY(10px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .saved-toast .check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #22c55e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    /* Save confetti burst */
+    .confetti {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      opacity: 0;
+      z-index: 28;
+      pointer-events: none;
+    }
+
+    @keyframes confettiBurst {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--cx), var(--cy)) scale(0); }
+    }
+
+    /* Save button pulse ring */
+    @keyframes savePulse {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+      100% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); }
+    }
+
+
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes sceneIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes sceneOut {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes iconPop {
+      0% { opacity: 0; transform: scale(0); }
+      70% { opacity: 1; transform: scale(1.15); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes cardPop {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+      60% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+      100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @keyframes cursorMove {
+      0% { opacity: 0; transform: translate(40px, 40px); }
+      30% { opacity: 1; transform: translate(40px, 40px); }
+      100% { opacity: 1; transform: translate(0, 0); }
+    }
+
+    @keyframes clickPulse {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(0, 0) scale(0.85); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-frame">
+    <div class="screen-content" id="screen">
+      <!-- Scene 1: Hi -->
+      <div class="hi-text" id="hiText">Hi</div>
+
+      <!-- Scene 2: Question bubbles -->
+      <div class="question-bubble q1" id="qb1">
+        <span class="q-icon" style="background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)"><img src="https://cdn.simpleicons.org/instagram/white" alt=""></span>
+        What's your Insta?
+      </div>
+      <div class="question-bubble q2" id="qb2">
+        <span class="q-icon" style="background:#0A66C2"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z'/%3E%3C/svg%3E" alt=""></span>
+        What's your LinkedIn?
+      </div>
+      <div class="question-bubble q7" id="qb7">
+        <span class="q-icon" style="background:#e8f5e9"><img src="https://cdn.simpleicons.org/instagram/2e7d32" alt=""></span>
+        No, the photography one
+      </div>
+      <div class="question-bubble q3" id="qb3">
+        <span class="q-icon" style="background:#25D366"><img src="https://cdn.simpleicons.org/whatsapp/white" alt=""></span>
+        What's your number?
+      </div>
+      <div class="question-bubble q9" id="qb9">
+        <span class="q-icon" style="background:#18181b"><img src="https://cdn.simpleicons.org/gmail/white" alt=""></span>
+        What's your email?
+      </div>
+      <div class="question-bubble q4" id="qb4">
+        <span class="q-icon" style="background:#FFFC00"><img src="https://cdn.simpleicons.org/snapchat/white" alt=""></span>
+        What's your Snapchat?
+      </div>
+      <div class="question-bubble q10" id="qb10">
+        <span class="q-icon" style="background:#333"><img src="https://cdn.simpleicons.org/behance/white" alt=""></span>
+        Send me your portfolio
+      </div>
+      <div class="question-bubble q5" id="qb5">
+        <span class="q-icon" style="background:#FF0000"><img src="https://cdn.simpleicons.org/youtube/white" alt=""></span>
+        What's your YouTube?
+      </div>
+      <div class="question-bubble q6" id="qb6">
+        <span class="q-icon" style="background:#000"><img src="https://cdn.simpleicons.org/x/white" alt=""></span>
+        What's your Twitter?
+      </div>
+      <div class="question-bubble q8" id="qb8">
+        <span class="q-icon" style="background:#000"><img src="https://cdn.simpleicons.org/x/white" alt=""></span>
+        Wait, which Twitter?
+      </div>
+
+      <!-- Scene 3: Frustration -->
+      <div class="frustration" id="frustration">😩</div>
+
+      <!-- Scene 4: Flink reveal -->
+      <div class="reveal-group" id="revealGroup">
+        <div class="introducing-text" id="introducing">INTRODUCING</div>
+        <div class="flink-text" id="flinkText">Flink</div>
+        <div class="tagline" id="tagline">All your socials. One link.</div>
+        <div class="flink-url" id="flinkUrl">flink.to/you</div>
+      </div>
+
+      <!-- Scene 6: One link, your whole identity -->
+      <div class="scene-identity" id="sceneIdentity">
+        <div class="scene-identity-inner" id="identityInner">
+        <div class="headline">One link.<br><em>Your whole identity.</em></div>
+        <div class="url-pill" id="urlPill">&#128279; flink.to/sarah</div>
+        <div class="arrow-down" id="arrowDown">&#8595;</div>
+        <div class="profile-card" id="profileCard">
+          <div class="pc-avatar"><div class="pc-avatar-inner">S</div></div>
+          <div class="pc-name">Sarah Miller</div>
+          <div class="pc-handle">@sarah</div>
+          <div class="pc-bio">Design, coffee & cat memes &#10024;</div>
+          <div class="pc-meta">
+            <div class="pc-meta-item">&#128205; San Francisco</div>
+            <div class="pc-meta-item">&#127760; sarah.design</div>
+          </div>
+          <div class="pc-buttons">
+            <div class="pc-btn pc-btn-save">&#128229; Save contact</div>
+            <div class="pc-btn pc-btn-share">&#128279; Share profile</div>
+          </div>
+
+          <!-- Featured section -->
+          <div class="pc-section" id="pcFeatured">
+            <div class="pc-section-header">
+              <div class="pc-section-title">&#11088; Featured</div>
+              <div class="pc-section-count">4 links</div>
+            </div>
+            <div class="pc-links-grid">
+              <div class="pc-link" id="pl1">
+                <div class="pc-link-icon" style="background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)">
+                  <img src="https://cdn.simpleicons.org/instagram/white" style="width:16px;height:16px" alt="instagram">
+                </div>
+                <div><div class="pc-link-name">Instagram</div><div class="pc-link-sub">@sarah.designs</div></div>
+              </div>
+              <div class="pc-link" id="pl2">
+                <div class="pc-link-icon" style="background:#000">
+                  <img src="https://cdn.simpleicons.org/x/white" style="width:16px;height:16px" alt="x">
+                </div>
+                <div><div class="pc-link-name">Twitter/X</div><div class="pc-link-sub">@sarahm</div></div>
+              </div>
+              <div class="pc-link" id="pl3">
+                <div class="pc-link-icon" style="background:#0A66C2">
+                  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z'/%3E%3C/svg%3E" style="width:16px;height:16px" alt="linkedin">
+                </div>
+                <div><div class="pc-link-name">LinkedIn</div><div class="pc-link-sub">sarahmiller</div></div>
+              </div>
+              <div class="pc-link" id="pl4">
+                <div class="pc-link-icon" style="background:#1877F2">
+                  <img src="https://cdn.simpleicons.org/facebook/white" style="width:16px;height:16px" alt="facebook">
+                </div>
+                <div><div class="pc-link-name">Facebook</div><div class="pc-link-sub">sarah.miller</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact section -->
+          <div class="pc-section" id="pcContact">
+            <div class="pc-section-header">
+              <div class="pc-section-title">&#128222; Contact</div>
+              <div class="pc-section-count">3 links</div>
+            </div>
+            <div class="pc-links-grid">
+              <div class="pc-link" id="pl5">
+                <div class="pc-link-icon" style="background:#25D366">
+                  <img src="https://cdn.simpleicons.org/whatsapp/white" style="width:16px;height:16px" alt="whatsapp">
+                </div>
+                <div><div class="pc-link-name">WhatsApp</div><div class="pc-link-sub">sarah</div></div>
+              </div>
+              <div class="pc-link" id="pl6">
+                <div class="pc-link-icon" style="background:#18181b">
+                  <img src="https://cdn.simpleicons.org/gmail/white" style="width:16px;height:16px" alt="gmail">
+                </div>
+                <div><div class="pc-link-name">Email</div><div class="pc-link-sub">sarah@email.com</div></div>
+              </div>
+              <div class="pc-link" id="pl7">
+                <div class="pc-link-icon" style="background:#34D399">
+                  <img src="https://cdn.simpleicons.org/signal/white" style="width:16px;height:16px" alt="signal">
+                </div>
+                <div><div class="pc-link-name">Phone</div><div class="pc-link-sub">+1 555-0123</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Elsewhere section -->
+          <div class="pc-section" id="pcElsewhere">
+            <div class="pc-section-header">
+              <div class="pc-section-title">&#127760; Elsewhere</div>
+              <div class="pc-section-count">2 links</div>
+            </div>
+            <div class="pc-links-grid">
+              <div class="pc-link" id="pl8">
+                <div class="pc-link-icon" style="background:#333">
+                  <img src="https://cdn.simpleicons.org/github/white" style="width:16px;height:16px" alt="github">
+                </div>
+                <div><div class="pc-link-name">GitHub</div><div class="pc-link-sub">sarahdev</div></div>
+              </div>
+              <div class="pc-link" id="pl9">
+                <div class="pc-link-icon" style="background:#FF0000">
+                  <img src="https://cdn.simpleicons.org/youtube/white" style="width:16px;height:16px" alt="youtube">
+                </div>
+                <div><div class="pc-link-name">YouTube</div><div class="pc-link-sub">@sarahcreates</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <!-- Scene 7: One tap, saved -->
+      <div class="scene-saved" id="sceneSaved">
+        <div class="headline" id="savedHeadline">One tap.<br><em>Saved.</em></div>
+        <div class="icons-ring" id="iconsRing">
+          <!-- Icons positioned in a true circle via JS -->
+          <div class="ring-icon" id="ri1" style="background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)"><img src="https://cdn.simpleicons.org/instagram/white" style="width:22px;height:22px" alt="instagram"></div>
+          <div class="ring-icon" id="ri2" style="background:#333"><img src="https://cdn.simpleicons.org/github/white" style="width:22px;height:22px" alt="github"></div>
+          <div class="ring-icon" id="ri3" style="background:#25D366"><img src="https://cdn.simpleicons.org/whatsapp/white" style="width:22px;height:22px" alt="whatsapp"></div>
+          <div class="ring-icon" id="ri4" style="background:#FF0000"><img src="https://cdn.simpleicons.org/youtube/white" style="width:22px;height:22px" alt="youtube"></div>
+          <div class="ring-icon" id="ri5" style="background:#0A66C2"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z'/%3E%3C/svg%3E" style="width:22px;height:22px" alt="linkedin"></div>
+          <div class="ring-icon" id="ri6" style="background:#18181b"><img src="https://cdn.simpleicons.org/gmail/white" style="width:22px;height:22px" alt="gmail"></div>
+          <!-- Mini card in center -->
+          <div class="mini-card" id="miniCard">
+            <div class="mini-avatar"><div class="mini-avatar-inner">S</div></div>
+            <div class="mini-name">Sarah Miller</div>
+            <div class="mini-url">flink.to/sarah</div>
+            <div class="save-btn" id="saveBtn">Save contact</div>
+          </div>
+        </div>
+        <!-- SVG cursor pointer -->
+        <svg class="cursor-svg" id="cursorHand" viewBox="0 0 24 24" fill="none">
+          <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87a.5.5 0 0 0 .35-.85L6.35 2.85a.5.5 0 0 0-.85.36Z" fill="#18181b" stroke="#fff" stroke-width="1"/>
+        </svg>
+        <!-- Confetti particles -->
+        <div class="confetti" id="cf1" style="background:#ec4899"></div>
+        <div class="confetti" id="cf2" style="background:#a855f7"></div>
+        <div class="confetti" id="cf3" style="background:#6366f1"></div>
+        <div class="confetti" id="cf4" style="background:#22c55e"></div>
+        <div class="confetti" id="cf5" style="background:#f59e0b"></div>
+        <div class="confetti" id="cf6" style="background:#ec4899"></div>
+        <div class="confetti" id="cf7" style="background:#06b6d4"></div>
+        <div class="confetti" id="cf8" style="background:#a855f7"></div>
+        <div class="confetti" id="cf9" style="background:#22c55e"></div>
+        <div class="confetti" id="cf10" style="background:#6366f1"></div>
+        <div class="saved-toast" id="savedToast">
+          <div class="check">&#10003;</div>
+          Saved to contacts
+        </div>
+      </div>
+
+
+      <!-- Sparkles -->
+      <div class="sparkle" id="s1" style="background:#ec4899;"></div>
+      <div class="sparkle" id="s2" style="background:#a855f7;"></div>
+      <div class="sparkle" id="s3" style="background:#6366f1;"></div>
+      <div class="sparkle" id="s4" style="background:#f59e0b;"></div>
+      <div class="sparkle" id="s5" style="background:#10b981;"></div>
+      <div class="sparkle" id="s6" style="background:#ec4899;"></div>
+      <div class="sparkle" id="s7" style="background:#6366f1;"></div>
+      <div class="sparkle" id="s8" style="background:#a855f7;"></div>
+    </div>
+  </div>
+
+  <script>
+    const timeline = [
+      // Scene 1: Hi pops in (t = 1.3s after load)
+      { t: 1300, action: () => {
+        el('hiText').style.animation = 'tadaPop 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards';
+      }},
+      // Hi fades out
+      { t: 2800, action: () => {
+        el('hiText').style.animation = 'fadeOut 0.4s ease forwards';
+      }},
+
+      // Scene 2: Questions pile up - starting neat, getting chaotic (faster + more tilted)
+      { t: 3400, action: () => popBubble('qb1', '0deg') },      // What's your Insta?
+      { t: 4100, action: () => popBubble('qb2', '1deg') },      // What's your LinkedIn?
+      { t: 4800, action: () => popBubble('qb7', '-2deg') },     // No, the photography one
+      { t: 5400, action: () => popBubble('qb3', '3deg') },      // What's your number?
+      { t: 5900, action: () => popBubble('qb9', '-3deg') },     // What's your email?
+      { t: 6300, action: () => popBubble('qb4', '5deg') },      // What's your Snapchat?
+      { t: 6650, action: () => popBubble('qb10', '-5deg') },    // Send me your portfolio
+      { t: 6950, action: () => popBubble('qb5', '-7deg') },     // What's your YouTube?
+      { t: 7200, action: () => popBubble('qb6', '6deg') },      // What's your Twitter?
+      { t: 7400, action: () => popBubble('qb8', '-8deg') },     // Wait, which Twitter?
+
+      // Scene 3: Frustration emoji + screen shake
+      { t: 8400, action: () => {
+        el('frustration').style.animation = 'emojiPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards';
+        el('screen').style.animation = 'shake 0.5s ease';
+      }},
+
+      // Scene 4: Collapse everything to center
+      { t: 9600, action: () => {
+        const bubbles = ['qb1','qb2','qb3','qb4','qb5','qb6','qb7','qb8','qb9','qb10'];
+        bubbles.forEach((id, i) => {
+          el(id).style.animation = `collapseToCenter 0.6s cubic-bezier(0.55,0.06,0.68,0.19) ${i * 40}ms forwards`;
+        });
+        el('frustration').style.animation = `fadeOut 0.5s ease 0.3s forwards`;
+      }},
+
+      // Scene 5: Dark transition
+      { t: 10600, action: () => {
+        el('screen').style.animation = 'none';
+        el('screen').classList.add('dark');
+      }},
+
+      // Sparkle burst - standalone moment
+      { t: 11300, action: () => {
+        const sparkles = ['s1','s2','s3','s4','s5','s6','s7','s8'];
+        const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+        sparkles.forEach((id, i) => {
+          const angle = angles[i] * Math.PI / 180;
+          const dist = 80 + Math.random() * 50;
+          const tx = Math.cos(angle) * dist + 'px';
+          const ty = Math.sin(angle) * dist + 'px';
+          const spark = el(id);
+          spark.style.setProperty('--tx', tx);
+          spark.style.setProperty('--ty', ty);
+          spark.style.top = '50%';
+          spark.style.left = '50%';
+          spark.style.animation = `sparkleBurst 1s ease ${i * 50}ms forwards`;
+        });
+      }},
+
+      // "Introducing" fades in
+      { t: 12000, action: () => {
+        el('introducing').style.animation = 'fadeInUp 0.5s ease forwards';
+      }},
+
+      // "Flink" bursts in
+      { t: 12600, action: () => {
+        el('flinkText').style.animation = 'flinkBurst 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards';
+      }},
+
+      // Tagline fades in
+      { t: 13800, action: () => {
+        el('tagline').style.animation = 'fadeInUp 0.5s ease forwards';
+      }},
+
+      // URL slides up
+      { t: 14600, action: () => {
+        el('flinkUrl').style.animation = 'fadeInUp 0.5s ease forwards';
+      }},
+
+      // === SCENE 6: One link, your whole identity ===
+      // Fade out reveal
+      { t: 16600, action: () => {
+        el('revealGroup').style.animation = 'sceneOut 0.5s ease forwards';
+        el('screen').classList.remove('dark');
+        el('screen').style.background = 'linear-gradient(180deg, #fdf2f8 0%, #ffffff 40%, #ffffff 100%)';
+      }},
+      // Show identity scene
+      { t: 17100, action: () => {
+        el('sceneIdentity').style.animation = 'sceneIn 0.5s ease forwards';
+      }},
+      // URL pill slides in
+      { t: 17600, action: () => {
+        el('urlPill').style.animation = 'fadeInUp 0.5s ease forwards';
+      }},
+      // Arrow
+      { t: 18100, action: () => {
+        el('arrowDown').style.animation = 'fadeInUp 0.4s ease forwards';
+      }},
+      // Profile card slides up
+      { t: 18500, action: () => {
+        el('profileCard').style.animation = 'slideUp 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards';
+      }},
+      // Featured section slides in
+      { t: 19200, action: () => {
+        el('pcFeatured').style.animation = 'sectionIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards';
+      }},
+      // Featured links stagger in
+      { t: 19500, action: () => {
+        ['pl1','pl2','pl3','pl4'].forEach((id, i) => {
+          el(id).style.animation = `linkSlideIn 0.3s ease ${i * 80}ms forwards`;
+        });
+      }},
+      // Contact section
+      { t: 20000, action: () => {
+        el('pcContact').style.animation = 'sectionIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards';
+      }},
+      // Contact links stagger
+      { t: 20300, action: () => {
+        ['pl5','pl6','pl7'].forEach((id, i) => {
+          el(id).style.animation = `linkSlideIn 0.3s ease ${i * 80}ms forwards`;
+        });
+      }},
+      // Elsewhere section
+      { t: 20700, action: () => {
+        el('pcElsewhere').style.animation = 'sectionIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards';
+      }},
+      // Elsewhere links stagger
+      { t: 21000, action: () => {
+        ['pl8','pl9'].forEach((id, i) => {
+          el(id).style.animation = `linkSlideIn 0.3s ease ${i * 80}ms forwards`;
+        });
+      }},
+
+      // Smooth scroll up to reveal all sections
+      { t: 21600, action: () => {
+        el('identityInner').style.transform = 'translateY(-150px)';
+      }},
+
+      // === SCENE 7: One tap, saved ===
+      // Fade out identity scene
+      { t: 24800, action: () => {
+        el('sceneIdentity').style.animation = 'sceneOut 0.5s ease forwards';
+      }},
+      // Show saved scene
+      { t: 25300, action: () => {
+        el('sceneSaved').style.animation = 'sceneIn 0.4s ease forwards';
+      }},
+      // Headline + position ring icons in a true circle
+      { t: 25500, action: () => {
+        el('savedHeadline').style.animation = 'fadeInUp 0.5s ease forwards';
+        // Position icons in a perfect circle
+        const icons = ['ri1','ri2','ri3','ri4','ri5','ri6'];
+        const radius = 95;
+        const size = 260;
+        const iconSize = 48;
+        const center = size / 2;
+        icons.forEach((id, i) => {
+          const angle = (i * 60 - 90) * Math.PI / 180;
+          const x = center + radius * Math.cos(angle) - iconSize / 2;
+          const y = center + radius * Math.sin(angle) - iconSize / 2;
+          el(id).style.left = x + 'px';
+          el(id).style.top = y + 'px';
+        });
+      }},
+      // Ring icons pop in one by one
+      { t: 26000, action: () => {
+        const floats = ['ringFloat1', 'ringFloat2', 'ringFloat3'];
+        ['ri1','ri2','ri3','ri4','ri5','ri6'].forEach((id, i) => {
+          const f = floats[i % 3];
+          const dur = 2.5 + (i * 0.3);
+          el(id).style.animation = `iconPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i * 100}ms forwards`;
+          // Add float after pop
+          setTimeout(() => {
+            el(id).style.animation += `, ${f} ${dur}s ease-in-out infinite`;
+          }, 500 + i * 100);
+        });
+      }},
+      // Mini card pops in center
+      { t: 26700, action: () => {
+        el('miniCard').style.animation = 'cardPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards';
+      }},
+      // Cursor moves to save button
+      { t: 27500, action: () => {
+        const btn = el('saveBtn');
+        const rect = btn.getBoundingClientRect();
+        const hand = el('cursorHand');
+        hand.style.left = (rect.left + rect.width / 2 - 4) + 'px';
+        hand.style.top = (rect.bottom + 2) + 'px';
+        hand.style.animation = 'cursorMove 0.8s ease forwards';
+      }},
+      // Click - confetti burst, button turns green
+      { t: 28500, action: () => {
+        // Cursor click
+        el('cursorHand').style.animation = 'clickPulse 0.3s ease forwards';
+        // Button turns green with pulse
+        const btn = el('saveBtn');
+        btn.style.background = '#22c55e';
+        btn.innerHTML = '&#10003; Saved';
+        btn.style.animation = 'savePulse 0.6s ease';
+        // Confetti burst from button position
+        const rect = btn.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        for (let i = 1; i <= 10; i++) {
+          const cf = el('cf' + i);
+          const angle = (i * 36) * Math.PI / 180;
+          const dist = 60 + Math.random() * 80;
+          cf.style.left = cx + 'px';
+          cf.style.top = cy + 'px';
+          cf.style.width = (4 + Math.random() * 6) + 'px';
+          cf.style.height = cf.style.width;
+          cf.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+          cf.style.setProperty('--cx', (Math.cos(angle) * dist) + 'px');
+          cf.style.setProperty('--cy', (Math.sin(angle) * dist) + 'px');
+          cf.style.animation = `confettiBurst 0.7s cubic-bezier(0.25,0.46,0.45,0.94) ${i * 30}ms forwards`;
+        }
+      }},
+      // Toast + hide cursor
+      { t: 29100, action: () => {
+        el('cursorHand').style.opacity = '0';
+        el('savedToast').style.animation = 'fadeInUp 0.5s ease forwards';
+      }},
+
+    ];
+
+    function el(id) { return document.getElementById(id); }
+
+    let bubbleCount = 0;
+    function popBubble(id, rot) {
+      const bubble = el(id);
+      bubble.style.setProperty('--rot', rot);
+      bubble.style.animation = `bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards`;
+      bubbleCount++;
+      // After pop-in, add gentle floating animation
+      const floatVariant = ['floatBob1', 'floatBob2', 'floatBob3'][bubbleCount % 3];
+      const duration = 2.5 + (Math.random() * 1.5);
+      setTimeout(() => {
+        bubble.style.animation += `, ${floatVariant} ${duration}s ease-in-out infinite`;
+      }, 450);
+    }
+
+    // Run timeline
+    timeline.forEach(({ t, action }) => setTimeout(action, t));
+  </script>
+</body>
+</html>
