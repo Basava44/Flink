@@ -19,7 +19,6 @@ import {
   Github,
   Youtube,
   Facebook,
-  MessageCircle,
   Gamepad2,
   MapPin,
   Globe,
@@ -34,7 +33,9 @@ import {
   Plus,
   Trash2,
   Link,
+  MessageCircle,
 } from "lucide-react";
+import WhatsAppIcon from "../components/icons/WhatsAppIcon";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ const SettingsPage = () => {
     {
       key: "whatsapp",
       name: "WhatsApp",
-      icon: <MessageCircle className="w-5 h-5" />,
+      icon: <WhatsAppIcon className="w-5 h-5" />,
       placeholder: "phone number or wa.me/username",
     },
     {

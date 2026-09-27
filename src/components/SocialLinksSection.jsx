@@ -20,11 +20,12 @@ import {
   PhoneCall,
   Globe,
 } from "lucide-react";
+import WhatsAppIcon from "./icons/WhatsAppIcon";
 
 const PLATFORM_META = {
   email: { icon: Mail, label: "Email", color: "from-blue-500 to-blue-600" },
   phone: { icon: Phone, label: "Phone", color: "from-green-500 to-green-600" },
-  whatsapp: { icon: MessageCircle, label: "WhatsApp", color: "from-emerald-500 to-emerald-600" },
+  whatsapp: { icon: WhatsAppIcon, label: "WhatsApp", color: "from-emerald-500 to-emerald-600" },
   instagram: { icon: Instagram, label: "Instagram", color: "from-pink-500 to-rose-500" },
   twitter: { icon: Twitter, label: "Twitter", color: "from-sky-400 to-blue-500" },
   linkedin: { icon: Linkedin, label: "LinkedIn", color: "from-blue-600 to-blue-700" },
@@ -118,6 +119,12 @@ const categorizeSocialLinks = (links) => {
       platformSection[link.platform] = elsewhere;
     }
   });
+
+  // Sort each section so same-platform links are adjacent (side by side in grid)
+  const sortByPlatform = (arr) => arr.sort((a, b) => a.platform.localeCompare(b.platform));
+  sortByPlatform(featured);
+  sortByPlatform(contact);
+  sortByPlatform(elsewhere);
 
   return { contact, featured, elsewhere };
 };

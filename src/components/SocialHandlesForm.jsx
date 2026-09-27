@@ -5,11 +5,12 @@ import {
   Facebook, MessageCircle, Gamepad2, Send, BookOpen, Music, Link2,
   Plus, Trash2, Link,
 } from 'lucide-react';
+import WhatsAppIcon from './icons/WhatsAppIcon';
 
 const PLATFORMS = [
   { key: 'email', name: 'Email', icon: Mail, placeholder: 'your.email@example.com', type: 'email' },
   { key: 'phone', name: 'Phone', icon: Phone, placeholder: 'phone number', type: 'tel' },
-  { key: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, placeholder: 'phone number or wa.me link' },
+  { key: 'whatsapp', name: 'WhatsApp', icon: WhatsAppIcon, placeholder: 'phone number or wa.me link' },
   { key: 'instagram', name: 'Instagram', icon: Instagram, placeholder: '@username' },
   { key: 'twitter', name: 'Twitter/X', icon: Twitter, placeholder: '@username' },
   { key: 'linkedin', name: 'LinkedIn', icon: Linkedin, placeholder: 'linkedin.com/in/username' },
