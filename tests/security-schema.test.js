@@ -38,6 +38,7 @@ test('public users table does not define an email column', () => {
 test('login email is not auto-published as a profile link', () => {
   assert.doesNotMatch(socialHandlesForm, /defaults\.email\s*=.*userEmail/i);
   assert.doesNotMatch(socialHandlesForm, /isEmailPrefilled/i);
+  assert.match(socialHandlesForm, /placeholder=\{platform\.placeholder\}/i);
   assert.doesNotMatch(settingsPage, /Email cannot be edited/i);
   assert.match(settingsPage, /Your login email stays private/i);
   assert.match(

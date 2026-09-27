@@ -194,7 +194,7 @@ const SocialHandlesForm = ({ onNext, onBack: _onBack, initialData = {} }) => {
                                 : "border-red-300 focus:border-red-400 focus:ring-red-400"
                               : ""
                           }`}
-                          placeholder={platform.name}
+                          placeholder={platform.placeholder}
                           autoCapitalize="off"
                           autoCorrect="off"
                           autoComplete="off"
