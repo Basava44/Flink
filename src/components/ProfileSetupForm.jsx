@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
-import { Globe, Lock, Camera, X, User, MapPin, FileText, Check, Loader2 } from "lucide-react";
+import { Globe, Camera, X, User, MapPin, FileText, Check, Loader2 } from "lucide-react";
 import { RESERVED_HANDLES, SITE_DOMAIN } from "../utils/constants";
 
 const ProfileSetupForm = ({ onComplete, onBack, initialData = {}, userId }) => {
@@ -208,15 +208,6 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {}, userId }) => {
                   )}
                 </div>
 
-                {/* Privacy badge */}
-                <div className={`mt-4 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ${
-                  formData.private
-                    ? isDark ? "bg-orange-900/20 text-orange-400 border border-orange-800/30" : "bg-orange-50 text-orange-600 border border-orange-200"
-                    : isDark ? "bg-green-900/20 text-green-400 border border-green-800/30" : "bg-green-50 text-green-600 border border-green-200"
-                }`}>
-                  {formData.private ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
-                  {formData.private ? "Private" : "Public"}
-                </div>
               </div>
 
               {/* Fake link items */}
@@ -379,40 +370,6 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {}, userId }) => {
                   />
                   {errors.website && <p className="mt-1 text-xs text-red-500">{errors.website}</p>}
                 </div>
-              </div>
-
-              {/* Privacy toggle */}
-              <div className={`flex items-center justify-between p-4 rounded-xl ${
-                isDark ? "bg-zinc-800/50 border border-zinc-700" : "bg-zinc-50 border border-zinc-200"
-              }`}>
-                <div className="flex items-center gap-2">
-                  {formData.private ? (
-                    <Lock className={`w-4 h-4 ${isDark ? "text-orange-400" : "text-orange-500"}`} />
-                  ) : (
-                    <Globe className={`w-4 h-4 ${isDark ? "text-green-400" : "text-green-500"}`} />
-                  )}
-                  <div>
-                    <p className={`text-sm font-medium ${isDark ? "text-white" : "text-zinc-900"}`}>
-                      {formData.private ? "Private" : "Public"}
-                    </p>
-                    <p className={`text-xs ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
-                      {formData.private ? "Only you can see your profile" : "Anyone can view your profile"}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, private: !prev.private }))}
-                  className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
-                    formData.private
-                      ? isDark ? "bg-orange-600" : "bg-orange-500"
-                      : isDark ? "bg-green-600" : "bg-green-500"
-                  }`}
-                >
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
-                    formData.private ? "left-5.5 translate-x-0.5" : "left-0.5"
-                  }`} />
-                </button>
               </div>
 
               {/* Actions */}

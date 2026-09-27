@@ -27,6 +27,14 @@ const settingsPage = await readFile(
   new URL('../src/pages/SettingsPage.jsx', import.meta.url),
   'utf8'
 );
+const profileSetupForm = await readFile(
+  new URL('../src/components/ProfileSetupForm.jsx', import.meta.url),
+  'utf8'
+);
+const privacyPolicy = await readFile(
+  new URL('../src/pages/PrivacyPolicy.jsx', import.meta.url),
+  'utf8'
+);
 
 test('public users table does not define an email column', () => {
   const usersTable = schema.match(/CREATE TABLE IF NOT EXISTS users \(([\s\S]*?)\n\);/i)?.[1];
@@ -45,6 +53,14 @@ test('login email is not auto-published as a profile link', () => {
     migration,
     /DELETE FROM public\.social_links[\s\S]*?links\.platform = 'email'[\s\S]*?accounts\.email/i
   );
+});
+
+test('profile visibility controls are hidden until the feature is released', () => {
+  assert.doesNotMatch(settingsPage, /Profile Visibility/i);
+  assert.doesNotMatch(settingsPage, /Toggle profile visibility/i);
+  assert.doesNotMatch(profileSetupForm, /Only you can see your profile/i);
+  assert.doesNotMatch(profileSetupForm, /private:\s*!prev\.private/i);
+  assert.doesNotMatch(privacyPolicy, /set your profile to private in Settings/i);
 });
 
 test('social-link RPC rejects a missing identity and restricts execution', () => {

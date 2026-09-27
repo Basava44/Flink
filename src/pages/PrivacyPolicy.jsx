@@ -94,7 +94,7 @@ function PrivacyPolicy() {
           <section>
             <h2 className={headingClass}>5. Your profile visibility</h2>
             <div className={sectionClass}>
-              <p>Flink profiles are public by default - that is the core purpose of the service. You can set your profile to private in Settings, which hides it from anyone except you. When your profile is public, your handle, display name, bio, avatar, and social links are accessible to anyone with your Flink URL. If you do not want information to be visible, either set your profile to private or do not add it to your profile.</p>
+              <p>Flink profiles are public - that is the core purpose of the service. Your handle, display name, bio, avatar, and social links are accessible to anyone with your Flink URL. Do not add information that you do not want to make publicly visible.</p>
             </div>
           </section>
 

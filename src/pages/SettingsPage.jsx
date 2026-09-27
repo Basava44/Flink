@@ -26,7 +26,6 @@ import {
   Camera,
   Upload,
   User,
-  Lock,
   Send,
   BookOpen,
   Music,
@@ -1561,103 +1560,6 @@ const SettingsPage = () => {
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Profile Privacy Section */}
-          <div
-            className={`p-6 rounded-2xl ${
-              isDark
-                ? "bg-zinc-900 border border-zinc-800"
-                : "bg-white border border-gray-200"
-            }`}
-          >
-            <h2
-              className={`text-lg font-semibold mb-4 ${
-                isDark ? "text-white" : "text-gray-800"
-              }`}
-            >
-              Profile Visibility
-            </h2>
-
-            <div
-              className={`p-4 rounded-xl ${
-                isDark
-                  ? "bg-zinc-800/50 border border-zinc-700"
-                  : "bg-gray-50 border border-gray-300"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <h3
-                      className={`font-medium ${
-                        isDark ? "text-white" : "text-gray-800"
-                      }`}
-                    >
-                      {profileData.private
-                        ? "Private Profile"
-                        : "Public Profile"}
-                    </h3>
-                    {profileData.private ? (
-                      <div
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                          isDark
-                            ? "bg-orange-900/30 text-orange-400 border border-orange-800"
-                            : "bg-orange-100 text-orange-800 border border-orange-200"
-                        }`}
-                      >
-                        <Lock className="w-3 h-3 inline mr-1" />
-                        Private
-                      </div>
-                    ) : (
-                      <div
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                          isDark
-                            ? "bg-green-900/30 text-green-400 border border-green-800"
-                            : "bg-green-100 text-green-800 border border-green-200"
-                        }`}
-                      >
-                        <Globe className="w-3 h-3 inline mr-1" />
-                        Public
-                      </div>
-                    )}
-                  </div>
-                  <p
-                    className={`text-sm leading-relaxed ${
-                      isDark ? "text-gray-300" : "text-gray-600"
-                    }`}
-                  >
-                    {profileData.private
-                      ? "Only you can see your profile details and social links"
-                      : "Anyone can view your profile and social links"}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleProfileChange("private", !profileData.private)
-                  }
-                  aria-label={`Toggle profile visibility to ${
-                    profileData.private ? "public" : "private"
-                  }`}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                    profileData.private
-                      ? isDark
-                        ? "bg-orange-600"
-                        : "bg-orange-500"
-                      : isDark
-                      ? "bg-green-600"
-                      : "bg-green-500"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                      profileData.private ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
               </div>
             </div>
           </div>
