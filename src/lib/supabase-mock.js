@@ -19,13 +19,18 @@ let tables = {
   flink_profiles: clone(mockFlinkProfiles),
   social_links: clone(mockSocialLinks),
   connections: clone(mockConnections),
+  reserved_handles: [],
+  reports: [],
+  support_requests: [],
 };
 
 let nextId = 100;
 const genId = () => `mock-${++nextId}`;
 
 // Auth state
-let currentSession = clone(mockSession);
+let currentSession = import.meta.env.VITE_MOCK_AUTH === "anonymous"
+  ? null
+  : clone(mockSession);
 const authListeners = new Set();
 
 function notifyAuthListeners(event, session) {
@@ -42,6 +47,7 @@ function createQueryBuilder(tableName) {
   let orderAsc = true;
   let limitCount = null;
   let isSingle = false;
+  let isMaybeSingle = false;
   let selectFields = "*";
   let operation = "select"; // select | insert | update | delete
   let payload = null;
@@ -156,7 +162,6 @@ function createQueryBuilder(tableName) {
   const builder = {
     select(fields) {
       selectFields = fields || "*";
-      operation = "select";
       return builder;
     },
     insert(data) {
@@ -200,6 +205,10 @@ function createQueryBuilder(tableName) {
     },
     single() {
       isSingle = true;
+      return builder;
+    },
+    maybeSingle() {
+      isMaybeSingle = true;
       return builder;
     },
     // Terminal — returns a promise-like thenable
@@ -249,8 +258,12 @@ function createQueryBuilder(tableName) {
           }
         }
 
-        if (isSingle) {
+        if (isSingle || isMaybeSingle) {
           if (result.length === 0) {
+            if (isMaybeSingle) {
+              resolve({ data: null, error: null });
+              return;
+            }
             resolve({
               data: null,
               error: { message: "Row not found", code: "PGRST116" },
@@ -281,7 +294,7 @@ function createStorageBucket(bucketName) {
     storageBuckets[bucketName] = {};
   }
   return {
-    upload(path, _file, _opts) {
+    upload(path, _file, _opts = {}) {
       storageBuckets[bucketName][path] = true;
       return Promise.resolve({ data: { path }, error: null });
     },
@@ -289,6 +302,19 @@ function createStorageBucket(bucketName) {
       return {
         data: { publicUrl: `/mock-storage/${bucketName}/${path}` },
       };
+    },
+    list(path = "") {
+      const prefix = path ? `${path}/` : "";
+      const data = Object.keys(storageBuckets[bucketName])
+        .filter((objectPath) => objectPath.startsWith(prefix))
+        .map((objectPath) => objectPath.slice(prefix.length))
+        .filter((name) => name && !name.includes("/"))
+        .map((name) => ({ id: name, name }));
+      return Promise.resolve({ data, error: null });
+    },
+    remove(paths) {
+      paths.forEach((path) => delete storageBuckets[bucketName][path]);
+      return Promise.resolve({ data: paths.map((path) => ({ name: path })), error: null });
     },
   };
 }
@@ -306,6 +332,80 @@ export const supabase = {
     },
   },
 
+  async rpc(functionName, params = {}) {
+    if (functionName === "upsert_social_links") {
+      if (!currentSession?.user || currentSession.user.id !== params.p_user_id) {
+        return { data: null, error: { message: "Not authorized" } };
+      }
+
+      tables.social_links = tables.social_links.filter(
+        (link) => link.user_id !== params.p_user_id
+      );
+      const links = Array.isArray(params.p_links) ? params.p_links : [];
+      tables.social_links.push(
+        ...links
+          .filter((link) => link.url)
+          .map((link) => ({
+            id: genId(),
+            user_id: params.p_user_id,
+            ...clone(link),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }))
+      );
+      return { data: null, error: null };
+    }
+
+    if (functionName === "delete_user_account") {
+      const userId = currentSession?.user?.id;
+      if (!userId) {
+        return { data: null, error: { message: "Not authorized" } };
+      }
+      tables.users = tables.users.filter((row) => row.id !== userId);
+      tables.flink_profiles = tables.flink_profiles.filter((row) => row.user_id !== userId);
+      tables.social_links = tables.social_links.filter((row) => row.user_id !== userId);
+      currentSession = null;
+      notifyAuthListeners("SIGNED_OUT", null);
+      return { data: null, error: null };
+    }
+
+    if (functionName === "submit_support_request") {
+      const userId = currentSession?.user?.id;
+      if (!userId) {
+        return { data: null, error: { message: "Not authorized" } };
+      }
+      const cutoff = Date.now() - 60_000;
+      const submittedRecently = tables.support_requests.some(
+        (request) =>
+          request.user_id === userId &&
+          new Date(request.created_at).getTime() > cutoff
+      );
+      if (submittedRecently) {
+        return {
+          data: null,
+          error: { message: "Please wait before sending another message" },
+        };
+      }
+      const request = {
+        id: genId(),
+        user_id: userId,
+        category: params.p_type,
+        subject: params.p_subject,
+        message: params.p_message,
+        priority: params.p_priority || "medium",
+        status: "open",
+        created_at: new Date().toISOString(),
+      };
+      tables.support_requests.push(request);
+      return { data: request.id, error: null };
+    }
+
+    return {
+      data: null,
+      error: { message: `Mock RPC not implemented: ${functionName}` },
+    };
+  },
+
   auth: {
     async getSession() {
       return { data: { session: currentSession }, error: null };
@@ -317,7 +417,7 @@ export const supabase = {
         : { data: { user: null }, error: { message: "Not authenticated" } };
     },
 
-    async signUp({ email, password, options }) {
+    async signUp({ email, password: _password, options }) {
       const newUser = {
         ...clone(mockAuthUser),
         id: genId(),
@@ -330,7 +430,7 @@ export const supabase = {
       return { data: { user: newUser, session }, error: null };
     },
 
-    async signInWithPassword({ email, password }) {
+    async signInWithPassword({ email, password: _password }) {
       // Accept any credentials in mock mode
       const matchedUser = tables.users.find((u) => u.email === email);
       const authUser = matchedUser
@@ -342,7 +442,7 @@ export const supabase = {
       return { data: { user: authUser, session }, error: null };
     },
 
-    async signInWithOAuth({ provider, options }) {
+    async signInWithOAuth({ provider: _provider, options: _options }) {
       // Simulate OAuth by signing in as the demo user
       currentSession = clone(mockSession);
       notifyAuthListeners("SIGNED_IN", currentSession);
@@ -355,12 +455,12 @@ export const supabase = {
       return { error: null };
     },
 
-    async resetPasswordForEmail(email, options) {
+    async resetPasswordForEmail(email, _options) {
       console.log("[Mock] Password reset email would be sent to:", email);
       return { data: {}, error: null };
     },
 
-    async updateUser({ password }) {
+    async updateUser({ password: _password }) {
       console.log("[Mock] Password updated");
       return { data: { user: currentSession?.user }, error: null };
     },

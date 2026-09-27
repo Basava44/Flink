@@ -2,8 +2,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import { Globe, Lock, Camera, X, User, MapPin, FileText, Check, Loader2 } from "lucide-react";
+import { RESERVED_HANDLES, SITE_DOMAIN } from "../utils/constants";
 
-const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
+const ProfileSetupForm = ({ onComplete, onBack, initialData = {}, userId }) => {
   const { isDark } = useTheme();
   const { supabase } = useAuth();
   const fileInputRef = useRef(null);
@@ -28,6 +29,10 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
     if (checkTimeout.current) clearTimeout(checkTimeout.current);
     if (!handle || handle.length < 3 || !/^[a-zA-Z0-9_-]+$/.test(handle)) {
       setHandleStatus(null);
+      return;
+    }
+    if (RESERVED_HANDLES.has(handle.toLowerCase())) {
+      setHandleStatus('taken');
       return;
     }
     setHandleStatus('checking');
@@ -100,12 +105,12 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
     setUploading(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const objectPath = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const { error } = await supabase.storage
         .from("avatars")
-        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+        .upload(objectPath, file, { cacheControl: "3600", upsert: false });
       if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(objectPath);
       setFormData((prev) => ({ ...prev, profile_url: publicUrl }));
     } catch (error) {
       console.error("Upload error:", error);
@@ -328,7 +333,7 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {} }) => {
                   <p className="mt-1 text-xs text-green-500">Handle is available</p>
                 ) : (
                   <p className={`mt-1 text-xs ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
-                    flink.to/{formData.handle || "..."}
+                    {SITE_DOMAIN}/{formData.handle || "..."}
                   </p>
                 )}
               </div>

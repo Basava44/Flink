@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import { AuthContext } from "./AuthContextType";
+import { getAvatarStoragePath } from "../utils/avatarStorage";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
     // Check for cached session first to avoid API call
@@ -83,6 +85,7 @@ export const AuthProvider = ({ children }) => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user ?? null);
+      setIsPasswordRecovery(event === "PASSWORD_RECOVERY");
 
       // Cache the session if valid
       if (session?.user) {
@@ -142,6 +145,9 @@ export const AuthProvider = ({ children }) => {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
+    // The auth subscription is intentionally registered once for the provider
+    // lifetime. The referenced helpers are stable callbacks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Add user to users table after successful signup
@@ -163,74 +169,8 @@ export const AuthProvider = ({ children }) => {
         return { data: null, error: checkError };
       }
 
-      // Check by email as fallback (handles OAuth linking with existing email accounts)
-      // Gmail ignores dots, so karibasava.t.g@ and karibasava.tg@ are the same person
-      if (user.email) {
-        const normalizeGmail = (email) => {
-          const [local, domain] = email.toLowerCase().split("@");
-          if (domain === "gmail.com" || domain === "googlemail.com") {
-            return local.replace(/\./g, "") + "@" + domain;
-          }
-          return email.toLowerCase();
-        };
-
-        // Try exact match first
-        let existingByEmail = null;
-        const { data: exactMatch } = await supabase
-          .from("users")
-          .select("id, email")
-          .eq("email", user.email)
-          .single();
-
-        if (exactMatch) {
-          existingByEmail = exactMatch;
-        } else {
-          // For Gmail, check with dot variations by fetching Gmail users
-          const normalizedNew = normalizeGmail(user.email);
-          const { data: gmailUsers } = await supabase
-            .from("users")
-            .select("id, email")
-            .ilike("email", "%@gmail.com");
-
-          if (gmailUsers) {
-            existingByEmail = gmailUsers.find(
-              (u) => normalizeGmail(u.email) === normalizedNew
-            ) || null;
-          }
-        }
-
-        if (existingByEmail) {
-          // User exists with this email but different auth ID - link accounts
-          const { data: updated, error: updateError } = await supabase
-            .from("users")
-            .update({ id: user.id, email: user.email })
-            .eq("id", existingByEmail.id)
-            .select()
-            .single();
-
-          if (updateError) {
-            console.error("Error linking accounts:", updateError);
-          }
-
-          // Also update flink_profiles and social_links to point to new auth ID
-          if (!updateError) {
-            await supabase
-              .from("flink_profiles")
-              .update({ user_id: user.id })
-              .eq("user_id", existingByEmail.id);
-            await supabase
-              .from("social_links")
-              .update({ user_id: user.id })
-              .eq("user_id", existingByEmail.id);
-          }
-
-          return { data: updated || existingByEmail, error: updateError };
-        }
-      }
-
       const userData = {
         id: user.id,
-        email: user.email,
         name:
           user.user_metadata?.full_name ||
           user.user_metadata?.name ||
@@ -339,9 +279,8 @@ export const AuthProvider = ({ children }) => {
           // Only log non-session missing errors
           console.error("Error signing out:", error);
         }
-      } catch (signOutError) {
-        // Ignore sign out errors - we've already cleared everything locally
-        console.log("Sign out completed locally");
+      } catch (_signOutError) {
+        // ignored
       }
 
       return { error: null };
@@ -372,13 +311,18 @@ export const AuthProvider = ({ children }) => {
       // Cache valid for 10 minutes
       if (Date.now() - ts > 10 * 60 * 1000) return null;
       return data;
-    } catch { return null; }
+    } catch {
+      // ignored
+      return null;
+    }
   }, []);
 
   const cacheSet = useCallback((key, data) => {
     try {
       localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
-    } catch {}
+    } catch {
+      // ignored
+    }
   }, []);
 
   const cacheClear = useCallback((userId) => {
@@ -386,7 +330,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem(`flink_user_${userId}`);
       localStorage.removeItem(`flink_social_${userId}`);
       localStorage.removeItem(`flink_profile_${userId}`);
-    } catch {}
+    } catch {
+      // ignored
+    }
   }, []);
 
   // Get user details from users table
@@ -407,14 +353,18 @@ export const AuthProvider = ({ children }) => {
         return { data: cached || null, error };
       }
 
-      setUserDetails(data);
-      cacheSet(`flink_user_${userId}`, data);
-      return { data, error: null };
+      const details = {
+        ...data,
+        email: user?.id === userId ? user.email : undefined,
+      };
+      setUserDetails(details);
+      cacheSet(`flink_user_${userId}`, details);
+      return { data: details, error: null };
     } catch (err) {
       console.error("Unexpected error fetching user details:", err);
       return { data: null, error: err };
     }
-  }, [cacheGet, cacheSet]);
+  }, [cacheGet, cacheSet, user]);
 
   // Get user's social links
   const getSocialLinks = useCallback(async (userId) => {
@@ -468,6 +418,64 @@ export const AuthProvider = ({ children }) => {
   // Delete user account
   const deleteAccount = useCallback(async () => {
     try {
+      if (!user?.id) {
+        return { error: new Error("Not authorized") };
+      }
+
+      const avatarPaths = new Set();
+      const { data: profile, error: profileError } = await supabase
+        .from("flink_profiles")
+        .select("profile_url")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Error finding avatar before account deletion:", profileError);
+        return { error: profileError };
+      }
+
+      const currentAvatarPath = getAvatarStoragePath(profile?.profile_url);
+      if (currentAvatarPath) avatarPaths.add(currentAvatarPath);
+
+      // Legacy uploads were stored at the bucket root. RLS limits this list to
+      // objects owned by the current user.
+      const { data: legacyAvatarFiles, error: legacyListError } = await supabase.storage
+        .from("avatars")
+        .list("", { limit: 1000 });
+
+      if (legacyListError) {
+        console.error("Error listing legacy avatars before account deletion:", legacyListError);
+        return { error: legacyListError };
+      }
+
+      legacyAvatarFiles
+        ?.filter((file) => file.id !== null)
+        .forEach((file) => avatarPaths.add(file.name));
+
+      const { data: avatarFiles, error: listError } = await supabase.storage
+        .from("avatars")
+        .list(user.id, { limit: 1000 });
+
+      if (listError) {
+        console.error("Error listing avatars before account deletion:", listError);
+        return { error: listError };
+      }
+
+      avatarFiles
+        ?.filter((file) => file.id !== null)
+        .forEach((file) => avatarPaths.add(`${user.id}/${file.name}`));
+
+      if (avatarPaths.size > 0) {
+        const { error: removeError } = await supabase.storage
+          .from("avatars")
+          .remove([...avatarPaths]);
+
+        if (removeError) {
+          console.error("Error deleting avatars:", removeError);
+          return { error: removeError };
+        }
+      }
+
       const { error } = await supabase.rpc("delete_user_account");
       if (error) {
         console.error("Error deleting account:", error);
@@ -480,21 +488,23 @@ export const AuthProvider = ({ children }) => {
       localStorage.clear();
 
       // Sign out locally (auth user is already deleted server-side)
-      try { await supabase.auth.signOut(); } catch {}
+      try { await supabase.auth.signOut(); } catch {
+        // ignored
+      }
 
       return { error: null };
     } catch (err) {
       console.error("Unexpected error deleting account:", err);
       return { error: err };
     }
-  }, []);
+  }, [user?.id]);
 
   // Test database connection
   const testDatabaseConnection = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("users")
-        .select("id, email, name, profile_url, first_login, created_at")
+        .select("id, name, profile_url, first_login, created_at")
         .limit(1);
 
       if (error) {
@@ -512,6 +522,7 @@ export const AuthProvider = ({ children }) => {
     user,
     userDetails,
     loading,
+    isPasswordRecovery,
     signUp,
     signIn,
     signInWithGoogle,
@@ -525,7 +536,7 @@ export const AuthProvider = ({ children }) => {
     testDatabaseConnection,
     cacheClear,
     supabase,
-  }), [user, userDetails, loading, signUp, signIn, signInWithGoogle, signOut,
+  }), [user, userDetails, loading, isPasswordRecovery, signUp, signIn, signInWithGoogle, signOut,
        resetPassword, deleteAccount, getUserDetails, addUserToDatabase, getSocialLinks,
        getProfileDetails, testDatabaseConnection, cacheClear]);
 

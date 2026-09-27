@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { supabase } from "../lib/supabase";
+import { RESERVED_HANDLES, SITE_DOMAIN } from "../utils/constants";
 import {
   Link2,
   Zap,
@@ -55,6 +56,7 @@ function Home() {
     setHandleInput(clean);
     if (checkTimeout.current) clearTimeout(checkTimeout.current);
     if (clean.length < 3) { setHandleStatus(null); return; }
+    if (RESERVED_HANDLES.has(clean)) { setHandleStatus("taken"); return; }
     setHandleStatus("checking");
     checkTimeout.current = setTimeout(async () => {
       try {
@@ -86,6 +88,7 @@ function Home() {
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={toggleTheme}
+            aria-label="Toggle theme"
             className={`p-2 rounded-lg transition-colors ${
               isDark ? "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
             }`}
@@ -147,7 +150,7 @@ function Home() {
               : "bg-zinc-50 border border-zinc-200"
           }`}>
             <span className={`pl-3 sm:pl-4 pr-0.5 text-xs sm:text-sm font-mono flex-shrink-0 ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
-              flink.to/
+              {SITE_DOMAIN}/
             </span>
             <input
               type="text"
@@ -176,13 +179,13 @@ function Home() {
             {handleStatus === "available" && (
               <p className="text-xs text-green-500 flex items-center justify-center gap-1">
                 <Check className="w-3 h-3" />
-                flink.to/{handleInput} is available
+                {SITE_DOMAIN}/{handleInput} is available
               </p>
             )}
             {handleStatus === "taken" && (
               <p className="text-xs text-red-500 flex items-center justify-center gap-1">
                 <X className="w-3 h-3" />
-                flink.to/{handleInput} is taken
+                {SITE_DOMAIN}/{handleInput} is taken
               </p>
             )}
           </div>
@@ -205,12 +208,12 @@ function Home() {
               { icon: Mail, color: "from-blue-500 to-blue-600" },
               { icon: Phone, color: "from-green-500 to-green-600" },
               { icon: MessageCircle, color: "from-emerald-500 to-emerald-600" },
-            ].map(({ icon: Icon, color }, i) => (
+            ].map(({ icon: _Icon, color }, i) => (
               <div
                 key={i}
                 className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-sm`}
               >
-                <Icon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white" />
+                <_Icon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white" />
               </div>
             ))}
             <span className={`text-xs font-medium ml-1 ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
@@ -259,7 +262,7 @@ function Home() {
                 desc: "Bio, resume, email signature, business card, or QR code. It just works.",
                 gradient: "from-blue-500 to-cyan-500",
               },
-            ].map(({ icon: Icon, title, desc, gradient }, i) => (
+            ].map(({ icon: _Icon, title, desc, gradient }, i) => (
               <div
                 key={i}
                 className={`group p-6 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${
@@ -269,7 +272,7 @@ function Home() {
                 }`}
               >
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-sm`}>
-                  <Icon className="w-5 h-5 text-white" />
+                  <_Icon className="w-5 h-5 text-white" />
                 </div>
                 <h3 className="text-base font-semibold mb-2">{title}</h3>
                 <p className={`text-sm leading-relaxed ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>

@@ -18,7 +18,6 @@ function Login() {
     password: "",
     confirmPassword: "",
   });
-  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -26,6 +25,14 @@ function Login() {
 
   // Pre-fill handle from landing page claim
   const claimedHandle = location.state?.claimedHandle;
+  const [isSignUp, setIsSignUp] = useState(!!claimedHandle);
+
+  // Persist claimed handle so it survives email confirmation redirect
+  useEffect(() => {
+    if (claimedHandle) {
+      localStorage.setItem("flink_claimed_handle", claimedHandle);
+    }
+  }, [claimedHandle]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -129,6 +136,7 @@ function Login() {
         </button>
         <button
           onClick={toggleTheme}
+          aria-label="Toggle theme"
           className={`p-2 rounded-lg transition-colors ${
             isDark ? "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
           }`}
@@ -209,6 +217,7 @@ function Login() {
                 onChange={handleInputChange}
                 className={inputClass}
                 placeholder="Full name"
+                aria-label="Full name"
                 required
               />
             )}
@@ -220,6 +229,7 @@ function Login() {
               onChange={handleInputChange}
               className={inputClass}
               placeholder="Email address"
+              aria-label="Email address"
               required
             />
 
@@ -231,11 +241,13 @@ function Login() {
                 onChange={handleInputChange}
                 className={`${inputClass} pr-10`}
                 placeholder="Password"
+                aria-label="Password"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"}`}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -255,6 +267,7 @@ function Login() {
                       : ""
                   }`}
                   placeholder="Confirm password"
+                  aria-label="Confirm password"
                   required
                 />
                 {formData.confirmPassword && !passwordsMatch && (
@@ -268,7 +281,7 @@ function Login() {
                 <button
                   type="button"
                   onClick={() => navigate("/forgot-password")}
-                  className={`text-xs font-medium ${isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-500 hover:text-zinc-700"}`}
+                  className={`text-xs font-medium min-h-[44px] py-2 px-2 ${isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-500 hover:text-zinc-700"}`}
                 >
                   Forgot password?
                 </button>
@@ -314,7 +327,7 @@ function Login() {
                 setError("");
                 setMessage("");
               }}
-              className={`ml-1.5 font-semibold transition-colors ${
+              className={`ml-1.5 font-semibold transition-colors min-h-[44px] py-2 px-2 ${
                 isDark ? "text-white hover:text-zinc-300" : "text-zinc-900 hover:text-zinc-700"
               }`}
             >

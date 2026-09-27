@@ -43,14 +43,18 @@ function ProfilePage() {
     try {
       const raw = localStorage.getItem(`flink_social_${user?.id}`);
       if (raw) { const { data } = JSON.parse(raw); return data || []; }
-    } catch {}
+    } catch {
+      // ignored
+    }
     return [];
   });
   const [profileDetails, setProfileDetails] = useState(() => {
     try {
       const raw = localStorage.getItem(`flink_profile_${user?.id}`);
       if (raw) { const { data } = JSON.parse(raw); return data || null; }
-    } catch {}
+    } catch {
+      // ignored
+    }
     return null;
   });
   const [copied, setCopied] = useState(false);
@@ -135,6 +139,7 @@ function ProfilePage() {
           }
         }
       } catch {
+        // ignored
         setProfileExists(false);
       } finally {
         setIsCheckingProfile(false);
@@ -171,7 +176,9 @@ function ProfilePage() {
         needsRefresh = true;
         localStorage.removeItem(`forceRefresh_${user.id}`);
       }
-    } catch {}
+    } catch {
+      // ignored
+    }
 
     if (needsRefresh) {
       loadDashboardData();
@@ -180,6 +187,8 @@ function ProfilePage() {
   }, [isOwnProfile, user?.id, loadDashboardData]);
 
   const handleOnboardingComplete = async () => {
+    // Clean up claimed handle from signup flow
+    localStorage.removeItem("flink_claimed_handle");
     // Refresh userDetails so first_login is false (prevents onboarding flash)
     await getUserDetails(user.id);
     // Load fresh data before navigating so links are immediately visible
@@ -240,6 +249,7 @@ function ProfilePage() {
             </button>
             <button
               onClick={toggleTheme}
+              aria-label="Toggle theme"
               className={`p-2 rounded-lg transition-all duration-200 active:scale-95 ${
                 isDark ? "text-zinc-400 hover:text-white hover:bg-zinc-800" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
               }`}
@@ -322,8 +332,8 @@ function ProfilePage() {
         key={`onboarding-${user?.id}`}
         onComplete={handleOnboardingComplete}
         userName={userDetails?.name || user?.email || ""}
-        userEmail={userDetails?.email || user?.email || ""}
         userId={user?.id || ""}
+        claimedHandle={localStorage.getItem("flink_claimed_handle") || ""}
       />
     );
   }
@@ -344,6 +354,7 @@ function ProfilePage() {
           <div className="flex items-center gap-1">
             <button
               onClick={toggleTheme}
+              aria-label="Toggle theme"
               className={`p-2.5 rounded-lg transition-all duration-200 active:scale-95 ${
                 isDark ? "text-zinc-400 hover:text-white hover:bg-zinc-800" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
               }`}

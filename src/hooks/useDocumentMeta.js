@@ -1,8 +1,8 @@
 import { useEffect } from "react";
+import { SITE_URL } from "../utils/constants";
 
 const DEFAULT_TITLE = "Flink - All Your Socials. One Link.";
 const DEFAULT_DESC = "Flink puts all your social profiles, contact info, and links in one beautiful page. Share a single link instead of juggling usernames.";
-const SITE_URL = "https://flink-smoky.vercel.app";
 
 export function useDocumentMeta({ title, description, path, ogImage } = {}) {
   useEffect(() => {

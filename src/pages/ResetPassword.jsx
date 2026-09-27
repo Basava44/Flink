@@ -15,17 +15,12 @@ function ResetPassword() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { supabase } = useAuth();
+  const [invalidLink, setInvalidLink] = useState(false);
+  const { supabase, loading: authLoading, isPasswordRecovery } = useAuth();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setError("Invalid or expired reset link. Please request a new one.");
-      }
-    };
-    checkSession();
-  }, [supabase]);
+    if (!authLoading) setInvalidLink(!isPasswordRecovery);
+  }, [authLoading, isPasswordRecovery]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -88,6 +83,7 @@ function ResetPassword() {
         </button>
         <button
           onClick={toggleTheme}
+          aria-label="Toggle theme"
           className={`p-2 rounded-lg transition-colors ${
             isDark ? "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
           }`}
@@ -110,7 +106,32 @@ function ResetPassword() {
             Back to login
           </button>
 
-          {success ? (
+          {invalidLink ? (
+            /* Invalid/expired link state */
+            <div className="text-center">
+              <div className={`w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center ${
+                isDark ? "bg-red-500/10" : "bg-red-50"
+              }`}>
+                <KeyRound className="w-6 h-6 text-red-500" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
+                Link expired
+              </h1>
+              <p className={`text-sm mb-8 ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
+                This password reset link is invalid or has expired. Please request a new one.
+              </p>
+              <button
+                onClick={() => navigate("/forgot-password")}
+                className={`w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98] ${
+                  isDark
+                    ? "bg-white text-zinc-900 hover:bg-zinc-200"
+                    : "bg-zinc-900 text-white hover:bg-zinc-800"
+                }`}
+              >
+                Request new link
+              </button>
+            </div>
+          ) : success ? (
             /* Success state */
             <div className="text-center">
               <div className="w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center bg-green-500/10">
@@ -181,6 +202,7 @@ function ResetPassword() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                       className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"}`}
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

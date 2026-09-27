@@ -1,11 +1,21 @@
+/* global process */
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
-const SITE_URL = "https://flink-smoky.vercel.app";
+const SITE_URL = (process.env.VITE_SITE_URL || "https://flink.to").replace(/\/$/, "");
 
 const BOT_AGENTS = /bot|crawl|spider|slurp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Discordbot|TelegramBot|Embedly|Quora Link Preview|Slack|vkShare|redditbot|Applebot|ia_archiver|Pinterest/i;
 
 // Static routes that should never be intercepted
-const STATIC_PATHS = new Set(["/", "/login", "/forgot-password", "/reset-password", "/settings", "/help"]);
+const STATIC_PATHS = new Set([
+  "/",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/settings",
+  "/help",
+  "/privacy",
+  "/terms",
+]);
 
 export const config = {
   matcher: "/:handle",

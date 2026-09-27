@@ -413,7 +413,7 @@ export const getConnectionStatus = async (userId1, userId2) => {
  * @param {boolean} isProfilePrivate - Whether the profile is private
  * @returns {Promise<{canView: boolean, connection: object}>}
  */
-export const canViewProfile = async (viewerId, profileUserId, isProfilePrivate) => {
+export const canViewProfile = async (viewerId, profileUserId, _isProfilePrivate) => {
   try {
     // If it's the same user, they can always view their own profile
     if (viewerId === profileUserId) {

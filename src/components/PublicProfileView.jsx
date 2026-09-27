@@ -31,6 +31,7 @@ import {
   Download,
 } from "lucide-react";
 import WhatsAppIcon from "./icons/WhatsAppIcon";
+import { parseWhatsAppInput } from "../utils/whatsapp";
 
 const PLATFORM_META = {
   email: { icon: Mail, label: "Email", color: "from-blue-500 to-blue-600" },
@@ -59,9 +60,7 @@ const formatUrlForClick = (url, platform) => {
   if (platform === "email") return `mailto:${url.replace(/^mailto:/, "")}`;
   if (platform === "phone") return url.startsWith("tel:") ? url : `tel:${url}`;
   if (platform === "whatsapp") {
-    if (url.includes("wa.me/") || url.includes("whatsapp.com"))
-      return url.startsWith("http") ? url : `https://${url}`;
-    return `https://wa.me/${url.replace(/[^0-9]/g, "")}`;
+    return parseWhatsAppInput(url) || "#";
   }
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   const builders = {
@@ -162,7 +161,7 @@ const categorizeSocialLinks = (links) => {
 };
 
 // Group consecutive same-platform links together within a section
-const groupLinksByPlatform = (links) => {
+const _groupLinksByPlatform = (links) => {
   const groups = [];
   let i = 0;
   while (i < links.length) {
@@ -280,7 +279,7 @@ const LinkGrid = ({ links, isDark, indexOffset = 0 }) => {
   );
 };
 
-const Section = ({ icon: SectionIcon, title, subtitle, children, isDark }) => {
+const Section = ({ icon: _SectionIcon, title, subtitle, children, isDark }) => {
   if (!children || (Array.isArray(children) && children.length === 0)) return null;
 
   return (
@@ -290,7 +289,7 @@ const Section = ({ icon: SectionIcon, title, subtitle, children, isDark }) => {
       {/* Section header */}
       <div className={`px-5 pt-4 pb-2 flex items-center justify-between`}>
         <div className="flex items-center gap-2">
-          <SectionIcon className={`w-4 h-4 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
+          <_SectionIcon className={`w-4 h-4 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
           <h3 className={`text-sm font-semibold ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
             {title}
           </h3>
@@ -317,6 +316,33 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportStatus, setReportStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
+
+  const handleReport = async () => {
+    if (!user) {
+      navigate('/login', { state: { from: `/${handle}` } });
+      return;
+    }
+    if (!reportReason) return;
+    setReportStatus('sending');
+    try {
+      const { error: reportError } = await supabase
+        .from('reports')
+        .insert({
+          reporter_id: user.id,
+          reported_user_id: profileData?.user_id,
+          reason: reportReason,
+          details: reportDetails.trim() || null,
+        });
+      if (reportError) throw reportError;
+      setReportStatus('sent');
+    } catch {
+      setReportStatus('error');
+    }
+  };
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -656,7 +682,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
         </button>
 
         {/* Footer */}
-        <div className={`mt-10 text-center ${!user ? "pb-16" : ""}`}>
+        <div className={`mt-10 text-center space-y-2 ${!user ? "pb-16" : ""}`}>
           <div className={`inline-flex items-center gap-1.5 text-xs ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
             <Link2 className="w-3 h-3" />
             <span>Powered by</span>
@@ -664,7 +690,112 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
               Flink
             </span>
           </div>
+          {!isPreview && (
+            <div>
+              <button
+                onClick={() => {
+                  if (user) setShowReportModal(true);
+                  else navigate('/login', { state: { from: `/${handle}` } });
+                }}
+                className={`text-[11px] transition-colors ${isDark ? "text-zinc-700 hover:text-zinc-500" : "text-zinc-300 hover:text-zinc-500"}`}
+              >
+                {user ? 'Report this profile' : 'Sign in to report this profile'}
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Report Modal */}
+        {showReportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowReportModal(false)}>
+            <div
+              className={`w-full max-w-sm rounded-2xl p-6 ${isDark ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-zinc-200 shadow-xl"}`}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Report profile"
+            >
+              {reportStatus === 'sent' ? (
+                <div className="text-center py-4">
+                  <Check className={`w-8 h-8 mx-auto mb-3 text-green-500`} />
+                  <p className={`text-sm font-medium ${isDark ? "text-white" : "text-zinc-900"}`}>Report submitted</p>
+                  <p className={`text-xs mt-1 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>We'll review this profile. Thank you.</p>
+                  <button
+                    onClick={() => { setShowReportModal(false); setReportStatus(null); setReportReason(''); setReportDetails(''); }}
+                    className={`mt-4 px-4 py-2 rounded-xl text-sm font-medium ${isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-100 text-zinc-700"}`}
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <h3 className={`text-base font-semibold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Report @{handle}</h3>
+                  <div className="space-y-2 mb-4">
+                    {[
+                      { value: 'spam', label: 'Spam' },
+                      { value: 'impersonation', label: 'Impersonation' },
+                      { value: 'malicious_links', label: 'Malicious links' },
+                      { value: 'harassment', label: 'Harassment' },
+                      { value: 'other', label: 'Other' },
+                    ].map((opt) => (
+                      <label key={opt.value} className={`flex items-center gap-2 p-2.5 rounded-xl cursor-pointer transition-colors text-sm ${
+                        reportReason === opt.value
+                          ? isDark ? "bg-zinc-800 text-white" : "bg-zinc-100 text-zinc-900"
+                          : isDark ? "text-zinc-400 hover:bg-zinc-800/50" : "text-zinc-600 hover:bg-zinc-50"
+                      }`}>
+                        <input
+                          type="radio"
+                          name="report-reason"
+                          value={opt.value}
+                          checked={reportReason === opt.value}
+                          onChange={(e) => setReportReason(e.target.value)}
+                          className="sr-only"
+                        />
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          reportReason === opt.value
+                            ? "border-red-500"
+                            : isDark ? "border-zinc-600" : "border-zinc-300"
+                        }`}>
+                          {reportReason === opt.value && <div className="w-2 h-2 rounded-full bg-red-500" />}
+                        </div>
+                        {opt.label}
+                      </label>
+                    ))}
+                  </div>
+                  {reportReason && (
+                    <textarea
+                      value={reportDetails}
+                      onChange={(e) => setReportDetails(e.target.value)}
+                      placeholder="Additional details (optional)"
+                      rows={2}
+                      className={`w-full px-3 py-2 rounded-xl text-sm mb-4 outline-none ${
+                        isDark ? "bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500" : "bg-zinc-50 border border-zinc-200 text-zinc-900 placeholder-zinc-400"
+                      }`}
+                    />
+                  )}
+                  {reportStatus === 'error' && (
+                    <p className="text-xs text-red-500 mb-3">Failed to submit report. Please try again.</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setShowReportModal(false); setReportStatus(null); }}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${isDark ? "text-zinc-400 hover:bg-zinc-800" : "text-zinc-500 hover:bg-zinc-50"}`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleReport}
+                      disabled={!reportReason || reportStatus === 'sending'}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+                    >
+                      {reportStatus === 'sending' ? 'Submitting...' : 'Submit report'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sticky CTA for logged-out visitors */}

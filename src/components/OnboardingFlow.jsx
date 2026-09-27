@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import SocialHandlesForm from './SocialHandlesForm';
 import ProfileSetupForm from './ProfileSetupForm';
 
-const OnboardingFlow = ({ onComplete, userName, userEmail, userId }) => {
+const OnboardingFlow = ({ onComplete, userName, userId, claimedHandle = '' }) => {
   const { supabase } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -68,17 +68,20 @@ const OnboardingFlow = ({ onComplete, userName, userEmail, userId }) => {
         });
       }
 
-      // Delete any existing social links first (prevents duplicates on re-onboarding)
-      await supabase
-        .from('social_links')
-        .delete()
-        .eq('user_id', formData.userId);
-
+      // Atomic replace: delete old + insert new in one transaction
       if (socialLinksData.length > 0) {
-        const { error: socialLinksError } = await supabase
-          .from('social_links')
-          .insert(socialLinksData);
-
+        const { error: socialLinksError } = await supabase.rpc(
+          'upsert_social_links',
+          {
+            p_user_id: formData.userId,
+            p_links: socialLinksData.map(({ platform, url, label, display_order }) => ({
+              platform,
+              url,
+              label: label || null,
+              display_order: display_order || 0,
+            })),
+          }
+        );
         if (socialLinksError) throw socialLinksError;
       }
 
@@ -137,7 +140,6 @@ const OnboardingFlow = ({ onComplete, userName, userEmail, userId }) => {
           onNext={handleSocialHandlesNext}
           onBack={handleBack}
           initialData={formData.socialLinks}
-          userEmail={userEmail}
         />
       )}
 
@@ -145,7 +147,8 @@ const OnboardingFlow = ({ onComplete, userName, userEmail, userId }) => {
         <ProfileSetupForm
           onComplete={handleProfileSetupComplete}
           onBack={handleBack}
-          initialData={formData.profile}
+          userId={userId}
+          initialData={{ ...formData.profile, handle: formData.profile.handle || claimedHandle }}
         />
       )}
     </div>

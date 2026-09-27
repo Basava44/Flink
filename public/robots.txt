@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://flink-smoky.vercel.app/sitemap.xml
+Sitemap: https://flink.to/sitemap.xml

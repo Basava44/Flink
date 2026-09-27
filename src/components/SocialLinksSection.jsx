@@ -21,6 +21,7 @@ import {
   Globe,
 } from "lucide-react";
 import WhatsAppIcon from "./icons/WhatsAppIcon";
+import { parseWhatsAppInput } from "../utils/whatsapp";
 
 const PLATFORM_META = {
   email: { icon: Mail, label: "Email", color: "from-blue-500 to-blue-600" },
@@ -49,9 +50,7 @@ const formatUrlForClick = (url, platform) => {
   if (platform === "email") return `mailto:${url.replace(/^mailto:/, "").trim()}`;
   if (platform === "phone") return url.startsWith("tel:") ? url : `tel:${url}`;
   if (platform === "whatsapp") {
-    if (url.includes("wa.me/") || url.includes("whatsapp.com"))
-      return url.startsWith("http") ? url : `https://${url}`;
-    return `https://wa.me/${url.replace(/[^0-9]/g, "")}`;
+    return parseWhatsAppInput(url) || "#";
   }
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   const builders = {
@@ -129,7 +128,7 @@ const categorizeSocialLinks = (links) => {
   return { contact, featured, elsewhere };
 };
 
-const LinkCard = ({ link, isDark, index = 0 }) => {
+const LinkCard = ({ link, isDark, index: _index = 0 }) => {
   const isCustom = link.platform === "custom";
   const meta = isCustom
     ? { icon: ExternalLink, label: link.label || "Link", color: "from-violet-500 to-purple-600" }
@@ -183,8 +182,8 @@ const LinkGrid = ({ links, isDark, indexOffset = 0 }) => {
   return (
     <>
       <div className="grid grid-cols-2">
-        {gridLinks.map((link, i) => (
-          <LinkCard key={link.id} link={link} isDark={isDark} index={indexOffset + i} />
+        {gridLinks.map((link, _index) => (
+          <LinkCard key={link.id} link={link} isDark={isDark} index={indexOffset + _index} />
         ))}
       </div>
       {lastLink && <LinkCard link={lastLink} isDark={isDark} index={indexOffset + gridLinks.length} />}
@@ -192,7 +191,7 @@ const LinkGrid = ({ links, isDark, indexOffset = 0 }) => {
   );
 };
 
-const Section = ({ icon: SectionIcon, title, subtitle, children, isDark }) => {
+const Section = ({ icon: _SectionIcon, title, subtitle, children, isDark }) => {
   if (!children || (Array.isArray(children) && children.length === 0)) return null;
 
   return (
@@ -201,7 +200,7 @@ const Section = ({ icon: SectionIcon, title, subtitle, children, isDark }) => {
     }`}>
       <div className="px-4 sm:px-5 pt-3.5 pb-1.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <SectionIcon className={`w-3.5 h-3.5 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
+          <_SectionIcon className={`w-3.5 h-3.5 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
           <h3 className={`text-xs sm:text-sm font-semibold ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
             {title}
           </h3>
@@ -217,7 +216,7 @@ const Section = ({ icon: SectionIcon, title, subtitle, children, isDark }) => {
   );
 };
 
-const SocialLinksSection = ({ socialLinks, profileDetails }) => {
+const SocialLinksSection = ({ socialLinks, profileDetails: _profileDetails }) => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
 

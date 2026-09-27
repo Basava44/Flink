@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTheme } from '../hooks/useTheme';
 import { Globe, FileText, MapPin, User } from 'lucide-react';
+import { SITE_URL, SITE_DOMAIN } from '../utils/constants';
 
 const ProfileSection = ({ userDetails, profileDetails }) => {
   const { isDark } = useTheme();
@@ -32,7 +33,7 @@ const ProfileSection = ({ userDetails, profileDetails }) => {
           : "bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200"
       }`}>
         <a
-          href={`https://flink.to/${profileDetails.handle}`}
+          href={`${SITE_URL}/${profileDetails.handle}`}
           target="_blank"
           rel="noopener noreferrer"
           className={`inline-flex items-center space-x-2 text-base font-semibold hover:scale-105 transition-transform duration-200 ${
@@ -40,7 +41,7 @@ const ProfileSection = ({ userDetails, profileDetails }) => {
           }`}
         >
           <Globe className="w-4 h-4" />
-          <span>flink.to/{profileDetails.handle}</span>
+          <span>{SITE_DOMAIN}/{profileDetails.handle}</span>
         </a>
       </div>
 

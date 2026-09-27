@@ -36,6 +36,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import WhatsAppIcon from "../components/icons/WhatsAppIcon";
+import { parseWhatsAppInput } from "../utils/whatsapp";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -59,9 +60,54 @@ const SettingsPage = () => {
   const [displayName, setDisplayName] = useState("");
   const [originalDisplayName, setOriginalDisplayName] = useState("");
   const [userProfileHandle, setUserProfileHandle] = useState(null);
+  const [showAllPlatforms, setShowAllPlatforms] = useState(false);
   const scrollTimeoutRef = useRef(null);
   const idleTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
+  const deleteDialogRef = useRef(null);
+  const deleteInputRef = useRef(null);
+  const deleteTriggerRef = useRef(null);
+
+  useEffect(() => {
+    if (!showDeleteModal) return undefined;
+
+    const previouslyFocused = document.activeElement;
+    const dialog = deleteDialogRef.current;
+    deleteInputRef.current?.focus();
+
+    const handleDialogKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setShowDeleteModal(false);
+        setDeleteConfirmText("");
+        return;
+      }
+
+      if (event.key !== "Tab" || !dialog) return;
+      const focusable = Array.from(
+        dialog.querySelectorAll(
+          'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleDialogKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleDialogKeyDown);
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, [showDeleteModal]);
 
   // Convert social links array to object format for editing
   const [socialLinksData, setSocialLinksData] = useState({});
@@ -75,6 +121,10 @@ const SettingsPage = () => {
     website: "",
     private: false,
   });
+
+  const POPULAR_PLATFORMS = new Set([
+    "email", "phone", "whatsapp", "instagram", "twitter", "linkedin", "github", "youtube",
+  ]);
 
   const socialPlatforms = [
     {
@@ -95,7 +145,7 @@ const SettingsPage = () => {
       key: "whatsapp",
       name: "WhatsApp",
       icon: <WhatsAppIcon className="w-5 h-5" />,
-      placeholder: "phone number or wa.me/username",
+      placeholder: "+91 98765 43210 or wa.me link",
     },
     {
       key: "instagram",
@@ -495,14 +545,14 @@ const SettingsPage = () => {
     try {
       // Generate unique filename
       const fileExt = originalFileName.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random()
+      const objectPath = `${user.id}/${Date.now()}-${Math.random()
         .toString(36)
         .substring(2)}.${fileExt}`;
 
       // Upload compressed blob to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(fileName, blob, {
+        .upload(objectPath, blob, {
           cacheControl: "3600",
           upsert: false,
           contentType: blob.type,
@@ -515,7 +565,7 @@ const SettingsPage = () => {
       // Get public URL with transformation for faster loading
       const {
         data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(fileName);
+      } = supabase.storage.from("avatars").getPublicUrl(objectPath);
 
       // Update profile URL state
       setProfileUrl(publicUrl);
@@ -541,6 +591,15 @@ const SettingsPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate WhatsApp values before saving
+    const waValues = socialLinksData.whatsapp || [];
+    for (const val of waValues) {
+      if (val?.trim() && !parseWhatsAppInput(val.trim())) {
+        setError("WhatsApp: enter an international phone number (e.g. +91 98765 43210) or a wa.me link");
+        return;
+      }
+    }
 
     setLoading(true);
     setError("");
@@ -626,25 +685,22 @@ const SettingsPage = () => {
           }
         });
 
-        // Delete all existing social links for this user first
-        const { error: deleteError } = await supabase
-          .from("social_links")
-          .delete()
-          .eq("user_id", user.id);
-
-        if (deleteError) {
-          throw deleteError;
-        }
-
-        // Insert new social links
-        if (linksToInsert.length > 0) {
-          const { error: insertError } = await supabase
-            .from("social_links")
-            .insert(linksToInsert);
-
-          if (insertError) {
-            throw insertError;
+        // Atomic replace: delete old + insert new in one transaction
+        const { error: upsertError } = await supabase.rpc(
+          "upsert_social_links",
+          {
+            p_user_id: user.id,
+            p_links: linksToInsert.map(({ platform, url, label, display_order }) => ({
+              platform,
+              url,
+              label: label || null,
+              display_order: display_order || 0,
+            })),
           }
+        );
+
+        if (upsertError) {
+          throw upsertError;
         }
 
         // Clear dashboard cache to force refresh
@@ -942,7 +998,7 @@ const SettingsPage = () => {
           <div className="flex items-center space-x-2">
             <Info className="w-4 h-4 flex-shrink-0" />
             <p className="text-sm">
-              <span className="font-medium">Note:</span> Flink handle and email
+              <span className="font-medium">Note:</span> Flink handle and account email
               are permanent and cannot be changed. You can edit your bio,
               location, website, and social links below.
             </p>
@@ -1146,7 +1202,12 @@ const SettingsPage = () => {
               </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {socialPlatforms.map((platform) => {
+              {socialPlatforms.filter((platform) => {
+                if (showAllPlatforms) return true;
+                if (POPULAR_PLATFORMS.has(platform.key)) return true;
+                const entries = socialLinksData[platform.key] || [""];
+                return entries.some(v => v?.trim());
+              }).map((platform) => {
                 const entries = socialLinksData[platform.key] || [""];
                 const isEmail = platform.key === "email";
                 return (
@@ -1182,52 +1243,84 @@ const SettingsPage = () => {
                         </button>
                       )}
                     </div>
-                    {entries.map((value, idx) => (
-                      <div key={idx} className="relative flex items-center gap-2">
-                        <input
-                          type={platform.type || "text"}
-                          value={value || ""}
-                          onChange={(e) =>
-                            handleInputChange(platform.key, e.target.value, idx)
-                          }
-                          onFocus={() => setFocusedField(`${platform.key}-${idx}`)}
-                          onBlur={() => setFocusedField(null)}
-                          disabled={isEmail && idx === 0}
-                          className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
-                            isEmail && idx === 0
-                              ? isDark
-                                ? "bg-zinc-800/30 border border-zinc-700 text-gray-400 cursor-not-allowed"
-                                : "bg-gray-100 border border-gray-200 text-gray-500 cursor-not-allowed"
-                              : isDark
-                              ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-gray-400 focus:border-primary-500"
-                              : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
-                          }`}
-                          placeholder={idx === 0 ? platform.placeholder : `Another ${platform.name}`}
-                        />
-                        {entries.length > 1 && !(isEmail && idx === 0) && (
-                          <button
-                            type="button"
-                            onClick={() => removePlatformEntry(platform.key, idx)}
-                            className={`flex-shrink-0 p-2.5 rounded-lg transition-all duration-200 active:scale-95 ${
-                              isDark
-                                ? "text-zinc-500 hover:text-red-400 hover:bg-zinc-800"
-                                : "text-zinc-400 hover:text-red-500 hover:bg-zinc-100"
-                            }`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                    {entries.map((value, idx) => {
+                      const isWa = platform.key === "whatsapp";
+                      const waVal = isWa ? (value || "").trim() : "";
+                      const waResolved = isWa && waVal ? parseWhatsAppInput(waVal) : null;
+                      const waInvalid = isWa && waVal && !waResolved;
+                      return (
+                        <div key={idx}>
+                          <div className="relative flex items-center gap-2">
+                            <input
+                              type={platform.type || "text"}
+                              value={value || ""}
+                              onChange={(e) =>
+                                handleInputChange(platform.key, e.target.value, idx)
+                              }
+                              onFocus={() => setFocusedField(`${platform.key}-${idx}`)}
+                              onBlur={() => setFocusedField(null)}
+                              className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 ${
+                                waInvalid
+                                  ? isDark
+                                    ? "bg-zinc-800/50 border border-red-800 text-white placeholder-gray-400 focus:border-red-700"
+                                    : "bg-gray-50 border border-red-300 text-gray-900 placeholder-gray-400 focus:border-red-400"
+                                  : isDark
+                                  ? "bg-zinc-800/50 border border-zinc-700 text-white placeholder-gray-400 focus:border-primary-500"
+                                  : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500"
+                              }`}
+                              placeholder={idx === 0 ? (isWa ? "+91 98765 43210 or wa.me link" : platform.placeholder) : `Another ${platform.name}`}
+                            />
+                            {entries.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removePlatformEntry(platform.key, idx)}
+                                className={`flex-shrink-0 p-2.5 rounded-lg transition-all duration-200 active:scale-95 ${
+                                  isDark
+                                    ? "text-zinc-500 hover:text-red-400 hover:bg-zinc-800"
+                                    : "text-zinc-400 hover:text-red-500 hover:bg-zinc-100"
+                                }`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                          {isWa && waVal && (
+                            <p className={`mt-1 text-xs pl-1 ${waInvalid
+                              ? isDark ? "text-red-400" : "text-red-500"
+                              : isDark ? "text-zinc-500" : "text-zinc-400"
+                            }`}>
+                              {waInvalid
+                                ? "Enter an international phone number or wa.me link"
+                                : <>Links to <span className={isDark ? "text-zinc-300" : "text-zinc-600"}>{waResolved}</span></>
+                              }
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
                     {isEmail && (
-                      <p className="text-xs pl-2 text-green-600">
-                        Email cannot be edited.
+                      <p className="text-xs pl-2 text-zinc-500">
+                        Optional public contact email. Your login email stays private.
                       </p>
                     )}
                   </div>
                 );
               })}
             </div>
+
+            {!showAllPlatforms && (
+              <button
+                type="button"
+                onClick={() => setShowAllPlatforms(true)}
+                className={`mt-3 w-full py-2.5 rounded-xl text-xs font-medium border border-dashed transition-all duration-200 ${
+                  isDark
+                    ? "border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-400"
+                    : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500"
+                }`}
+              >
+                + Show more platforms (Snapchat, Discord, Twitch, Telegram, Reddit, Spotify, Medium, Threads)
+              </button>
+            )}
 
             {/* Custom Links */}
             <div className={`mt-6 pt-6 border-t ${isDark ? "border-zinc-800" : "border-gray-200"}`}>
@@ -1593,6 +1686,7 @@ const SettingsPage = () => {
               This action cannot be undone.
             </p>
             <button
+              ref={deleteTriggerRef}
               type="button"
               onClick={() => setShowDeleteModal(true)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 active:scale-95 ${
@@ -1631,11 +1725,15 @@ const SettingsPage = () => {
             onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}
           />
           <div
+            ref={deleteDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-modal-title"
             className={`relative w-full max-w-sm rounded-2xl p-6 shadow-2xl ${
               isDark ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-zinc-200"
             }`}
           >
-            <h3 className={`text-lg font-semibold mb-2 ${isDark ? "text-red-400" : "text-red-700"}`}>
+            <h3 id="delete-modal-title" className={`text-lg font-semibold mb-2 ${isDark ? "text-red-400" : "text-red-700"}`}>
               Delete your account?
             </h3>
             <p className={`text-sm mb-4 ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
@@ -1645,6 +1743,7 @@ const SettingsPage = () => {
               Type <strong className={isDark ? "text-zinc-200" : "text-zinc-900"}>delete</strong> to confirm:
             </p>
             <input
+              ref={deleteInputRef}
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
@@ -1659,6 +1758,7 @@ const SettingsPage = () => {
               <button
                 type="button"
                 onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}
+                aria-label="Cancel delete account"
                 className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isDark
                     ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"

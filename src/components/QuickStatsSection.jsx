@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const QuickStatsSection = ({
   socialLinks,
-  profileDetails,
+  profileDetails: _profileDetails,
   friends = 0,
   pendingRequests = 0,
 }) => {

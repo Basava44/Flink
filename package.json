@@ -3,18 +3,23 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://basava44.github.io/Flink",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "homepage": "https://flink.to",
   "scripts": {
     "dev": "vite",
     "dev:mock": "VITE_USE_MOCK=true vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --test tests/*.test.js",
+    "check": "npm run lint && npm test && npm run build",
+    "dev:mock:anon": "VITE_USE_MOCK=true VITE_MOCK_AUTH=anonymous vite",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
-    "@emailjs/browser": "^4.4.1",
     "@supabase/supabase-js": "^2.75.0",
     "lucide-react": "^0.545.0",
     "react": "^19.1.1",

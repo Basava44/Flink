@@ -264,7 +264,7 @@ export function encodeQR(text) {
 
   const version = getVersion(dataLen);
   const vt = VERSION_TABLE[version];
-  const totalCodewords = vt[0];
+  const _totalCodewords = vt[0];
   const ecPerBlock = vt[1];
   const numBlocks1 = vt[2];
   const dataPerBlock1 = vt[3];
@@ -351,7 +351,7 @@ export function encodeQR(text) {
   placePatterns(qr, version);
 
   // Try all masks and pick best
-  let bestMask = 0;
+  let _bestMask = 0;
   let bestPenalty = Infinity;
   let bestMatrix = null;
 
@@ -368,7 +368,7 @@ export function encodeQR(text) {
     const p = penaltyScore(clone.matrix, clone.size);
     if (p < bestPenalty) {
       bestPenalty = p;
-      bestMask = mask;
+      _bestMask = mask;
       bestMatrix = clone.matrix;
     }
   }

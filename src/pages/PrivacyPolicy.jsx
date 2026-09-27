@@ -50,7 +50,7 @@ function PrivacyPolicy() {
             <div className={sectionClass}>
               <p className="mb-3">When you use Flink, we collect the following information:</p>
               <ul className="list-disc pl-5 space-y-1.5">
-                <li><strong>Account information</strong> - your name, email address, and password (or Google account details if you use Google sign-in).</li>
+                <li><strong>Account information</strong> - your name, email address, and password (or Google account details if you use Google sign-in). Your email and password are kept in the authentication system and are not exposed through public profiles.</li>
                 <li><strong>Profile information</strong> - your chosen handle, display name, bio, avatar photo, and location.</li>
                 <li><strong>Social links</strong> - the platform names, URLs, and labels you add to your profile.</li>
                 <li><strong>Usage data</strong> - basic analytics like page views, collected automatically by our hosting provider.</li>
@@ -92,9 +92,9 @@ function PrivacyPolicy() {
           </section>
 
           <section>
-            <h2 className={headingClass}>5. Your public profile</h2>
+            <h2 className={headingClass}>5. Your profile visibility</h2>
             <div className={sectionClass}>
-              <p>Your Flink profile (handle, display name, bio, avatar, and social links) is publicly accessible by design - that is the core purpose of the service. If you do not want information to be public, do not add it to your profile.</p>
+              <p>Flink profiles are public by default - that is the core purpose of the service. You can set your profile to private in Settings, which hides it from anyone except you. When your profile is public, your handle, display name, bio, avatar, and social links are accessible to anyone with your Flink URL. If you do not want information to be visible, either set your profile to private or do not add it to your profile.</p>
             </div>
           </section>
 

@@ -64,6 +64,7 @@ function ForgotPassword() {
         </button>
         <button
           onClick={toggleTheme}
+          aria-label="Toggle theme"
           className={`p-2 rounded-lg transition-colors ${
             isDark ? "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
           }`}

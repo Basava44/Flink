@@ -4,7 +4,6 @@ import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { supabase } from '../lib/supabase';
-import emailjs from '@emailjs/browser';
 import {
   ArrowLeft,
   Sun,
@@ -22,9 +21,9 @@ const faqs = [
       'Flink is a free link-in-bio service that lets you create a clean, public profile page with all your social links and contact info in one place. Share a single URL and let people find you everywhere.',
   },
   {
-    question: 'How do I change my handle?',
+    question: 'Can I change my handle?',
     answer:
-      'Go to Settings from your profile page. You can update your handle in the Profile section. Note that your old URL will stop working once you change it.',
+      'Handles are permanent once set and cannot be changed. Choose carefully during setup, as your Flink URL is tied to your handle.',
   },
   {
     question: 'How do I delete my account?',
@@ -82,8 +81,6 @@ const HelpSupportPage = () => {
   useDocumentMeta({ title: 'Help & Support', path: '/help' });
 
   const [formData, setFormData] = useState({
-    name: user?.user_metadata?.full_name || user?.email || '',
-    email: user?.email || '',
     type: 'question',
     subject: '',
     message: '',
@@ -92,12 +89,6 @@ const HelpSupportPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [userProfileHandle, setUserProfileHandle] = useState(null);
-
-  // EmailJS Configuration
-  const EMAILJS_SERVICE_ID = 'service_0x90k2w';
-  const EMAILJS_TEMPLATE_ID = 'template_ta7xsho';
-  const EMAILJS_PUBLIC_KEY = 'p7oUEROenZNCa6crO';
-  const SUPPORT_EMAIL = 'karibasava.t.g@gmail.com';
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -136,36 +127,23 @@ const HelpSupportPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setIsSubmitting(true);
     setSubmitStatus(null);
 
     try {
-      const templateParams = {
-        from_name: formData.name,
-        from_email: formData.email,
-        to_email: SUPPORT_EMAIL,
-        subject: `[${formData.type.replace('_', ' ').toUpperCase()}] ${formData.subject}`,
-        type: formData.type,
-        priority: formData.priority,
-        message: formData.message,
-        user_email: formData.email,
-        reply_to: formData.email,
-      };
+      const { error: submitError } = await supabase.rpc('submit_support_request', {
+        p_type: formData.type,
+        p_subject: formData.subject,
+        p_message: formData.message,
+        p_priority: formData.priority,
+      });
+      if (submitError) throw submitError;
 
-      const response = await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
-      );
-
-      console.log('Email sent successfully:', response);
       setSubmitStatus('success');
 
       setTimeout(() => {
         setFormData({
-          name: user?.user_metadata?.full_name || user?.email || '',
-          email: user?.email || '',
           type: 'question',
           subject: '',
           message: '',
@@ -175,10 +153,8 @@ const HelpSupportPage = () => {
       }, 3000);
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      setSubmitStatus('error');
-      alert(
-        'Failed to send feedback. Please try again later or contact us directly at ' +
-          SUPPORT_EMAIL
+      setSubmitStatus(
+        error?.message?.toLowerCase().includes('wait') ? 'rate_limit' : 'error'
       );
     } finally {
       setIsSubmitting(false);
@@ -301,6 +277,19 @@ const HelpSupportPage = () => {
             >
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <p>There was an error sending your message. Please try again.</p>
+            </div>
+          )}
+
+          {submitStatus === 'rate_limit' && (
+            <div
+              className={`mb-6 p-4 rounded-xl flex items-center gap-3 text-sm ${
+                isDark
+                  ? 'bg-amber-900/20 border border-amber-800 text-amber-300'
+                  : 'bg-amber-50 border border-amber-200 text-amber-700'
+              }`}
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <p>Please wait before sending another message. You can submit once per minute.</p>
             </div>
           )}
 

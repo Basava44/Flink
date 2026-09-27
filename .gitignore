@@ -33,3 +33,4 @@ dist-ssr
 *.sw?
 
 client_secret*
+audit/

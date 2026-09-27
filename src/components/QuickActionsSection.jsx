@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Link, Share2, X, Copy, QrCode, Check, MessageCircle, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import QRCodeImg from './QRCode';
+import { SITE_URL, SITE_DOMAIN } from '../utils/constants';
 
 const QuickActionsSection = ({ profileDetails }) => {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ const QuickActionsSection = ({ profileDetails }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const profileUrl = `https://flink.to/${profileDetails?.handle || 'your-handle'}`;
+  const profileUrl = `${SITE_URL}/${profileDetails?.handle || 'your-handle'}`;
 
   const handleSocialLinksClick = () => {
     navigate('/settings');
@@ -211,7 +212,7 @@ const QuickActionsSection = ({ profileDetails }) => {
                         isDark ? "text-gray-400" : "text-gray-500"
                       }`}
                     >
-                      flink.to/{profileDetails?.handle || "your-handle"}
+                      {SITE_DOMAIN}/{profileDetails?.handle || "your-handle"}
                     </p>
                   </div>
 

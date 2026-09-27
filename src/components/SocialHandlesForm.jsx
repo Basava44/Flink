@@ -6,11 +6,12 @@ import {
   Plus, Trash2, Link,
 } from 'lucide-react';
 import WhatsAppIcon from './icons/WhatsAppIcon';
+import { parseWhatsAppInput } from '../utils/whatsapp';
 
 const PLATFORMS = [
   { key: 'email', name: 'Email', icon: Mail, placeholder: 'your.email@example.com', type: 'email' },
   { key: 'phone', name: 'Phone', icon: Phone, placeholder: 'phone number', type: 'tel' },
-  { key: 'whatsapp', name: 'WhatsApp', icon: WhatsAppIcon, placeholder: 'phone number or wa.me link' },
+  { key: 'whatsapp', name: 'WhatsApp', icon: WhatsAppIcon, placeholder: '+91 98765 43210 or wa.me link' },
   { key: 'instagram', name: 'Instagram', icon: Instagram, placeholder: '@username' },
   { key: 'twitter', name: 'Twitter/X', icon: Twitter, placeholder: '@username' },
   { key: 'linkedin', name: 'LinkedIn', icon: Linkedin, placeholder: 'linkedin.com/in/username' },
@@ -27,12 +28,11 @@ const PLATFORMS = [
   { key: 'threads', name: 'Threads', icon: Twitter, placeholder: '@username' },
 ];
 
-const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' }) => {
+const SocialHandlesForm = ({ onNext, onBack: _onBack, initialData = {} }) => {
   const { isDark } = useTheme();
   const [socialLinks, setSocialLinks] = useState(() => {
     const defaults = {};
     PLATFORMS.forEach(p => { defaults[p.key] = initialData[p.key] || ''; });
-    defaults.email = initialData.email || userEmail || '';
     return defaults;
   });
   const [customLinks, setCustomLinks] = useState(initialData.customLinks || []);
@@ -40,11 +40,11 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
   useEffect(() => {
     setSocialLinks(prev => {
       const updated = { ...prev };
-      PLATFORMS.forEach(p => { updated[p.key] = initialData[p.key] || (p.key === 'email' ? userEmail : '') || prev[p.key]; });
+      PLATFORMS.forEach(p => { updated[p.key] = initialData[p.key] || prev[p.key]; });
       return updated;
     });
     if (initialData.customLinks) setCustomLinks(initialData.customLinks);
-  }, [initialData, userEmail]);
+  }, [initialData]);
 
   const handleInputChange = (platform, value) => {
     setSocialLinks(prev => ({ ...prev, [platform]: value }));
@@ -67,8 +67,16 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
     setCustomLinks(prev => prev.filter((_, i) => i !== index));
   };
 
+  const [whatsappError, setWhatsappError] = useState('');
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    const wa = socialLinks.whatsapp?.trim();
+    if (wa && !parseWhatsAppInput(wa)) {
+      setWhatsappError('Enter an international phone number (e.g. +91 98765 43210) or a wa.me link');
+      return;
+    }
+    setWhatsappError('');
     onNext({ socialLinks, customLinks: customLinks.filter(l => l.label.trim() && l.url.trim()) });
   };
 
@@ -161,31 +169,49 @@ const SocialHandlesForm = ({ onNext, onBack, initialData = {}, userEmail = '' })
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {PLATFORMS.map((platform) => {
                   const Icon = platform.icon;
-                  const isEmailPrefilled = platform.key === 'email' && userEmail;
+                  const isWhatsApp = platform.key === 'whatsapp';
+                  const waValue = socialLinks.whatsapp?.trim();
+                  const waResolved = isWhatsApp && waValue ? parseWhatsAppInput(waValue) : null;
+                  const waInvalid = isWhatsApp && waValue && !waResolved;
 
                   return (
-                    <div key={platform.key} className="relative">
-                      <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
-                        <Icon className="w-4 h-4" />
+                    <div key={platform.key} className={isWhatsApp ? "col-span-1 sm:col-span-2" : "relative"}>
+                      <div className="relative">
+                        <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <input
+                          type={platform.type || "text"}
+                          value={socialLinks[platform.key]}
+                          onChange={(e) => {
+                            handleInputChange(platform.key, e.target.value);
+                            if (isWhatsApp) setWhatsappError('');
+                          }}
+                          className={`${inputClass} ${
+                            waInvalid
+                              ? isDark
+                                ? "border-red-800 focus:border-red-700 focus:ring-red-700"
+                                : "border-red-300 focus:border-red-400 focus:ring-red-400"
+                              : ""
+                          }`}
+                          placeholder={platform.name}
+                          autoCapitalize="off"
+                          autoCorrect="off"
+                          autoComplete="off"
+                          spellCheck="false"
+                        />
                       </div>
-                      <input
-                        type={platform.type || "text"}
-                        value={socialLinks[platform.key]}
-                        onChange={(e) => handleInputChange(platform.key, e.target.value)}
-                        className={`${inputClass} ${
-                          isEmailPrefilled
-                            ? isDark
-                              ? "border-green-800 bg-green-900/10 text-green-300"
-                              : "border-green-300 bg-green-50 text-green-700"
-                            : ""
-                        }`}
-                        placeholder={platform.name}
-                        disabled={!!isEmailPrefilled}
-                        autoCapitalize="off"
-                        autoCorrect="off"
-                        autoComplete="off"
-                        spellCheck="false"
-                      />
+                      {isWhatsApp && waValue && (
+                        <p className={`mt-1 text-xs pl-1 ${waInvalid
+                          ? isDark ? "text-red-400" : "text-red-500"
+                          : isDark ? "text-zinc-500" : "text-zinc-400"
+                        }`}>
+                          {waInvalid
+                            ? (whatsappError || 'Enter an international phone number or wa.me link')
+                            : <>Links to <span className={isDark ? "text-zinc-300" : "text-zinc-600"}>{waResolved}</span></>
+                          }
+                        </p>
+                      )}
                     </div>
                   );
                 })}
