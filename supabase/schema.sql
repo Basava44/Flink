@@ -30,6 +30,10 @@ CREATE TABLE IF NOT EXISTS flink_profiles (
   website TEXT,
   profile_url TEXT,
   is_private BOOLEAN DEFAULT FALSE,
+  is_premium BOOLEAN DEFAULT FALSE,
+  premium_since TIMESTAMPTZ,
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -57,7 +61,7 @@ INSERT INTO reserved_handles (handle) VALUES
   ('forgot-password'), ('reset-password'), ('privacy'), ('terms'),
   ('admin'), ('api'), ('app'), ('about'), ('blog'), ('contact'),
   ('dashboard'), ('flink'), ('home'), ('notifications'), ('friends'),
-  ('search'), ('explore'), ('profile'), ('edit'), ('delete'),
+  ('search'), ('explore'), ('profile'), ('edit'), ('delete'), ('analytics'),
   ('null'), ('undefined'), ('favicon.ico'), ('robots.txt'), ('sitemap.xml')
 ON CONFLICT DO NOTHING;
 
@@ -91,6 +95,35 @@ CREATE TABLE IF NOT EXISTS support_requests (
 
 CREATE INDEX IF NOT EXISTS idx_support_requests_user_created
   ON support_requests(user_id, created_at DESC);
+
+-- ANALYTICS TABLES
+-- ==============================================
+
+CREATE TABLE IF NOT EXISTS profile_views (
+  id BIGSERIAL PRIMARY KEY,
+  profile_id INTEGER NOT NULL REFERENCES flink_profiles(id) ON DELETE CASCADE,
+  visitor_id TEXT,          -- fingerprint hash for unique visitor tracking (no PII)
+  referrer TEXT,
+  country TEXT,
+  user_agent TEXT,
+  viewed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_profile_views_profile_id ON profile_views(profile_id);
+CREATE INDEX IF NOT EXISTS idx_profile_views_viewed_at ON profile_views(profile_id, viewed_at DESC);
+
+CREATE TABLE IF NOT EXISTS link_clicks (
+  id BIGSERIAL PRIMARY KEY,
+  link_id INTEGER NOT NULL REFERENCES social_links(id) ON DELETE CASCADE,
+  profile_id INTEGER NOT NULL REFERENCES flink_profiles(id) ON DELETE CASCADE,
+  referrer TEXT,
+  country TEXT,
+  user_agent TEXT,
+  clicked_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_link_clicks_link_id ON link_clicks(link_id);
+CREATE INDEX IF NOT EXISTS idx_link_clicks_profile_id ON link_clicks(profile_id, clicked_at DESC);
 
 -- 2. INDEXES
 -- ==============================================
@@ -139,7 +172,8 @@ BEGIN
     WHERE schemaname = 'public'
       AND tablename IN (
         'users', 'flink_profiles', 'social_links',
-        'reserved_handles', 'reports', 'support_requests'
+        'reserved_handles', 'reports', 'support_requests',
+        'profile_views', 'link_clicks'
       )
   ) LOOP
     EXECUTE format('DROP POLICY IF EXISTS %I ON %I', r.policyname, r.tablename);
@@ -223,6 +257,40 @@ CREATE POLICY "Users can update own links" ON social_links
 
 CREATE POLICY "Users can delete own links" ON social_links
   FOR DELETE USING (auth.uid() = user_id);
+
+-- PROFILE_VIEWS policies
+ALTER TABLE profile_views ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can insert a view (public visitors trigger this)
+CREATE POLICY "Anyone can insert profile views" ON profile_views
+  FOR INSERT WITH CHECK (true);
+
+-- Profile owners can read their own analytics
+CREATE POLICY "Profile owners can read own views" ON profile_views
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM flink_profiles
+      WHERE flink_profiles.id = profile_views.profile_id
+      AND flink_profiles.user_id = auth.uid()
+    )
+  );
+
+-- LINK_CLICKS policies
+ALTER TABLE link_clicks ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can insert a click (public visitors trigger this)
+CREATE POLICY "Anyone can insert link clicks" ON link_clicks
+  FOR INSERT WITH CHECK (true);
+
+-- Profile owners can read their own click analytics
+CREATE POLICY "Profile owners can read own clicks" ON link_clicks
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM flink_profiles
+      WHERE flink_profiles.id = link_clicks.profile_id
+      AND flink_profiles.user_id = auth.uid()
+    )
+  );
 
 -- 5. UPDATED_AT TRIGGER
 -- ==============================================
@@ -396,10 +464,10 @@ GRANT EXECUTE ON FUNCTION submit_support_request(TEXT, TEXT, TEXT, TEXT) TO auth
 SELECT tablename, rowsecurity AS rls_enabled
 FROM pg_tables
 WHERE schemaname = 'public'
-  AND tablename IN ('users', 'flink_profiles', 'social_links', 'reserved_handles', 'reports', 'support_requests');
+  AND tablename IN ('users', 'flink_profiles', 'social_links', 'reserved_handles', 'reports', 'support_requests', 'profile_views', 'link_clicks');
 
 SELECT tablename, policyname, cmd AS operation
 FROM pg_policies
 WHERE schemaname = 'public'
-  AND tablename IN ('users', 'flink_profiles', 'social_links', 'reserved_handles', 'reports', 'support_requests')
+  AND tablename IN ('users', 'flink_profiles', 'social_links', 'reserved_handles', 'reports', 'support_requests', 'profile_views', 'link_clicks')
 ORDER BY tablename, policyname;

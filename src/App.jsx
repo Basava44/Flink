@@ -11,6 +11,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const HelpSupportPage = lazy(() => import("./pages/HelpSupportPage"));
+const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
@@ -42,6 +43,7 @@ function AppContent() {
           <Route path="/:handle" element={<ProfilePage />} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/help" element={<ProtectedRoute><HelpSupportPage /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

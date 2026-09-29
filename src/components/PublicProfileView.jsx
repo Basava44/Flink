@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../lib/supabase";
+import { trackProfileView, trackLinkClick } from "../lib/analytics";
 import {
   ArrowLeft,
   User,
@@ -213,7 +214,7 @@ const generateVCard = (profileData, socialLinks) => {
   return lines.join("\r\n");
 };
 
-const LinkCard = ({ link, isDark, index = 0 }) => {
+const LinkCard = ({ link, isDark, index = 0, profileId }) => {
   const isCustom = link.platform === "custom";
   const meta = isCustom
     ? { icon: ExternalLink, label: link.label || "Link", color: "from-violet-500 to-purple-600" }
@@ -236,6 +237,7 @@ const LinkCard = ({ link, isDark, index = 0 }) => {
       href={clickUrl}
       target={isInternal ? "_self" : "_blank"}
       rel={isInternal ? undefined : "noopener noreferrer"}
+      onClick={() => profileId && trackLinkClick(link.id, profileId)}
       className={`group flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 active:scale-[0.98] hover:scale-[1.01] animate-fade-in-up ${
         isDark
           ? "hover:bg-zinc-800/60"
@@ -259,9 +261,9 @@ const LinkCard = ({ link, isDark, index = 0 }) => {
   );
 };
 
-const LinkGrid = ({ links, isDark, indexOffset = 0 }) => {
+const LinkGrid = ({ links, isDark, indexOffset = 0, profileId }) => {
   if (links.length === 0) return null;
-  if (links.length === 1) return <LinkCard link={links[0]} isDark={isDark} index={indexOffset} />;
+  if (links.length === 1) return <LinkCard link={links[0]} isDark={isDark} index={indexOffset} profileId={profileId} />;
 
   const isOdd = links.length % 2 !== 0;
   const gridLinks = isOdd ? links.slice(0, -1) : links;
@@ -271,10 +273,10 @@ const LinkGrid = ({ links, isDark, indexOffset = 0 }) => {
     <>
       <div className="grid grid-cols-2">
         {gridLinks.map((link, i) => (
-          <LinkCard key={link.id} link={link} isDark={isDark} index={indexOffset + i} />
+          <LinkCard key={link.id} link={link} isDark={isDark} index={indexOffset + i} profileId={profileId} />
         ))}
       </div>
-      {lastLink && <LinkCard link={lastLink} isDark={isDark} index={indexOffset + gridLinks.length} />}
+      {lastLink && <LinkCard link={lastLink} isDark={isDark} index={indexOffset + gridLinks.length} profileId={profileId} />}
     </>
   );
 };
@@ -385,6 +387,11 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
           profile_url: profile.profile_url || userData?.profile_url,
         });
         setSocialLinks(links || []);
+
+        // Track profile view (skip for preview and own profile)
+        if (!isPreview && (!user || user.id !== profile.user_id)) {
+          trackProfileView(profile.id);
+        }
       } catch {
         setError("Failed to load profile");
       } finally {
@@ -630,7 +637,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
               subtitle={`${featured.length} ${featured.length === 1 ? "link" : "links"}`}
               isDark={isDark}
             >
-              <LinkGrid links={featured} isDark={isDark} indexOffset={0} />
+              <LinkGrid links={featured} isDark={isDark} indexOffset={0} profileId={profileData.id} />
             </Section>
           )}
 
@@ -642,7 +649,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
               subtitle={`${contact.length} ${contact.length === 1 ? "link" : "links"}`}
               isDark={isDark}
             >
-              <LinkGrid links={contact} isDark={isDark} indexOffset={featured.length} />
+              <LinkGrid links={contact} isDark={isDark} indexOffset={featured.length} profileId={profileData.id} />
             </Section>
           )}
 
@@ -654,7 +661,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
               subtitle={`${elsewhere.length} ${elsewhere.length === 1 ? "link" : "links"}`}
               isDark={isDark}
             >
-              <LinkGrid links={elsewhere} isDark={isDark} indexOffset={featured.length + contact.length} />
+              <LinkGrid links={elsewhere} isDark={isDark} indexOffset={featured.length + contact.length} profileId={profileData.id} />
             </Section>
           )}
 
