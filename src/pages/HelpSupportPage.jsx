@@ -33,7 +33,12 @@ const faqs = [
   {
     question: 'Is Flink free?',
     answer:
-      'Yes, Flink is completely free to use. There are no premium tiers or hidden charges. You get a full-featured profile page at no cost.',
+      'Yes, Flink is free to use. You get a full profile page with all your social links at no cost. We also offer an optional Premium plan for users who want more.',
+  },
+  {
+    question: 'What do I get with Premium?',
+    answer:
+      'Premium includes link analytics (see which links get clicked and how often), visitor analytics (track profile views, unique visitors, and trends over time), a verified premium badge on your profile, and an upgraded avatar ring. More features like custom themes are coming soon.',
   },
 ];
 

@@ -27,6 +27,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import QRCodeImg from "../components/QRCode";
+import PremiumBadge from "../components/PremiumBadge";
 
 function ProfilePage() {
   const { handle } = useParams();
@@ -397,23 +398,33 @@ function ProfilePage() {
             <div className="flex flex-col items-center text-center mb-8">
               {/* Avatar */}
               <div className="relative mb-4">
-                {userDetails?.profile_url ? (
-                  <img
-                    src={userDetails.profile_url}
-                    alt="Profile"
-                    className="w-20 h-20 rounded-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                      e.target.nextSibling.style.display = "flex";
-                    }}
-                  />
-                ) : null}
-                <div
-                  className={`w-20 h-20 rounded-full items-center justify-center text-2xl font-bold ${
-                    userDetails?.profile_url ? "hidden" : "flex"
-                  } ${isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-200 text-zinc-600"}`}
-                >
-                  {initial}
+                {profileDetails?.is_premium && (
+                  <div className="absolute -inset-1 bg-gradient-to-br from-pink-500 via-purple-500 to-violet-500 rounded-full opacity-75 blur-sm animate-pulse" />
+                )}
+                <div className="relative">
+                  {userDetails?.profile_url ? (
+                    <img
+                      src={userDetails.profile_url}
+                      alt="Profile"
+                      className="w-20 h-20 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className={`w-20 h-20 rounded-full items-center justify-center text-2xl font-bold ${
+                      userDetails?.profile_url ? "hidden" : "flex"
+                    } ${isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-200 text-zinc-600"}`}
+                  >
+                    {initial}
+                  </div>
+                  {profileDetails?.is_premium && (
+                    <div className="absolute bottom-0 right-0">
+                      <PremiumBadge size="sm" />
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -32,6 +32,7 @@ import {
   Download,
 } from "lucide-react";
 import WhatsAppIcon from "./icons/WhatsAppIcon";
+import PremiumBadge from "./PremiumBadge";
 import { parseWhatsAppInput } from "../utils/whatsapp";
 
 const PLATFORM_META = {
@@ -533,7 +534,11 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
         <div className="flex flex-col items-center text-center">
           {/* Avatar with gradient ring */}
           <div className="relative mb-5">
-            <div className="absolute -inset-1 bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 rounded-full opacity-75 blur-sm" />
+            <div className={`absolute -inset-1 rounded-full opacity-75 blur-sm ${
+              profileData.is_premium
+                ? "bg-gradient-to-br from-pink-500 via-purple-500 to-violet-500 animate-pulse"
+                : "bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500"
+            }`} />
             <div className={`relative w-28 h-28 rounded-full ${isDark ? "ring-4 ring-zinc-950" : "ring-4 ring-zinc-100"}`}>
               {profileData.profile_url ? (
                 <img
@@ -553,6 +558,11 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
               >
                 {initial}
               </div>
+              {profileData.is_premium && (
+                <div className="absolute bottom-0 right-0">
+                  <PremiumBadge size="md" />
+                </div>
+              )}
             </div>
           </div>
 
