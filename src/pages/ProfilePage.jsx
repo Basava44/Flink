@@ -25,6 +25,7 @@ import {
   X,
   Download,
   HelpCircle,
+  BarChart3,
 } from "lucide-react";
 import QRCodeImg from "../components/QRCode";
 import PremiumBadge from "../components/PremiumBadge";
@@ -151,12 +152,12 @@ function ProfilePage() {
   }, [handle, user, navigate]);
 
   // Load dashboard data
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(async (force = false) => {
     if (!user?.id) return;
     try {
       const [socialResult, profileResult] = await Promise.all([
-        getSocialLinks(user.id),
-        getProfileDetails(user.id),
+        getSocialLinks(user.id, { force }),
+        getProfileDetails(user.id, { force }),
       ]);
       if (!socialResult.error) setSocialLinks(socialResult.data || []);
       if (!profileResult.error) setProfileDetails(profileResult.data);
@@ -171,10 +172,13 @@ function ProfilePage() {
 
     // Check if settings page flagged a refresh
     let needsRefresh = !hasLoadedData.current;
+    let force = false;
     try {
       const flag = localStorage.getItem(`forceRefresh_${user.id}`);
       if (flag) {
         needsRefresh = true;
+        // Settings just mutated the data, so bypass the cache.
+        force = true;
         localStorage.removeItem(`forceRefresh_${user.id}`);
       }
     } catch {
@@ -182,7 +186,7 @@ function ProfilePage() {
     }
 
     if (needsRefresh) {
-      loadDashboardData();
+      loadDashboardData(force);
       hasLoadedData.current = true;
     }
   }, [isOwnProfile, user?.id, loadDashboardData]);
@@ -193,7 +197,7 @@ function ProfilePage() {
     // Refresh userDetails so first_login is false (prevents onboarding flash)
     await getUserDetails(user.id);
     // Load fresh data before navigating so links are immediately visible
-    await loadDashboardData();
+    await loadDashboardData(true);
     hasLoadedData.current = true;
     // Fetch the newly created profile and redirect to handle URL
     const { data: newProfile } = await supabase
@@ -362,8 +366,20 @@ function ProfilePage() {
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
+            {profileDetails?.is_premium && (
+              <button
+                onClick={() => navigate("/analytics")}
+                aria-label="Analytics"
+                className={`p-2.5 rounded-lg transition-all duration-200 active:scale-95 ${
+                  isDark ? "text-zinc-400 hover:text-white hover:bg-zinc-800" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={() => navigate("/help")}
+              aria-label="Help"
               className={`p-2.5 rounded-lg transition-all duration-200 active:scale-95 ${
                 isDark ? "text-zinc-400 hover:text-white hover:bg-zinc-800" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
               }`}

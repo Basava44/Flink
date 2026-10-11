@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { AuthContext } from "./AuthContextType";
 import { getAvatarStoragePath } from "../utils/avatarStorage";
@@ -8,6 +8,9 @@ export const AuthProvider = ({ children }) => {
   const [userDetails, setUserDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  // Tracks which user we've already run per-session setup for, so repeated
+  // auth events for the same user don't refetch.
+  const setupUserIdRef = useRef(null);
 
   useEffect(() => {
     // Check for cached session first to avoid API call
@@ -84,7 +87,10 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null);
+      const nextUser = session?.user ?? null;
+      // supabase-js re-emits SIGNED_IN on tab refocus. Keep the previous object
+      // identity when it's the same user so consumers don't refetch.
+      setUser((prev) => (prev?.id === nextUser?.id ? prev : nextUser));
       setIsPasswordRecovery(event === "PASSWORD_RECOVERY");
 
       // Cache the session if valid
@@ -101,35 +107,31 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("sb-session");
       }
 
-      // Handle user signup and signin
-      if (session?.user && (event === "SIGNED_IN" || event === "SIGNED_UP")) {
-        // For OAuth users (Google), add them to database immediately
-        // For email signups, they should already be added in the signUp function
-        if (
-          event === "SIGNED_IN" ||
-          (event === "SIGNED_UP" &&
-            (session.user.email_confirmed_at || session.user.confirmed_at))
-        ) {
-          addUserToDatabase(session.user).then(({ error }) => {
+      // Run per-user setup once per user rather than per auth event. Keying off
+      // the user id instead of the event name matters because supabase-js
+      // re-emits SIGNED_IN whenever the tab regains focus, and the initial page
+      // load arrives as INITIAL_SESSION.
+      if (nextUser && setupUserIdRef.current !== nextUser.id) {
+        setupUserIdRef.current = nextUser.id;
+
+        // For OAuth users (Google), add them to database immediately.
+        // For email signups, they should already be added in the signUp function.
+        // addUserToDatabase is idempotent - it checks for an existing row first.
+        if (nextUser.email_confirmed_at || nextUser.confirmed_at) {
+          addUserToDatabase(nextUser).then(({ error }) => {
             if (error) {
               console.error("Failed to add user to database:", error);
-            } else {
-              // // console.log("User successfully added to database");
             }
           });
-        } else {
-          // // console.log(
-          //   "User not yet confirmed, skipping database insertion (will be handled after confirmation)"
-          // );
         }
 
         // Then fetch user details (non-blocking)
-        getUserDetails(session.user.id).catch(() => {
+        getUserDetails(nextUser.id).catch(() => {
           // // console.log("Error fetching user details (non-critical)");
         });
-      } else if (!session?.user) {
+      } else if (!nextUser) {
         // Clear user details when user signs out
-        // // console.log("User signed out, clearing user details...");
+        setupUserIdRef.current = null;
         setUserDetails(null);
       }
 
@@ -367,9 +369,10 @@ export const AuthProvider = ({ children }) => {
   }, [cacheGet, cacheSet, user]);
 
   // Get user's social links
-  const getSocialLinks = useCallback(async (userId) => {
+  const getSocialLinks = useCallback(async (userId, { force = false } = {}) => {
     try {
       const cached = cacheGet(`flink_social_${userId}`);
+      if (!force && cached) return { data: cached, error: null };
 
       const { data, error } = await supabase
         .from("social_links")
@@ -392,9 +395,10 @@ export const AuthProvider = ({ children }) => {
   }, [cacheGet, cacheSet]);
 
   // Get user's profile details
-  const getProfileDetails = useCallback(async (userId) => {
+  const getProfileDetails = useCallback(async (userId, { force = false } = {}) => {
     try {
       const cached = cacheGet(`flink_profile_${userId}`);
+      if (!force && cached) return { data: cached, error: null };
 
       const { data, error } = await supabase
         .from("flink_profiles")

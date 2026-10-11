@@ -61,12 +61,12 @@ const MiniChart = ({ data, days, isDark }) => {
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, isDark }) => (
+const StatCard = ({ icon: _Icon, label, value, isDark }) => (
   <div className={`rounded-xl border p-4 ${
     isDark ? "bg-zinc-900/50 border-zinc-800/60" : "bg-white border-zinc-200/60 shadow-sm"
   }`}>
     <div className="flex items-center gap-2 mb-1">
-      <Icon className={`w-4 h-4 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
+      <_Icon className={`w-4 h-4 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
       <span className={`text-xs font-medium ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>{label}</span>
     </div>
     <p className={`text-2xl font-bold ${isDark ? "text-white" : "text-zinc-900"}`}>{value}</p>
@@ -94,7 +94,7 @@ const TopLinkRow = ({ link, clicks, isDark }) => (
 
 function AnalyticsPage() {
   const navigate = useNavigate();
-  const { user, userDetails } = useAuth();
+  const { user } = useAuth();
   const { isDark } = useTheme();
   const [period, setPeriod] = useState(30);
   const [loading, setLoading] = useState(true);

@@ -1,0 +1,90 @@
+FLINK - TODO
+============
+
+Decision log and backlog. Launch first, then revisit the Shop idea.
+
+
+POST-LAUNCH: SHOP / PRODUCTS SECTION
+------------------------------------
+Status: DEFERRED - decided to launch without it, revisit once real creators ask.
+
+Why it matters:
+  Creator monetization is where link-in-bio tools make money (Beacons, Stan
+  Store built their businesses on it; Linktree added it later). For Indian
+  creators the real cases are courses, Notion templates, consult calls, and
+  Amazon affiliate links.
+
+What actually makes it different from an existing custom link:
+  Thumbnail + price. NOT the categorization. We already have
+  platform='custom' with a `label`, so a product rendered as another icon
+  row adds nothing. The value is entirely in the visual treatment.
+
+Lean implementation (keep products inside social_links, do NOT add a table):
+  ALTER TABLE social_links ADD COLUMN IF NOT EXISTS image_url TEXT;
+  ALTER TABLE social_links ADD COLUMN IF NOT EXISTS price_label TEXT;
+
+  - platform='product'
+  - `label` = product title (reuses existing custom-link convention)
+  - `price_label` = free text ("Rs 499", "Free", "From Rs 1,999").
+    Display-only, so no numeric/currency modelling needed.
+  - New branch in categorizeSocialLinks() - src/components/PublicProfileView.jsx
+  - New card component with a 16:9 thumbnail instead of LinkCard's icon row
+  - Reuses: RLS, display_order, existing settings CRUD
+
+  KEY REASON to extend social_links rather than add a products table:
+  link_clicks has a FK to social_links(id) (supabase/schema.sql:117), so
+  products inherit click analytics for free. A separate table would need a
+  separate clicks path or a nullable FK.
+
+HARD BOUNDARY - links out, never checkout:
+  Taking payments means payment gateway + GST + refunds + disputes, and in
+  India potentially payment-aggregator rules. Link out to the creator's
+  Razorpay / Gumroad / Topmate page and stay out of the money path.
+  NOTE: the existing stripe_customer_id / stripe_subscription_id on
+  flink_profiles is for Flink's OWN premium subscription. Do not let that
+  blur into creator payouts.
+
+Second pass (not needed for v1 of this feature):
+  - Image upload to a `products` bucket + storage RLS (mirror the `avatars`
+    bucket pattern). Accept a thumbnail URL initially.
+
+
+BEFORE LAUNCH
+-------------
+[ ] Pick a domain + name. flink.to is aftermarket at ~Rs 7.8L - do not buy.
+    fl.ink and flink.bio are taken. "Flink" also collides hard with Apache
+    Flink for SEO, so a rename is on the table.
+[ ] package.json "homepage" is still "https://flink.to" - a domain we do not
+    own. Must be updated before deploy or build paths break.
+[ ] Deploy to Vercel (currently gh-pages).
+[ ] SEO / meta tags / Open Graph for shared profile links.
+[ ] Mobile polish pass + real-device testing.
+
+
+KNOWN ISSUES
+------------
+[ ] AnalyticsPage premium-gate false positive. `loading` starts true, but the
+    analytics effect calls setLoading(false) immediately because profileId is
+    still null, while the profile fetch that sets isPremium is still in
+    flight. So the gate `if (!loading && !isPremium)` briefly passes and a
+    premium user sees "Analytics is a Premium feature" before it resolves.
+    Worse: if the flink_profiles row is missing or RLS blocks the read,
+    profileId stays null forever and the paywall is permanent.
+    Fix: gate on a tri-state (null = unknown) instead of a boolean, or don't
+    setLoading(false) until the profile fetch has actually settled.
+    NOTE: the nav link is premium-gated (ProfilePage top bar only renders it
+    when profileDetails.is_premium), so the only people who can click through
+    are premium users - i.e. exactly the ones who hit the false paywall. The
+    page is still reachable by typing /analytics directly.
+[ ] src/pages/Dashboard.jsx is not referenced by any route in App.jsx - looks
+    like dead code. Left in place; confirm before deleting.
+
+
+NOTES
+-----
+- Requires Node 20+. On Node 18 `npm run build` fails with a rollup
+  MODULE_NOT_FOUND in rollup/dist/native.js. Use `nvm use 20`.
+- Reuse the lavender gradient wave, do not reinvent it:
+    dark:  bg-gradient-to-b from-purple-950/20 via-transparent to-transparent
+    light: bg-gradient-to-b from-purple-100/30 via-pink-50/10 to-transparent
+  A zinc-100 -> transparent wave is invisible on bg-zinc-50.

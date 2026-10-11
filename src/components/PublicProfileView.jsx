@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
@@ -262,9 +262,20 @@ const LinkCard = ({ link, isDark, index = 0, profileId }) => {
   );
 };
 
-const LinkGrid = ({ links, isDark, indexOffset = 0, profileId }) => {
+const LinkGrid = ({ links, isDark, indexOffset = 0, profileId, singleColumn = false }) => {
   if (links.length === 0) return null;
-  if (links.length === 1) return <LinkCard link={links[0]} isDark={isDark} index={indexOffset} profileId={profileId} />;
+
+  const renderCard = (link, i) => (
+    <LinkCard
+      key={link.id}
+      link={link}
+      isDark={isDark}
+      index={indexOffset + i}
+      profileId={profileId}
+    />
+  );
+
+  if (singleColumn || links.length === 1) return <>{links.map(renderCard)}</>;
 
   const isOdd = links.length % 2 !== 0;
   const gridLinks = isOdd ? links.slice(0, -1) : links;
@@ -273,16 +284,14 @@ const LinkGrid = ({ links, isDark, indexOffset = 0, profileId }) => {
   return (
     <>
       <div className="grid grid-cols-2">
-        {gridLinks.map((link, i) => (
-          <LinkCard key={link.id} link={link} isDark={isDark} index={indexOffset + i} profileId={profileId} />
-        ))}
+        {gridLinks.map(renderCard)}
       </div>
-      {lastLink && <LinkCard link={lastLink} isDark={isDark} index={indexOffset + gridLinks.length} profileId={profileId} />}
+      {lastLink && renderCard(lastLink, gridLinks.length)}
     </>
   );
 };
 
-const Section = ({ icon: _SectionIcon, title, subtitle, children, isDark }) => {
+const Section = ({ icon: _SectionIcon, title, children, isDark }) => {
   if (!children || (Array.isArray(children) && children.length === 0)) return null;
 
   return (
@@ -290,16 +299,11 @@ const Section = ({ icon: _SectionIcon, title, subtitle, children, isDark }) => {
       isDark ? "bg-zinc-900/50 border-zinc-800/60" : "bg-white border-zinc-200/60 shadow-sm"
     }`}>
       {/* Section header */}
-      <div className={`px-5 pt-4 pb-2 flex items-center justify-between`}>
-        <div className="flex items-center gap-2">
-          <_SectionIcon className={`w-4 h-4 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
-          <h3 className={`text-sm font-semibold ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
-            {title}
-          </h3>
-        </div>
-        <span className={`text-[11px] ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
-          {subtitle}
-        </span>
+      <div className="px-5 pt-4 pb-2 flex items-center gap-2">
+        <_SectionIcon className={`w-4 h-4 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
+        <h3 className={`text-sm font-semibold ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
+          {title}
+        </h3>
       </div>
 
       {/* Links */}
@@ -323,6 +327,11 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
   const [reportStatus, setReportStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
+
+  // Read by the profile-load effect to decide whether to log a view. Held in a
+  // ref so a viewer signing in doesn't re-trigger the whole profile fetch.
+  const viewerRef = useRef({ userId: user?.id, isPreview });
+  viewerRef.current = { userId: user?.id, isPreview };
 
   const handleReport = async () => {
     if (!user) {
@@ -390,7 +399,8 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
         setSocialLinks(links || []);
 
         // Track profile view (skip for preview and own profile)
-        if (!isPreview && (!user || user.id !== profile.user_id)) {
+        const { userId, isPreview: viewingAsPreview } = viewerRef.current;
+        if (!viewingAsPreview && userId !== profile.user_id) {
           trackProfileView(profile.id);
         }
       } catch {
@@ -488,11 +498,19 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
   return (
     <div className={`min-h-screen ${isDark ? "bg-zinc-950" : "bg-zinc-50"}`}>
       {/* Subtle gradient header */}
-      <div className={`absolute inset-x-0 top-0 h-64 ${
+      <div className={`absolute inset-x-0 top-0 h-72 ${
         isDark
-          ? "bg-gradient-to-b from-zinc-900 to-transparent"
-          : "bg-gradient-to-b from-zinc-100 to-transparent"
+          ? "bg-gradient-to-b from-purple-950/20 via-transparent to-transparent"
+          : "bg-gradient-to-b from-purple-100/30 via-pink-50/10 to-transparent"
       }`} />
+
+      {/* Soft halo centred behind the avatar, for depth without extra height */}
+      <div
+        aria-hidden="true"
+        className={`absolute left-1/2 -translate-x-1/2 -top-16 w-[300px] h-[300px] rounded-full blur-3xl pointer-events-none ${
+          isDark ? "bg-purple-600/15" : "bg-purple-300/25"
+        }`}
+      />
 
       {/* Preview banner */}
       {isPreview && (
@@ -529,22 +547,25 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
         </div>
       )}
 
-      <div className="relative max-w-md mx-auto px-5 pt-10 pb-16">
+      <div className="relative max-w-md mx-auto px-5 pt-6 pb-8">
         {/* Profile header */}
         <div className="flex flex-col items-center text-center">
           {/* Avatar with gradient ring */}
-          <div className="relative mb-5">
-            <div className={`absolute -inset-1 rounded-full opacity-75 blur-sm ${
+          <div className="relative mb-3.5">
+            {/* Gradient aurora ring is a premium-only treatment */}
+            {profileData.is_premium && (
+              <div className="absolute -inset-1 rounded-full opacity-75 blur-sm bg-gradient-to-br from-pink-500 via-purple-500 to-violet-500 animate-pulse" />
+            )}
+            <div className={`relative w-20 h-20 rounded-full ${
               profileData.is_premium
-                ? "bg-gradient-to-br from-pink-500 via-purple-500 to-violet-500 animate-pulse"
-                : "bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500"
-            }`} />
-            <div className={`relative w-28 h-28 rounded-full ${isDark ? "ring-4 ring-zinc-950" : "ring-4 ring-zinc-100"}`}>
+                ? isDark ? "ring-4 ring-zinc-950" : "ring-4 ring-zinc-100"
+                : isDark ? "ring-1 ring-zinc-800" : "ring-1 ring-zinc-200"
+            }`}>
               {profileData.profile_url ? (
                 <img
                   src={profileData.profile_url}
                   alt={profileData.name}
-                  className="w-28 h-28 rounded-full object-cover"
+                  className="w-20 h-20 rounded-full object-cover"
                   onError={(e) => {
                     e.target.style.display = "none";
                     e.target.nextSibling.style.display = "flex";
@@ -552,7 +573,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
                 />
               ) : null}
               <div
-                className={`w-28 h-28 rounded-full items-center justify-center text-3xl font-bold ${
+                className={`w-20 h-20 rounded-full items-center justify-center text-2xl font-bold ${
                   profileData.profile_url ? "hidden" : "flex"
                 } ${isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-200 text-zinc-600"}`}
               >
@@ -567,7 +588,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
           </div>
 
           {/* Name */}
-          <h1 className={`text-2xl font-bold tracking-tight ${isDark ? "text-white" : "text-zinc-900"}`}>
+          <h1 className={`text-xl font-bold tracking-tight ${isDark ? "text-white" : "text-zinc-900"}`}>
             {profileData.name}
           </h1>
 
@@ -578,7 +599,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
 
           {/* Bio */}
           {profileData.bio && (
-            <p className={`mt-3 text-sm leading-relaxed max-w-xs ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+            <p className={`mt-2 text-sm leading-relaxed max-w-xs line-clamp-2 ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
               {profileData.bio}
             </p>
           )}
@@ -613,19 +634,23 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
           )}
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2.5 mt-6 w-full max-w-xs">
+          <div className="flex items-center gap-2 mt-5 w-full max-w-[280px]">
             {hasContact && (
               <button
                 onClick={handleSaveContact}
-                className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold whitespace-nowrap px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:opacity-90 transition-all duration-200 active:scale-[0.97] shadow-lg shadow-purple-500/20"
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold whitespace-nowrap px-3.5 py-2 rounded-lg transition-all duration-200 active:scale-[0.97] ${
+                  isDark
+                    ? "bg-white text-zinc-900 hover:bg-zinc-100"
+                    : "bg-zinc-900 text-white hover:bg-zinc-800"
+                }`}
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-3.5 h-3.5" />
                 Save contact
               </button>
             )}
             <button
               onClick={handleShare}
-              className={`${hasContact ? "" : "flex-1"} inline-flex items-center justify-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.97] ${
+              className={`${hasContact ? "" : "flex-1"} inline-flex items-center justify-center gap-1.5 text-[13px] font-medium px-3.5 py-2 rounded-lg transition-all duration-200 active:scale-[0.97] ${
                 isDark
                   ? "bg-zinc-800 text-zinc-300 hover:text-zinc-100 border border-zinc-700/50"
                   : "bg-white text-zinc-600 hover:text-zinc-800 border border-zinc-200 shadow-sm"
@@ -638,39 +663,24 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
         </div>
 
         {/* Categorized sections */}
-        <div className="mt-8 space-y-3">
+        <div className="mt-6 space-y-3">
           {/* Featured */}
           {featured.length > 0 && (
-            <Section
-              icon={Star}
-              title="Featured"
-              subtitle={`${featured.length} ${featured.length === 1 ? "link" : "links"}`}
-              isDark={isDark}
-            >
+            <Section icon={Star} title="Featured" isDark={isDark}>
               <LinkGrid links={featured} isDark={isDark} indexOffset={0} profileId={profileData.id} />
             </Section>
           )}
 
           {/* Contact */}
           {contact.length > 0 && (
-            <Section
-              icon={PhoneCall}
-              title="Contact"
-              subtitle={`${contact.length} ${contact.length === 1 ? "link" : "links"}`}
-              isDark={isDark}
-            >
-              <LinkGrid links={contact} isDark={isDark} indexOffset={featured.length} profileId={profileData.id} />
+            <Section icon={PhoneCall} title="Contact" isDark={isDark}>
+              <LinkGrid links={contact} isDark={isDark} indexOffset={featured.length} profileId={profileData.id} singleColumn />
             </Section>
           )}
 
           {/* Elsewhere */}
           {elsewhere.length > 0 && (
-            <Section
-              icon={Globe}
-              title="Elsewhere"
-              subtitle={`${elsewhere.length} ${elsewhere.length === 1 ? "link" : "links"}`}
-              isDark={isDark}
-            >
+            <Section icon={Globe} title="Elsewhere" isDark={isDark}>
               <LinkGrid links={elsewhere} isDark={isDark} indexOffset={featured.length + contact.length} profileId={profileData.id} />
             </Section>
           )}
@@ -686,7 +696,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
         {/* Copy link - subtle */}
         <button
           onClick={handleCopyLink}
-          className={`w-full mt-4 flex items-center justify-center gap-1.5 text-xs font-medium py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] ${
+          className={`w-full mt-2 flex items-center justify-center gap-1.5 text-xs font-medium py-2 rounded-xl transition-all duration-200 active:scale-[0.98] ${
             copied
               ? "text-green-500"
               : isDark
@@ -699,7 +709,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
         </button>
 
         {/* Footer */}
-        <div className={`mt-10 text-center space-y-2 ${!user ? "pb-16" : ""}`}>
+        <div className={`mt-4 text-center space-y-1.5 ${!user ? "pb-12" : ""}`}>
           <div className={`inline-flex items-center gap-1.5 text-xs ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
             <Link2 className="w-3 h-3" />
             <span>Powered by</span>
