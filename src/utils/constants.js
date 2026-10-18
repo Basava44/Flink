@@ -1,7 +1,7 @@
 // Application constants
 
 // Canonical site URL - reads from env, falls back to production domain
-export const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://flink.to').replace(/\/$/, '');
+export const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://myflink.in').replace(/\/$/, '');
 
 // Display domain for UI (without protocol)
 export const SITE_DOMAIN = SITE_URL.replace(/^https?:\/\//, '');

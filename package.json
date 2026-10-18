@@ -6,7 +6,7 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "homepage": "https://flink.to",
+  "homepage": "https://myflink.in",
   "scripts": {
     "dev": "vite",
     "dev:mock": "VITE_USE_MOCK=true vite",

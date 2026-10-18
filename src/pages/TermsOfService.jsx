@@ -55,7 +55,7 @@ function TermsOfService() {
           <section>
             <h2 className={headingClass}>2. What Flink is</h2>
             <div className={sectionClass}>
-              <p>Flink is a free link-in-bio service that lets you create a public profile page with links to your social accounts and contact information. Your profile is accessible via a unique URL (e.g., flink.to/yourhandle).</p>
+              <p>Flink is a free link-in-bio service that lets you create a public profile page with links to your social accounts and contact information. Your profile is accessible via a unique URL (e.g., myflink.in/yourhandle).</p>
             </div>
           </section>
 

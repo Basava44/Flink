@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://flink.to/sitemap.xml
+Sitemap: https://myflink.in/sitemap.xml

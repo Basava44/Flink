@@ -1,7 +1,7 @@
 /* global process */
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
-const SITE_URL = (process.env.VITE_SITE_URL || "https://flink.to").replace(/\/$/, "");
+const SITE_URL = (process.env.VITE_SITE_URL || "https://myflink.in").replace(/\/$/, "");
 
 const BOT_AGENTS = /bot|crawl|spider|slurp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Discordbot|TelegramBot|Embedly|Quora Link Preview|Slack|vkShare|redditbot|Applebot|ia_archiver|Pinterest/i;
 

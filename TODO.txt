@@ -49,17 +49,6 @@ Second pass (not needed for v1 of this feature):
     bucket pattern). Accept a thumbnail URL initially.
 
 
-BEFORE LAUNCH
--------------
-[ ] Pick a domain + name. flink.to is aftermarket at ~Rs 7.8L - do not buy.
-    fl.ink and flink.bio are taken. "Flink" also collides hard with Apache
-    Flink for SEO, so a rename is on the table.
-[ ] package.json "homepage" is still "https://flink.to" - a domain we do not
-    own. Must be updated before deploy or build paths break.
-[ ] Deploy to Vercel (currently gh-pages).
-[ ] SEO / meta tags / Open Graph for shared profile links.
-[ ] Mobile polish pass + real-device testing.
-
 
 KNOWN ISSUES
 ------------
