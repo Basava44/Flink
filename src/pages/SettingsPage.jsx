@@ -41,7 +41,7 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const { user, supabase, getSocialLinks, getProfileDetails, deleteAccount } = useAuth();
-  useDocumentMeta({ title: "Settings", path: "/settings" });
+  useDocumentMeta({ title: "Settings", path: "/settings", noindex: true });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [socialLinks, setSocialLinks] = useState([]);

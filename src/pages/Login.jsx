@@ -11,7 +11,7 @@ function Login() {
   const location = useLocation();
   const { user, signIn, signUp, signInWithGoogle } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-  useDocumentMeta({ title: "Log in", path: "/login" });
+  useDocumentMeta({ title: "Log in", path: "/login", noindex: true });
   const [formData, setFormData] = useState({
     name: "",
     email: "",

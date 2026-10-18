@@ -83,7 +83,7 @@ const HelpSupportPage = () => {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const { user } = useAuth();
-  useDocumentMeta({ title: 'Help & Support', path: '/help' });
+  useDocumentMeta({ title: 'Help & Support', path: '/help', noindex: true });
 
   const [formData, setFormData] = useState({
     type: 'question',

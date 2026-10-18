@@ -8,7 +8,7 @@ import { ArrowLeft, Sun, Moon, KeyRound, CheckCircle, Eye, EyeOff } from "lucide
 function ResetPassword() {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
-  useDocumentMeta({ title: "Reset Password", path: "/reset-password" });
+  useDocumentMeta({ title: "Reset Password", path: "/reset-password", noindex: true });
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);

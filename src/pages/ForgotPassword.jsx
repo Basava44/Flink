@@ -8,7 +8,7 @@ import { ArrowLeft, Sun, Moon, KeyRound } from "lucide-react";
 function ForgotPassword() {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
-  useDocumentMeta({ title: "Forgot Password", path: "/forgot-password" });
+  useDocumentMeta({ title: "Forgot Password", path: "/forgot-password", noindex: true });
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");

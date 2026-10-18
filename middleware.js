@@ -32,7 +32,7 @@ export default async function middleware(request) {
 
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/flink_profiles?handle=eq.${encodeURIComponent(handle)}&select=bio,profile_url,user_id`,
+      `${SUPABASE_URL}/rest/v1/flink_profiles?handle=eq.${encodeURIComponent(handle)}&select=bio,profile_url,user_id,is_private`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -45,6 +45,9 @@ export default async function middleware(request) {
     if (!profiles?.length) return;
 
     const profile = profiles[0];
+
+    // Don't serve rich meta tags for private profiles
+    if (profile.is_private) return;
 
     // Fetch user name
     let name = handle;
@@ -62,10 +65,24 @@ export default async function middleware(request) {
       name = users[0].name;
     }
 
-    const title = `${name} (@${handle}) | Flink`;
+    const title = `${name} (@${handle}) - Flink`;
     const description = profile.bio || `Check out ${name}'s links on Flink`;
     const image = profile.profile_url || `${SITE_URL}/og-image.png`;
     const pageUrl = `${SITE_URL}/${handle}`;
+
+    const jsonLd = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "ProfilePage",
+      name: `${name} (@${handle})`,
+      url: pageUrl,
+      description,
+      mainEntity: {
+        "@type": "Person",
+        name,
+        url: pageUrl,
+        ...(image !== `${SITE_URL}/og-image.png` ? { image } : {}),
+      },
+    });
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -84,6 +101,7 @@ export default async function middleware(request) {
   <meta name="twitter:description" content="${esc(description)}" />
   <meta name="twitter:image" content="${esc(image)}" />
   <link rel="canonical" href="${esc(pageUrl)}" />
+  <script type="application/ld+json">${jsonLd}</script>
   <meta http-equiv="refresh" content="0;url=${esc(pageUrl)}" />
 </head>
 <body></body>
