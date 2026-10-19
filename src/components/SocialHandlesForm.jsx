@@ -176,6 +176,9 @@ const SocialHandlesForm = ({ onNext, onBack: _onBack, initialData = {} }) => {
 
                   return (
                     <div key={platform.key} className={isWhatsApp ? "col-span-1 sm:col-span-2" : "relative"}>
+                      <label className={`block mb-1 ml-1 text-xs font-medium sm:hidden ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                        {platform.name}
+                      </label>
                       <div className="relative">
                         <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
                           <Icon className="w-4 h-4" />
