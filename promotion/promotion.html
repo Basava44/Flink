@@ -1698,11 +1698,11 @@
   <script>
     const timeline = [
       // Scene 1: Hi pops in (t = 1.3s after load)
-      { t: 1300, action: () => {
+      { t: 800, action: () => {
         el('hiText').style.animation = 'tadaPop 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards';
       }},
       // Hi fades out
-      { t: 2800, action: () => {
+      { t: 2000, action: () => {
         el('hiText').style.animation = 'fadeOut 0.4s ease forwards';
       }},
 
