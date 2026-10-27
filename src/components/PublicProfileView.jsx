@@ -314,7 +314,7 @@ const Section = ({ icon: _SectionIcon, title, children, isDark }) => {
   );
 };
 
-const PublicProfileView = ({ handle, isPreview = false }) => {
+const PublicProfileView = ({ handle, isPreview = false, prefetchedProfile = null }) => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const { user } = useAuth();
@@ -365,30 +365,37 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
       }
 
       try {
-        const { data: profile, error: profileError } = await supabase
-          .from("flink_profiles")
-          .select("*")
-          .eq("handle", handle.toLowerCase())
-          .single();
+        // Use prefetched profile from ProfilePage if available, otherwise fetch
+        let profile = prefetchedProfile;
+        if (!profile) {
+          const { data, error: profileError } = await supabase
+            .from("flink_profiles")
+            .select("*")
+            .eq("handle", handle.toLowerCase())
+            .single();
 
-        if (profileError || !profile) {
-          setError("Profile not found");
-          setLoading(false);
-          return;
+          if (profileError || !data) {
+            setError("Profile not found");
+            setLoading(false);
+            return;
+          }
+          profile = data;
         }
 
-        const { data: userData } = await supabase
-          .from("users")
-          .select("name, created_at, profile_url")
-          .eq("id", profile.user_id)
-          .single();
-
-        const { data: links } = await supabase
-          .from("social_links")
-          .select("*")
-          .eq("user_id", profile.user_id)
-          .order("display_order", { ascending: true })
-          .order("created_at", { ascending: true });
+        // Fetch user data and social links in parallel
+        const [{ data: userData }, { data: links }] = await Promise.all([
+          supabase
+            .from("users")
+            .select("name, created_at, profile_url")
+            .eq("id", profile.user_id)
+            .single(),
+          supabase
+            .from("social_links")
+            .select("*")
+            .eq("user_id", profile.user_id)
+            .order("display_order", { ascending: true })
+            .order("created_at", { ascending: true }),
+        ]);
 
         setProfileData({
           ...profile,
@@ -411,7 +418,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
     };
 
     loadProfile();
-  }, [handle]);
+  }, [handle, prefetchedProfile]);
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/${handle}`;
@@ -566,6 +573,7 @@ const PublicProfileView = ({ handle, isPreview = false }) => {
                   src={profileData.profile_url}
                   alt={profileData.name}
                   className="w-20 h-20 rounded-full object-cover"
+                  fetchpriority="high"
                   onError={(e) => {
                     e.target.style.display = "none";
                     e.target.nextSibling.style.display = "flex";

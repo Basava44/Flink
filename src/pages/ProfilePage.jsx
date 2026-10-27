@@ -41,6 +41,7 @@ function ProfilePage() {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [profileExists, setProfileExists] = useState(true);
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
+  const [publicProfileData, setPublicProfileData] = useState(null);
   const [socialLinks, setSocialLinks] = useState(() => {
     try {
       const raw = localStorage.getItem(`flink_social_${user?.id}`);
@@ -129,7 +130,7 @@ function ProfilePage() {
         } else {
           const { data: profileData, error: profileError } = await supabase
             .from("flink_profiles")
-            .select("user_id")
+            .select("*")
             .eq("handle", handle.toLowerCase())
             .maybeSingle();
 
@@ -138,6 +139,10 @@ function ProfilePage() {
           } else {
             setIsOwnProfile(user && user.id === profileData.user_id);
             setProfileExists(true);
+            // Pass full profile to PublicProfileView to avoid redundant fetch
+            if (!(user && user.id === profileData.user_id)) {
+              setPublicProfileData(profileData);
+            }
           }
         }
       } catch {
@@ -327,7 +332,7 @@ function ProfilePage() {
 
   // Public profile (or preview mode for own profile)
   if (!isOwnProfile || isPreview) {
-    return <PublicProfileView handle={handle} isPreview={isPreview} />;
+    return <PublicProfileView handle={handle} isPreview={isPreview} prefetchedProfile={publicProfileData} />;
   }
 
   // Own profile - show onboarding full screen if first login
