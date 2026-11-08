@@ -19,7 +19,14 @@ function ResetPassword() {
   const { supabase, loading: authLoading, isPasswordRecovery, clearPasswordRecovery } = useAuth();
 
   useEffect(() => {
-    if (!authLoading) setInvalidLink(!isPasswordRecovery);
+    if (authLoading) return;
+    const hash = window.location.hash;
+    const hasRecoveryInHash = hash.includes("type=recovery");
+    if (isPasswordRecovery || hasRecoveryInHash) {
+      setInvalidLink(false);
+    } else {
+      setInvalidLink(true);
+    }
   }, [authLoading, isPasswordRecovery]);
 
   const handleSubmit = async (e) => {
