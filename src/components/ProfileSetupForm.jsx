@@ -27,7 +27,7 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {}, userId }) => {
   // Debounced handle availability check
   const checkHandleAvailability = useCallback((handle) => {
     if (checkTimeout.current) clearTimeout(checkTimeout.current);
-    if (!handle || handle.length < 3 || !/^[a-zA-Z0-9_-]+$/.test(handle)) {
+    if (!handle || handle.length < 3 || !/^[a-zA-Z0-9._-]+$/.test(handle)) {
       setHandleStatus(null);
       return;
     }
@@ -56,7 +56,7 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {}, userId }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const newValue = name === "handle" ? value.toLowerCase().replace(/[^a-z0-9_-]/g, '') : value;
+    const newValue = name === "handle" ? value.toLowerCase().replace(/[^a-z0-9._-]/g, '') : value;
     setFormData((prev) => ({ ...prev, [name]: newValue }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
     if (name === "handle") checkHandleAvailability(newValue);
@@ -66,8 +66,8 @@ const ProfileSetupForm = ({ onComplete, onBack, initialData = {}, userId }) => {
     const newErrors = {};
     if (!formData.handle.trim()) {
       newErrors.handle = "Handle is required";
-    } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.handle)) {
-      newErrors.handle = "Only letters, numbers, underscores, hyphens";
+    } else if (!/^[a-zA-Z0-9._-]+$/.test(formData.handle)) {
+      newErrors.handle = "Only letters, numbers, periods, underscores, hyphens";
     } else if (formData.handle.length < 3) {
       newErrors.handle = "At least 3 characters";
     } else if (formData.handle.length > 30) {

@@ -52,7 +52,7 @@ function Home() {
   }, [user?.id, loading, navigate]);
 
   const checkHandle = (value) => {
-    const clean = value.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    const clean = value.toLowerCase().replace(/[^a-z0-9._-]/g, "");
     setHandleInput(clean);
     if (checkTimeout.current) clearTimeout(checkTimeout.current);
     if (clean.length < 3) { setHandleStatus(null); return; }

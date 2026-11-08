@@ -91,7 +91,7 @@ export const AuthProvider = ({ children }) => {
       // supabase-js re-emits SIGNED_IN on tab refocus. Keep the previous object
       // identity when it's the same user so consumers don't refetch.
       setUser((prev) => (prev?.id === nextUser?.id ? prev : nextUser));
-      setIsPasswordRecovery(event === "PASSWORD_RECOVERY");
+      if (event === "PASSWORD_RECOVERY") setIsPasswordRecovery(true);
 
       // Cache the session if valid
       if (session?.user) {
@@ -522,11 +522,14 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const clearPasswordRecovery = useCallback(() => setIsPasswordRecovery(false), []);
+
   const value = useMemo(() => ({
     user,
     userDetails,
     loading,
     isPasswordRecovery,
+    clearPasswordRecovery,
     signUp,
     signIn,
     signInWithGoogle,
@@ -540,7 +543,7 @@ export const AuthProvider = ({ children }) => {
     testDatabaseConnection,
     cacheClear,
     supabase,
-  }), [user, userDetails, loading, isPasswordRecovery, signUp, signIn, signInWithGoogle, signOut,
+  }), [user, userDetails, loading, isPasswordRecovery, clearPasswordRecovery, signUp, signIn, signInWithGoogle, signOut,
        resetPassword, deleteAccount, getUserDetails, addUserToDatabase, getSocialLinks,
        getProfileDetails, testDatabaseConnection, cacheClear]);
 

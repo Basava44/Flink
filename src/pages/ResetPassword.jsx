@@ -16,7 +16,7 @@ function ResetPassword() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [invalidLink, setInvalidLink] = useState(false);
-  const { supabase, loading: authLoading, isPasswordRecovery } = useAuth();
+  const { supabase, loading: authLoading, isPasswordRecovery, clearPasswordRecovery } = useAuth();
 
   useEffect(() => {
     if (!authLoading) setInvalidLink(!isPasswordRecovery);
@@ -44,6 +44,7 @@ function ResetPassword() {
         setError(error.message);
       } else {
         setSuccess(true);
+        clearPasswordRecovery();
       }
     } catch {
       setError("An unexpected error occurred. Please try again.");
