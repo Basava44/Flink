@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { injectSeo, homeSeo, profileSeo, pageSeo, notFoundSeo } from '../src/seo/html.js';
+import { injectSeo, homeSeo, profileSeo, pageSeo, notFoundSeo, compareSeo } from '../src/seo/html.js';
 
 const TEMPLATE = `<html><head><!--seo:head--><title>old</title><!--/seo:head--><script src="/app.js"></script></head>
 <body><div id="root"><!--seo:body--><p>old</p><!--/seo:body--></div></body></html>`;
@@ -64,4 +64,12 @@ test('app pages are noindex and not-found pages are noindex', () => {
   assert.match(pageSeo({ title: 'Log in', path: '/login', noindex: true }).head, /noindex/);
   assert.match(notFoundSeo('nobody').head, /noindex/);
   assert.doesNotMatch(pageSeo({ title: 'Privacy Policy', path: '/privacy' }).head, /noindex/);
+});
+
+test('comparison page is indexable with crawlable table', () => {
+  const { head, body } = compareSeo();
+  assert.match(head, /<link rel="canonical" href="https:\/\/myflink.in\/linktree-alternative"/);
+  assert.doesNotMatch(head, /noindex/);
+  assert.match(body, /<h1>Flink vs Linktree<\/h1>/);
+  assert.match(body, /<td>myflink.in\/yourname<\/td>/);
 });

@@ -16,6 +16,7 @@ const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const LinktreeAlternative = lazy(() => import("./pages/LinktreeAlternative"));
 
 function LoadingSpinner() {
   return (
@@ -42,6 +43,7 @@ function AppContent() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/linktree-alternative" element={<LinktreeAlternative />} />
           <Route path="/admin-panel-basava" element={<AdminDashboard />} />
           <Route path="/:handle" element={<ProfilePage />} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

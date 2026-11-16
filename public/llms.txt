@@ -13,6 +13,7 @@
 ## Key pages
 
 - [Home](https://myflink.in/): what Flink is, features and FAQ
+- [Flink vs Linktree](https://myflink.in/linktree-alternative): comparison and how to switch
 - [Sign up / Log in](https://myflink.in/login)
 - [Privacy Policy](https://myflink.in/privacy)
 - [Terms of Service](https://myflink.in/terms)

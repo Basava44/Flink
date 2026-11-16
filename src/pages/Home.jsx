@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
@@ -96,16 +96,16 @@ function Home() {
           >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <button
-            onClick={() => navigate("/login")}
+          <Link
+            to="/login"
             className={`text-sm font-medium px-3 sm:px-4 py-2 rounded-lg border transition-colors ${
               isDark ? "text-zinc-400 hover:text-white border-zinc-700" : "text-zinc-600 hover:text-zinc-900 border-zinc-200"
             }`}
           >
             Log in
-          </button>
-          <button
-            onClick={() => navigate("/login")}
+          </Link>
+          <Link
+            to="/login"
             className={`text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 active:scale-95 ${
               isDark
                 ? "bg-white text-zinc-900 hover:bg-zinc-200"
@@ -113,7 +113,7 @@ function Home() {
             }`}
           >
             Sign up
-          </button>
+          </Link>
         </div>
       </nav>
 
@@ -326,13 +326,13 @@ function Home() {
           <p className={`text-base mb-8 ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
             Join Flink and make connecting effortless.
           </p>
-          <button
-            onClick={() => navigate("/login")}
+          <Link
+            to="/login"
             className="inline-flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-xl text-white bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md"
           >
             Create your Flink
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </Link>
         </div>
       </section>
 
@@ -346,18 +346,24 @@ function Home() {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate("/privacy")}
+            <Link
+              to="/linktree-alternative"
+              className={`text-xs transition-colors ${isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"}`}
+            >
+              Flink vs Linktree
+            </Link>
+            <Link
+              to="/privacy"
               className={`text-xs transition-colors ${isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"}`}
             >
               Privacy
-            </button>
-            <button
-              onClick={() => navigate("/terms")}
+            </Link>
+            <Link
+              to="/terms"
               className={`text-xs transition-colors ${isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"}`}
             >
               Terms
-            </button>
+            </Link>
             <p className={`text-xs ${isDark ? "text-zinc-700" : "text-zinc-400"}`}>
               &copy; {new Date().getFullYear()} Flink
             </p>

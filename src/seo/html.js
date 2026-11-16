@@ -2,6 +2,7 @@
 // PerplexityBot, WhatsApp, LinkedIn...) that read the raw HTML without running JS.
 // Used by vite.config.js (homepage) and api/profile.js (profile + app routes).
 import { HOME_FAQ } from "./faq.js";
+import { COMPARE } from "./compare.js";
 
 export const SITE_URL = "https://myflink.in";
 export const DEFAULT_TITLE = "Flink - Free Link in Bio Page for Creators";
@@ -223,4 +224,20 @@ export function notFoundSeo(handle) {
     }),
     body: fallback(`<main><h1>Profile not found</h1><p><a href="/">Create your own free Flink page</a></p></main>`),
   };
+}
+
+export function compareSeo() {
+  const body = fallback(`
+      <main>
+        <h1>${esc(COMPARE.h1)}</h1>
+        <p>${esc(COMPARE.intro)}</p>
+        <table>
+          <thead><tr><th>Feature</th><th>Flink</th><th>Linktree</th></tr></thead>
+          <tbody>${COMPARE.rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>
+        </table>
+        ${COMPARE.sections.map(({ h, p }) => `<h2>${esc(h)}</h2><p>${esc(p)}</p>`).join("\n        ")}
+      </main>
+      <footer><a href="/">Create your free Flink page</a></footer>
+    `);
+  return { head: headTags({ title: `${COMPARE.title} - Flink`, description: COMPARE.description, path: COMPARE.path }), body };
 }

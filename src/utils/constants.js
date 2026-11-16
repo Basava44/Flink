@@ -12,6 +12,6 @@ export const RESERVED_HANDLES = new Set([
   'forgot-password', 'reset-password', 'privacy', 'terms',
   'admin', 'api', 'app', 'about', 'blog', 'contact',
   'dashboard', 'flink', 'home', 'notifications', 'friends',
-  'search', 'explore', 'profile', 'edit', 'delete',
+  'search', 'explore', 'profile', 'edit', 'delete', 'linktree-alternative',
   'null', 'undefined', 'favicon.ico', 'robots.txt', 'sitemap.xml',
 ]);
