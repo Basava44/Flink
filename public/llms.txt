@@ -1,0 +1,23 @@
+# Flink
+
+> Flink (myflink.in) is a free link-in-bio page for creators and professionals, built for India. Each user gets one short link, myflink.in/yourname, that holds their social profiles, website and contact details.
+
+## What Flink does
+
+- One link for Instagram, YouTube, X (Twitter), LinkedIn, WhatsApp, Facebook, Threads, Snapchat, Telegram, Discord, Twitch, Spotify, GitHub, Reddit, Medium, email, phone and custom links
+- Save contact: visitors download a vCard with the person's name, phone, email and website in one tap
+- QR code for every profile, for print and in-person sharing
+- Private profiles: hidden from visitors and search engines
+- Free to create; sign up with email or Google
+
+## Key pages
+
+- [Home](https://myflink.in/): what Flink is, features and FAQ
+- [Sign up / Log in](https://myflink.in/login)
+- [Privacy Policy](https://myflink.in/privacy)
+- [Terms of Service](https://myflink.in/terms)
+- [Sitemap of public profiles](https://myflink.in/sitemap.xml)
+
+## Profile pages
+
+Public profiles live at https://myflink.in/{handle} and include the person's name, bio, location and links, with ProfilePage/Person structured data.

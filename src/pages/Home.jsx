@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
+import HomeFaq from "../components/HomeFaq";
 import { supabase } from "../lib/supabase";
 import { RESERVED_HANDLES, SITE_DOMAIN } from "../utils/constants";
 import {
@@ -310,6 +311,8 @@ function Home() {
           </div>
         </div>
       </section>
+
+      <HomeFaq isDark={isDark} />
 
       {/* Final CTA */}
       <section className="py-24 px-5">

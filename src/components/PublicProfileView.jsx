@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
+import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { supabase } from "../lib/supabase";
 import { trackProfileView, trackLinkClick } from "../lib/analytics";
 import {
@@ -327,6 +328,18 @@ const PublicProfileView = ({ handle, isPreview = false, prefetchedProfile = null
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
   const [reportStatus, setReportStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
+
+  const metaName = profileData?.name || handle;
+  useDocumentMeta(
+    profileData && !isPreview
+      ? {
+          title: `${metaName} (@${profileData.handle})`,
+          description: profileData.bio || `Connect with ${metaName} - all their links in one place on Flink.`,
+          path: `/${profileData.handle}`,
+          ogImage: profileData.profile_url || undefined,
+        }
+      : null
+  );
 
   // Read by the profile-load effect to decide whether to log a view. Held in a
   // ref so a viewer signing in doesn't re-trigger the whole profile fetch.

@@ -64,15 +64,18 @@ function ProfilePage() {
   const [showQR, setShowQR] = useState(false);
 
   const profileName = userDetails?.name || handle;
+  // Visitors' profile meta is set by PublicProfileView from the viewed profile's data
   useDocumentMeta(
     !profileExists
-      ? { title: "Profile not found", description: `@${handle} doesn't exist on Flink`, path: `/${handle}` }
-      : {
-          title: profileName ? `${profileName} (@${handle})` : `@${handle}`,
-          description: profileDetails?.bio || `Check out ${profileName || handle}'s links on Flink`,
-          path: `/${handle}`,
-          ogImage: profileDetails?.profile_url || undefined,
-        }
+      ? { title: "Profile not found", description: `@${handle} doesn't exist on Flink`, path: `/${handle}`, noindex: true }
+      : isOwnProfile
+        ? {
+            title: profileName ? `${profileName} (@${handle})` : `@${handle}`,
+            description: profileDetails?.bio || `Check out ${profileName || handle}'s links on Flink`,
+            path: `/${handle}`,
+            ogImage: profileDetails?.profile_url || undefined,
+          }
+        : null
   );
 
   const hasLoadedData = useRef(false);

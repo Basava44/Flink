@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import { SITE_URL } from "../utils/constants";
+import { DEFAULT_TITLE, DEFAULT_DESC } from "../seo/html";
 
-const DEFAULT_TITLE = "Flink - All Your Social Links in One Place";
-const DEFAULT_DESC = "Create your free Flink page to share your social media profiles, website, and contact details with one simple link.";
-
-export function useDocumentMeta({ title, description, path, ogImage, noindex } = {}) {
+// Pass null to leave the current (server-rendered) tags untouched
+export function useDocumentMeta(meta = {}) {
+  const skip = meta === null;
+  const { title, description, path, ogImage, noindex } = meta || {};
   useEffect(() => {
+    if (skip) return;
     const fullTitle = title ? `${title} - Flink` : DEFAULT_TITLE;
     const desc = description || DEFAULT_DESC;
     const url = path ? `${SITE_URL}${path}` : SITE_URL;
@@ -46,5 +48,5 @@ export function useDocumentMeta({ title, description, path, ogImage, noindex } =
     return () => {
       document.title = DEFAULT_TITLE;
     };
-  }, [title, description, path, ogImage, noindex]);
+  }, [skip, title, description, path, ogImage, noindex]);
 }
