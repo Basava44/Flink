@@ -13,6 +13,7 @@
 ## Key pages
 
 - [Home](https://myflink.in/): what Flink is, features and FAQ
+- [About](https://myflink.in/about): who runs Flink and how to contact us
 - [Flink vs Linktree](https://myflink.in/linktree-alternative): comparison and how to switch
 - [Sign up / Log in](https://myflink.in/login)
 - [Privacy Policy](https://myflink.in/privacy)
@@ -22,3 +23,9 @@
 ## Profile pages
 
 Public profiles live at https://myflink.in/{handle} and include the person's name, bio, location and links, with ProfilePage/Person structured data.
+
+## Contact
+
+- Built and run by Karibasaveshwara TG
+- Email: karibasava.t.g@gmail.com
+- Instagram: https://www.instagram.com/my_flink/

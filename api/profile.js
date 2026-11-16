@@ -2,7 +2,7 @@
 // Serves index.html for every single-segment route (see vercel.json) with
 // per-page title, canonical, Open Graph and JSON-LD injected, so crawlers and
 // link-preview bots that don't run JS see the real profile instead of the homepage.
-import { injectSeo, profileSeo, pageSeo, notFoundSeo, compareSeo } from "../src/seo/html.js";
+import { injectSeo, profileSeo, pageSeo, notFoundSeo, compareSeo, aboutSeo } from "../src/seo/html.js";
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
@@ -76,6 +76,7 @@ export default async function handler(req, res) {
     res.status(status).send(injectSeo(template, seo));
   };
 
+  if (handle === "about") return send(200, aboutSeo(), "public, s-maxage=86400");
   if (handle === "linktree-alternative") return send(200, compareSeo(), "public, s-maxage=86400");
   if (STATIC_PAGES[handle]) return send(200, pageSeo(STATIC_PAGES[handle]), "public, s-maxage=86400");
   if (APP_PAGES[handle]) {

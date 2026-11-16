@@ -10,6 +10,7 @@ export default async function handler(req, res) {
 
     const urls = [
       { loc: `${SITE_URL}/`, priority: "1.0", changefreq: "weekly" },
+      { loc: `${SITE_URL}/about`, priority: "0.5", changefreq: "yearly" },
       { loc: `${SITE_URL}/linktree-alternative`, priority: "0.8", changefreq: "monthly" },
       { loc: `${SITE_URL}/privacy`, priority: "0.3", changefreq: "yearly" },
       { loc: `${SITE_URL}/terms`, priority: "0.3", changefreq: "yearly" },

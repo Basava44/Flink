@@ -347,6 +347,12 @@ function Home() {
           </div>
           <div className="flex items-center gap-4">
             <Link
+              to="/about"
+              className={`text-xs transition-colors ${isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"}`}
+            >
+              About
+            </Link>
+            <Link
               to="/linktree-alternative"
               className={`text-xs transition-colors ${isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"}`}
             >

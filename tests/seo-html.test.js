@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { injectSeo, homeSeo, profileSeo, pageSeo, notFoundSeo, compareSeo } from '../src/seo/html.js';
+import { injectSeo, homeSeo, profileSeo, pageSeo, notFoundSeo, compareSeo, aboutSeo } from '../src/seo/html.js';
 
 const TEMPLATE = `<html><head><!--seo:head--><title>old</title><!--/seo:head--><script src="/app.js"></script></head>
 <body><div id="root"><!--seo:body--><p>old</p><!--/seo:body--></div></body></html>`;
@@ -72,4 +72,12 @@ test('comparison page is indexable with crawlable table', () => {
   assert.doesNotMatch(head, /noindex/);
   assert.match(body, /<h1>Flink vs Linktree<\/h1>/);
   assert.match(body, /<td>myflink.in\/yourname<\/td>/);
+});
+
+test('about page and Organization schema name the founder and Instagram', () => {
+  const { head, body } = aboutSeo();
+  assert.match(head, /"@type":"AboutPage"/);
+  assert.match(head, /"founder":\{"@type":"Person","name":"Karibasaveshwara TG"\}/);
+  assert.match(body, /mailto:karibasava.t.g@gmail.com/);
+  assert.match(homeSeo().head, /"sameAs":\["https:\/\/www.instagram.com\/my_flink\/"\]/);
 });

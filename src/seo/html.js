@@ -3,6 +3,7 @@
 // Used by vite.config.js (homepage) and api/profile.js (profile + app routes).
 import { HOME_FAQ } from "./faq.js";
 import { COMPARE } from "./compare.js";
+import { ABOUT } from "./about.js";
 
 export const SITE_URL = "https://myflink.in";
 export const DEFAULT_TITLE = "Flink - Free Link in Bio Page for Creators";
@@ -80,6 +81,9 @@ export function homeSeo() {
     alternateName: "myflink",
     url: `${SITE_URL}/`,
     logo: `${SITE_URL}/logo.png`,
+    email: ABOUT.email,
+    founder: { "@type": "Person", name: ABOUT.founder },
+    sameAs: [ABOUT.instagram],
   };
   const schema = {
     "@context": "https://schema.org",
@@ -132,7 +136,7 @@ export function homeSeo() {
         <h2>Frequently asked questions</h2>
         ${HOME_FAQ.map(({ q, a }) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join("\n        ")}
       </main>
-      <footer><a href="/privacy">Privacy</a> <a href="/terms">Terms</a></footer>
+      <footer><a href="/about">About</a> <a href="/linktree-alternative">Flink vs Linktree</a> <a href="/privacy">Privacy</a> <a href="/terms">Terms</a></footer>
     `);
 
   return { head: headTags({ title: DEFAULT_TITLE, description: DEFAULT_DESC, path: "/", schema }), body };
@@ -240,4 +244,24 @@ export function compareSeo() {
       <footer><a href="/">Create your free Flink page</a></footer>
     `);
   return { head: headTags({ title: `${COMPARE.title} - Flink`, description: COMPARE.description, path: COMPARE.path }), body };
+}
+
+export function aboutSeo() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    url: `${SITE_URL}${ABOUT.path}`,
+    name: `${ABOUT.title} - Flink`,
+    mainEntity: { "@id": `${SITE_URL}/#org`, "@type": "Organization", name: "Flink", url: `${SITE_URL}/`, email: ABOUT.email, founder: { "@type": "Person", name: ABOUT.founder }, sameAs: [ABOUT.instagram] },
+  };
+  const body = fallback(`
+      <main>
+        <h1>${esc(ABOUT.h1)}</h1>
+        ${ABOUT.sections.map(({ h, p }) => `<h2>${esc(h)}</h2><p>${esc(p)}</p>`).join("\n        ")}
+        <h2>Contact</h2>
+        <p><a href="mailto:${esc(ABOUT.email)}">${esc(ABOUT.email)}</a> <a href="${esc(ABOUT.instagram)}" rel="me noopener">Instagram ${esc(ABOUT.instagramHandle)}</a></p>
+      </main>
+      <footer><a href="/">Create your free Flink page</a></footer>
+    `);
+  return { head: headTags({ title: `${ABOUT.title} - Flink`, description: ABOUT.description, path: ABOUT.path, schema }), body };
 }
